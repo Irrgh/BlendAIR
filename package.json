@@ -6,14 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "mkdir build 2>nul & tsc",
-    "docs": "npx typedoc --out docs src/**/*.ts",
+    "docs": "mkdir docs 2>nul & npx typedoc --out docs src/**/*.ts",
     "server": "node server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@webgpu/types": "^0.1.40",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "gl-matrix": "^3.4.3"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

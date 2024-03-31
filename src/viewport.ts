@@ -10,8 +10,18 @@ export class Viewport {
      */
     constructor(private canvas: HTMLCanvasElement) { }
 
+    /**
+     * Actual device used for rendering @example {vendor: 'intel', architecture: 'gen-12lp', device: '', description: ''}
+     */
     adapter: GPUAdapter | null = null;
+
+
+    /**
+     * Interface for using gpu
+     */
     device: GPUDevice | null = null;
+
+
     context: GPUCanvasContext | null = null;
     canvasFormat: GPUTextureFormat | null = null;
 
@@ -38,7 +48,7 @@ export class Viewport {
         this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
         this.context?.configure({
             device: this.device,
-            format: this.canvasFormat,
+            format: this.canvasFormat
         });
 
 
@@ -46,7 +56,7 @@ export class Viewport {
     }
 
     /**
-     * Clears the current Render Pass with a clear color
+     * Clears the current render pass with a color.
      */
 
     clear(color: GPUColorDict = { r: 0, g: 0, b: 0, a: 1 }): void {
@@ -75,6 +85,12 @@ export class Viewport {
         this.device!.queue.submit([encoder!.finish()]);
 
     }
+
+
+
+
+
+
 
 
 
