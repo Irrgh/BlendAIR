@@ -93,12 +93,16 @@ export class ResizableWindow {
             return this.setInitialChild(child);
         }
 
+        const divBefore = this.children[index].div;
+
         const childrenBefore = this.children.slice(0, index)        // insert child into list of children
         const childrenAfter = this.children.slice(index);
         this.children = childrenBefore.concat([child], childrenAfter);
 
 
-        const divBefore = this.children[index].div;
+        
+
+        console.log(divBefore);
 
 
         if (divBefore) {
@@ -153,7 +157,7 @@ export class ResizableWindow {
 
             // called continuously while mouse is moving
             const dragStart = (event:MouseEvent) => {
-                console.log("ee");
+                this.moveResizer(event.clientX,event.clientY);
             }
 
             // called when movement is properly ended
@@ -187,21 +191,25 @@ export class ResizableWindow {
 
 
         this.div.insertBefore(resizer, divBefore);
-
+        this.resizers.push(resizer);
 
 
     }
 
-    private getResizerIndex (resizer:HTMLDivElement) {
+    private getResizerIndex (resizer:HTMLDivElement):number {
         for (let i = 0; i < this.resizers.length; i++) {
             if (this.resizers[i] === resizer) {
                 return i;
             }
         }
+        console.log(this.resizers);
         throw new Error(`Resizer does not exist in list 🤔`);
     }
 
-
+    /** Caculates the leftmost position of resizer left attribute
+     * 
+     * @returns 
+     */
     private calculateLeftClearance():number {
 
         if (this.children.length == 0) {
@@ -226,10 +234,14 @@ export class ResizableWindow {
 
     }
 
+    /** Caculates the rightmost position of resizer left attribute
+     * 
+     * @returns 
+     */
     private calculateRightClearance():number {
 
         if (this.children.length == 0) {
-            return this.div.clientLeft + this.width - ResizableWindow.MINIMUM_DIMENSIONS;
+            return this.div.clientLeft + this.width - ResizableWindow.MINIMUM_DIMENSIONS - ResizableWindow.RESIZER_THICKNESS;
         } else {
 
             if (this.childLayout == ResizableLayout.HORIZONTAL) {
@@ -252,9 +264,9 @@ export class ResizableWindow {
 
 
 
-    private moveResizer (resizerIndex:number,x:number, y:number) {
+    private moveResizer (x:number, y:number) {
 
-        if (!this.activeResizerIndex) {throw new Error("There is no resizer to move")}
+        if (this.activeResizerIndex == undefined) {throw new Error("There is no resizer to move")}
 
         
 
@@ -262,15 +274,24 @@ export class ResizableWindow {
         switch (this.childLayout) {
             case ResizableLayout.HORIZONTAL:
 
-                const child1 = this.children[resizerIndex];
-                const child2 = this.children[resizerIndex+1];
+                const child1 = this.children[this.activeResizerIndex];
+                const child2 = this.children[this.activeResizerIndex+1];
                 
-                const firstWidth = Math.min(Math.max(ResizableWindow.MINIMUM_DIMENSIONS,x - this.div.clientLeft),);
-
                 const leftmost = child1.calculateLeftClearance();
                 const rightmost = child2.calculateRightClearance();
 
+                const resizerLeft = Math.max(Math.min(x,rightmost),leftmost);
 
+                this.resizers[this.activeResizerIndex].style.setProperty("left",`${resizerLeft}px`);
+
+
+                child1.div.style.setProperty("width",`${resizerLeft}px`);
+                child2.div.style.setProperty("left",`${resizerLeft+ResizableWindow.RESIZER_THICKNESS}px`);
+                child2.div.style.setProperty("width", `${this.width - resizerLeft - ResizableWindow.RESIZER_THICKNESS}px`);
+
+
+
+                console.log(leftmost,rightmost);
 
 
 
