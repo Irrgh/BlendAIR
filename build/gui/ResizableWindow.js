@@ -154,11 +154,11 @@ export class ResizableWindow {
         }
         else {
             if (this.childLayout == ResizableLayout.HORIZONTAL) {
-                return this.children[this.children.length].calculateLeftClearance();
+                return this.children[this.children.length - 1].calculateLeftClearance();
             }
             else {
                 return this.children.map((el) => {
-                    el.calculateLeftClearance();
+                    return el.calculateLeftClearance();
                 }).reduce((acc, curr) => {
                     return Math.max(acc, curr); // stfu typescript why would curr be :void
                 }, Number.MIN_VALUE); // should return the max of this
@@ -175,14 +175,48 @@ export class ResizableWindow {
         }
         else {
             if (this.childLayout == ResizableLayout.HORIZONTAL) {
-                return this.children[this.children.length].calculateRightClearance();
+                return this.children[0].calculateRightClearance();
             }
             else {
                 return this.children.map((el) => {
-                    el.calculateRightClearance();
+                    return el.calculateRightClearance();
                 }).reduce((acc, curr) => {
                     return Math.min(acc, curr); // stfu typescript why would curr be :void
                 }, Number.MAX_VALUE); // should return the min of this
+            }
+        }
+    }
+    calculateTopClearance() {
+        if (this.children.length == 0) {
+            return this.div.clientTop + ResizableWindow.MINIMUM_DIMENSIONS;
+        }
+        else {
+            if (this.childLayout == ResizableLayout.VERTICAL) {
+                return this.children[0].calculateTopClearance();
+            }
+            else {
+                return this.children.map((el) => {
+                    return el.calculateTopClearance();
+                }).reduce((acc, curr) => {
+                    return Math.min(acc, curr); // stfu typescript why would curr be :void
+                }, Number.MAX_VALUE); // should return the max of this
+            }
+        }
+    }
+    calculateBottomClearance() {
+        if (this.children.length == 0) {
+            return this.div.clientTop + this.height - ResizableWindow.MINIMUM_DIMENSIONS - ResizableWindow.RESIZER_THICKNESS;
+        }
+        else {
+            if (this.childLayout == ResizableLayout.VERTICAL) {
+                return this.children[this.children.length - 1].calculateBottomClearance();
+            }
+            else {
+                return this.children.map((el) => {
+                    return el.calculateBottomClearance();
+                }).reduce((acc, curr) => {
+                    return Math.max(acc, curr); // stfu typescript why would curr be :void
+                }, Number.MIN_VALUE); // should return the min of this
             }
         }
     }
@@ -190,10 +224,11 @@ export class ResizableWindow {
         if (this.activeResizerIndex == undefined) {
             throw new Error("There is no resizer to move");
         }
+        console.log(x, y);
+        const child1 = this.children[this.activeResizerIndex];
+        const child2 = this.children[this.activeResizerIndex + 1];
         switch (this.childLayout) {
             case ResizableLayout.HORIZONTAL:
-                const child1 = this.children[this.activeResizerIndex];
-                const child2 = this.children[this.activeResizerIndex + 1];
                 const leftmost = child1.calculateLeftClearance();
                 const rightmost = child2.calculateRightClearance();
                 const resizerLeft = Math.max(Math.min(x, rightmost), leftmost);
@@ -201,9 +236,19 @@ export class ResizableWindow {
                 child1.div.style.setProperty("width", `${resizerLeft}px`);
                 child2.div.style.setProperty("left", `${resizerLeft + ResizableWindow.RESIZER_THICKNESS}px`);
                 child2.div.style.setProperty("width", `${this.width - resizerLeft - ResizableWindow.RESIZER_THICKNESS}px`);
-                console.log(leftmost, rightmost);
+                child1.width = resizerLeft;
+                child2.width = this.width - resizerLeft - ResizableWindow.RESIZER_THICKNESS;
                 break;
             case ResizableLayout.VERTICAL:
+                const topmost = child1.calculateTopClearance();
+                const bottommost = child2.calculateBottomClearance();
+                const resizerTop = Math.max(Math.min(y, bottommost), topmost);
+                this.resizers[this.activeResizerIndex].style.setProperty("top", `${resizerTop}px`);
+                child1.div.style.setProperty("height", `${resizerTop}px`);
+                child2.div.style.setProperty("top", `${resizerTop + ResizableWindow.RESIZER_THICKNESS}px`);
+                child2.div.style.setProperty("height", `${this.height - resizerTop - ResizableWindow.RESIZER_THICKNESS}px`);
+                child1.height = resizerTop;
+                child2.height = this.height - resizerTop - ResizableWindow.RESIZER_THICKNESS;
                 break;
         }
     }

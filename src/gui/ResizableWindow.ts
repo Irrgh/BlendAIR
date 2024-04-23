@@ -26,7 +26,7 @@ export class ResizableWindow {
         this.parent = parentWindow;
         this.div = document.createElement("div");
 
-      
+
         this.childLayout = childLayout;
         this.type = type;
 
@@ -100,7 +100,7 @@ export class ResizableWindow {
         this.children = childrenBefore.concat([child], childrenAfter);
 
 
-        
+
 
         console.log(divBefore);
 
@@ -141,10 +141,10 @@ export class ResizableWindow {
             resizer.classList.add("horizontalResizer");
             resizer.style.setProperty("top", `${divBefore.clientTop + ResizableWindow.MINIMUM_DIMENSIONS}px`);
             resizer.style.setProperty("height", `${ResizableWindow.RESIZER_THICKNESS}px`);
-            resizer.style.setProperty("width",`${this.width}`);
+            resizer.style.setProperty("width", `${this.width}`);
 
         }
-        
+
         resizer.addEventListener("mousedown", (event) => {
 
             event.preventDefault();
@@ -156,34 +156,34 @@ export class ResizableWindow {
             console.log(startPos);
 
             // called continuously while mouse is moving
-            const dragStart = (event:MouseEvent) => {
-                this.moveResizer(event.clientX,event.clientY);
+            const dragStart = (event: MouseEvent) => {
+                this.moveResizer(event.clientX, event.clientY);
             }
 
             // called when movement is properly ended
-            const dragFinish = (event:MouseEvent) => {
+            const dragFinish = (event: MouseEvent) => {
                 console.log("finish");
                 this.activeResizerIndex = null;
-                window.removeEventListener("mousemove",dragStart);
-                window.removeEventListener("mouseup",dragFinish);
+                window.removeEventListener("mousemove", dragStart);
+                window.removeEventListener("mouseup", dragFinish);
             }
 
             // called when movement is canceled
-            const dragCancel = (event:KeyboardEvent) => {
+            const dragCancel = (event: KeyboardEvent) => {
 
                 if (event.key === "Escape") {
                     console.log("cancel");
                     this.activeResizerIndex = null;
-                    window.removeEventListener("mousemove",dragStart);
-                    window.removeEventListener("mouseup",dragFinish);
-                    window.removeEventListener("keydown",dragCancel);
+                    window.removeEventListener("mousemove", dragStart);
+                    window.removeEventListener("mouseup", dragFinish);
+                    window.removeEventListener("keydown", dragCancel);
                 }
 
 
             }
 
-            window.addEventListener("mousemove",dragStart);
-            window.addEventListener("keydown",dragCancel);
+            window.addEventListener("mousemove", dragStart);
+            window.addEventListener("keydown", dragCancel);
             window.addEventListener("mouseup", dragFinish);
 
 
@@ -196,7 +196,7 @@ export class ResizableWindow {
 
     }
 
-    private getResizerIndex (resizer:HTMLDivElement):number {
+    private getResizerIndex(resizer: HTMLDivElement): number {
         for (let i = 0; i < this.resizers.length; i++) {
             if (this.resizers[i] === resizer) {
                 return i;
@@ -210,7 +210,7 @@ export class ResizableWindow {
      * 
      * @returns 
      */
-    private calculateLeftClearance():number {
+    private calculateLeftClearance(): number {
 
         if (this.children.length == 0) {
             return this.div.clientLeft + ResizableWindow.MINIMUM_DIMENSIONS;
@@ -218,16 +218,16 @@ export class ResizableWindow {
 
             if (this.childLayout == ResizableLayout.HORIZONTAL) {
 
-                return this.children[this.children.length].calculateLeftClearance();
+                return this.children[this.children.length-1].calculateLeftClearance();
             } else {
 
                 return this.children.map((el) => {
-                    el.calculateLeftClearance();
-                }).reduce((acc,curr) => {
+                    return el.calculateLeftClearance();
+                }).reduce((acc, curr) => {
 
-                    return Math.max(acc,curr!);         // stfu typescript why would curr be :void
+                    return Math.max(acc, curr!);         // stfu typescript why would curr be :void
 
-                },Number.MIN_VALUE);                    // should return the max of this
+                }, Number.MIN_VALUE);                    // should return the max of this
 
             }
         }
@@ -238,7 +238,7 @@ export class ResizableWindow {
      * 
      * @returns 
      */
-    private calculateRightClearance():number {
+    private calculateRightClearance(): number {
 
         if (this.children.length == 0) {
             return this.div.clientLeft + this.width - ResizableWindow.MINIMUM_DIMENSIONS - ResizableWindow.RESIZER_THICKNESS;
@@ -246,16 +246,16 @@ export class ResizableWindow {
 
             if (this.childLayout == ResizableLayout.HORIZONTAL) {
 
-                return this.children[this.children.length].calculateRightClearance();
+                return this.children[0].calculateRightClearance();
             } else {
 
                 return this.children.map((el) => {
-                    el.calculateRightClearance();
-                }).reduce((acc,curr) => {
+                    return el.calculateRightClearance();
+                }).reduce((acc, curr) => {
 
-                    return Math.min(acc,curr!);         // stfu typescript why would curr be :void
+                    return Math.min(acc, curr!);         // stfu typescript why would curr be :void
 
-                },Number.MAX_VALUE);                    // should return the min of this
+                }, Number.MAX_VALUE);                    // should return the min of this
 
             }
         }
@@ -263,50 +263,101 @@ export class ResizableWindow {
     }
 
 
+    private calculateTopClearance(): number {
 
-    private moveResizer (x:number, y:number) {
+        if (this.children.length == 0) {
+            return this.div.clientTop + ResizableWindow.MINIMUM_DIMENSIONS;
+        } else {
 
-        if (this.activeResizerIndex == undefined) {throw new Error("There is no resizer to move")}
+            if (this.childLayout == ResizableLayout.VERTICAL) {
 
-        
+                return this.children[0].calculateTopClearance();
+            } else {
+
+                return this.children.map((el) => {
+                    return el.calculateTopClearance();
+                }).reduce((acc, curr) => {
+
+                    return Math.min(acc, curr!);         // stfu typescript why would curr be :void
+
+                }, Number.MAX_VALUE);                    // should return the max of this
+
+            }
+        }
+
+    }
+
+    private calculateBottomClearance(): number {
+
+        if (this.children.length == 0) {
+            return this.div.clientTop + this.height - ResizableWindow.MINIMUM_DIMENSIONS - ResizableWindow.RESIZER_THICKNESS;
+        } else {
+
+            if (this.childLayout == ResizableLayout.VERTICAL) {
+
+                return this.children[this.children.length-1].calculateBottomClearance();
+            } else {
+
+                return this.children.map((el) => {
+                    return el.calculateBottomClearance();
+                }).reduce((acc, curr) => {
+                    return Math.max(acc, curr!);         // stfu typescript why would curr be :void
+
+                }, Number.MIN_VALUE);                    // should return the min of this
+
+            }
+        }
+
+    }
+
+
+    private moveResizer(x: number, y: number) {
+
+        if (this.activeResizerIndex == undefined) { throw new Error("There is no resizer to move") }
+
+        console.log(x,y);
+
+        const child1 = this.children[this.activeResizerIndex];
+        const child2 = this.children[this.activeResizerIndex + 1];
 
 
         switch (this.childLayout) {
             case ResizableLayout.HORIZONTAL:
 
-                const child1 = this.children[this.activeResizerIndex];
-                const child2 = this.children[this.activeResizerIndex+1];
-                
+
+
                 const leftmost = child1.calculateLeftClearance();
                 const rightmost = child2.calculateRightClearance();
 
-                const resizerLeft = Math.max(Math.min(x,rightmost),leftmost);
+                const resizerLeft = Math.max(Math.min(x, rightmost), leftmost);
 
-                this.resizers[this.activeResizerIndex].style.setProperty("left",`${resizerLeft}px`);
+                this.resizers[this.activeResizerIndex].style.setProperty("left", `${resizerLeft}px`);
 
 
-                child1.div.style.setProperty("width",`${resizerLeft}px`);
-                child2.div.style.setProperty("left",`${resizerLeft+ResizableWindow.RESIZER_THICKNESS}px`);
+                child1.div.style.setProperty("width", `${resizerLeft}px`);
+                child2.div.style.setProperty("left", `${resizerLeft + ResizableWindow.RESIZER_THICKNESS}px`);
                 child2.div.style.setProperty("width", `${this.width - resizerLeft - ResizableWindow.RESIZER_THICKNESS}px`);
+                child1.width = resizerLeft;
+                child2.width = this.width - resizerLeft - ResizableWindow.RESIZER_THICKNESS;
 
-
-
-                console.log(leftmost,rightmost);
-
-
-
-
-
-
-            break;
+                break;
             case ResizableLayout.VERTICAL:
 
+                const topmost = child1.calculateTopClearance();
+                const bottommost = child2.calculateBottomClearance();
+
+                const resizerTop = Math.max(Math.min(y, bottommost), topmost);
+
+                this.resizers[this.activeResizerIndex].style.setProperty("top", `${resizerTop}px`);
 
 
+                child1.div.style.setProperty("height", `${resizerTop}px`);
+                child2.div.style.setProperty("top", `${resizerTop + ResizableWindow.RESIZER_THICKNESS}px`);
+                child2.div.style.setProperty("height", `${this.height - resizerTop - ResizableWindow.RESIZER_THICKNESS}px`);
+                child1.height = resizerTop;
+                child2.height = this.height - resizerTop - ResizableWindow.RESIZER_THICKNESS;
 
-
-
-            break;
+                break;
         }
 
 
@@ -329,9 +380,9 @@ export class ResizableWindow {
      * @param newWidth 
      * @param newHeight 
      */
-    private resize(newWidth:number,newHeight:number):void {
-        this.div.style.setProperty("width",`${newWidth}px`);
-        this.div.style.setProperty("height",`${newHeight}`);
+    private resize(newWidth: number, newHeight: number): void {
+        this.div.style.setProperty("width", `${newWidth}px`);
+        this.div.style.setProperty("height", `${newHeight}`);
         this.width = newWidth;
         this.height = newHeight;
     }
