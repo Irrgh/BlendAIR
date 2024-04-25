@@ -27,13 +27,16 @@
             
             const child = new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD);
 
-            root.insertChildBefore(child,0);
             root.insertChildBefore(new ResizableWindow(null, ResizableLayout.VERTICAL, ResizableType.CHILD),0);
+            root.insertChildBefore(child,0);
+            root.insertChildBefore(new ResizableWindow(null, ResizableLayout.VERTICAL, ResizableType.CHILD),1);
 
             child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD),0);
             child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD),0);
+            child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD),1);
+            child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD),2);
 
-
+            
 
 
 
