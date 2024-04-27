@@ -20,7 +20,7 @@
     border-radius: 7px;
     border: 2px transparent;
     position: fixed;
-    background-color: gray;
+    background-color: rgb(25, 46, 40);
     box-sizing: border-box;
 }
 
@@ -34,13 +34,13 @@
 .verticalResizer {
     position: absolute;
     height: 100%;
-    background-color: blue;
+    background-color: rgb(119, 150, 149);
     z-index: 100;
 }
 
 .horizontalResizer {
     position: absolute;
     width: 100%;
-    background-color: red;
+    background-color: rgb(119, 150, 149);
     z-index: 100;
 }

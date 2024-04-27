@@ -18,7 +18,7 @@ export class ResizableWindow {
 
     //** In pixel */
     public static MINIMUM_DIMENSIONS: number = 50;
-    public static RESIZER_THICKNESS: number = 4;
+    public static RESIZER_THICKNESS: number = 3;
     public activeResizerIndex: number | null = null;
 
 
@@ -71,9 +71,13 @@ export class ResizableWindow {
      * @returns the root window of the app.
      */
     public static initializeRootWindow(childLayout: ResizableLayout): ResizableWindow {
-        const window = new ResizableWindow(null, childLayout, ResizableType.ROOT);
-        document.body.appendChild(window.div);
-        return window;
+        const root = new ResizableWindow(null, childLayout, ResizableType.ROOT);
+        document.body.appendChild(root.div);
+        window.addEventListener("resize",(event) => {
+            root.setBottomTo(window.innerHeight);
+            root.setRightTo(window.innerWidth);
+        });
+        return root;
     }
 
     private setInitialChild(child: ResizableWindow) {
@@ -411,7 +415,7 @@ export class ResizableWindow {
         if (top < 0) { throw new Error(`top is smaller than 0: ${top}`) }
         const originalLayout = this.div.getBoundingClientRect();
         const heightDifference = top - originalLayout.top;
-        this.height += heightDifference;
+        this.height -= heightDifference;
         this.div.style.top = `${top}px`;
         this.div.style.height = `${this.height}px`;
 

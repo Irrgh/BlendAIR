@@ -26,6 +26,7 @@ export class Viewport {
 
     context: GPUCanvasContext | null = null;
     canvasFormat: GPUTextureFormat | null = null;
+    initialized:boolean = false;
 
 
 
@@ -34,6 +35,10 @@ export class Viewport {
      * @returns {Promise<void>} A Promise that resolves when initialization is complete.
      */
     async initialize(): Promise<void> {
+
+        if (this.initialized) {
+            return;
+        }
 
         if (!navigator.gpu) {
             throw new Error("WebGPU not supported on this browser.");
@@ -57,16 +62,15 @@ export class Viewport {
             format: this.canvasFormat
         });
 
-
-
+        this.initialized = true;
     }
 
     /**
      * Clears the current render pass with a color.
      */
 
-    clear(color: GPUColorDict = { r: 0, g: 0, b: 0, a: 1 }): void {
-
+    async clear(color: GPUColorDict = { r: 0, g: 0, b: 0, a: 1 }): Promise<void> {
+        await this.initialize();
 
         /*  Interface for recording GPU commands */
         const encoder: GPUCommandEncoder = this.device!.createCommandEncoder();
@@ -97,8 +101,8 @@ export class Viewport {
 
 
 
-    render(vertices: Float32Array, shaders: string): void {
-
+    async render(vertices: Float32Array, shaders: string): Promise<void> {
+        await this.initialize();
 
 
         const shaderModule = this.device!.createShaderModule({

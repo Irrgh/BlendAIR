@@ -22,11 +22,15 @@ export class Viewport {
     device = null;
     context = null;
     canvasFormat = null;
+    initialized = false;
     /**
      * Initializes the Viewport for rendering with WebGPU.
      * @returns {Promise<void>} A Promise that resolves when initialization is complete.
      */
     async initialize() {
+        if (this.initialized) {
+            return;
+        }
         if (!navigator.gpu) {
             throw new Error("WebGPU not supported on this browser.");
         }
@@ -44,11 +48,13 @@ export class Viewport {
             device: this.device,
             format: this.canvasFormat
         });
+        this.initialized = true;
     }
     /**
      * Clears the current render pass with a color.
      */
-    clear(color = { r: 0, g: 0, b: 0, a: 1 }) {
+    async clear(color = { r: 0, g: 0, b: 0, a: 1 }) {
+        await this.initialize();
         /*  Interface for recording GPU commands */
         const encoder = this.device.createCommandEncoder();
         const pass = encoder?.beginRenderPass({
@@ -67,7 +73,8 @@ export class Viewport {
         // Finish the command buffer and immediately submit it.
         this.device.queue.submit([encoder.finish()]);
     }
-    render(vertices, shaders) {
+    async render(vertices, shaders) {
+        await this.initialize();
         const shaderModule = this.device.createShaderModule({
             code: shaders,
         });
