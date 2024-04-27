@@ -76,6 +76,18 @@ export class ResizableWindow {
         return window;
     }
 
+    private setInitialChild(child: ResizableWindow) {
+        this.children = [child];
+        this.div.append(child.div);
+        console.log("i went here");
+        child.div.style.setProperty("width", `${this.width}px`);
+        child.div.style.setProperty("height", `${this.height}px`);
+        child.div.style.setProperty("left", `${this.div.getBoundingClientRect().left}px`);
+        child.div.style.setProperty("top", `${this.div.getBoundingClientRect().top}px`);
+        child.width = this.width;
+        child.height = this.height;
+    }
+
 
 
     /**
@@ -115,8 +127,9 @@ export class ResizableWindow {
 
         if (this.childLayout === ResizableLayout.HORIZONTAL) {
 
+            child.height = this.height;
             child.div.style.setProperty("width", `${child.width}px`);
-            child.div.style.setProperty("height", `${this.height}px`);
+            child.div.style.setProperty("height", `${child.height}px`);
             child.div.style.setProperty("left", `${childBefore.div.getBoundingClientRect().left}px`);
             child.div.style.setProperty("top", `${this.div.getBoundingClientRect().top}px`);
 
@@ -126,13 +139,13 @@ export class ResizableWindow {
 
             resizer.classList.add("verticalResizer");
             resizer.style.setProperty("left", `${childBefore.div.getBoundingClientRect().left - ResizableWindow.RESIZER_THICKNESS}px`);
-            resizer.style.setProperty("height", `${this.height}px`);
+            //resizer.style.setProperty("height", `${this.height}px`);
             resizer.style.setProperty("width", `${ResizableWindow.RESIZER_THICKNESS}px`);
 
         } else {
-
+            child.width = this.width;
             child.div.style.setProperty("height", `${child.height}px`);
-            child.div.style.setProperty("width", `${this.width}px`);
+            child.div.style.setProperty("width", `${child.width}px`);
             child.div.style.setProperty("left", `${this.div.getBoundingClientRect().left}px`);
             child.div.style.setProperty("top", `${childBefore.div.getBoundingClientRect().top}px`);
 
@@ -143,7 +156,7 @@ export class ResizableWindow {
             resizer.classList.add("horizontalResizer");
             resizer.style.setProperty("top", `${childBefore.div.getBoundingClientRect().top - ResizableWindow.RESIZER_THICKNESS}px`);
             resizer.style.setProperty("height", `${ResizableWindow.RESIZER_THICKNESS}px`);
-            resizer.style.setProperty("width", `${this.width}`);
+            //resizer.style.setProperty("width", `${this.width}`);
 
         }
 
@@ -220,7 +233,7 @@ export class ResizableWindow {
 
             if (this.childLayout == ResizableLayout.HORIZONTAL) {
 
-                return this.children[this.children.length-1].calculateLeftClearance();
+                return this.children[this.children.length - 1].calculateLeftClearance();
             } else {
 
                 return this.children.map((el) => {
@@ -243,8 +256,8 @@ export class ResizableWindow {
     private calculateRightClearance(): number {
 
         if (this.children.length == 0) {
-            console.log("Window: ",this);
-            console.log("Parameters: ",this.div.getBoundingClientRect().left, this.width, ResizableWindow.MINIMUM_DIMENSIONS, ResizableWindow.RESIZER_THICKNESS);
+            console.log("Window: ", this);
+            console.log("Parameters: ", this.div.getBoundingClientRect().left, this.width, ResizableWindow.MINIMUM_DIMENSIONS, ResizableWindow.RESIZER_THICKNESS);
             return this.div.getBoundingClientRect().left + this.width - ResizableWindow.MINIMUM_DIMENSIONS - ResizableWindow.RESIZER_THICKNESS;
         } else {
 
@@ -275,7 +288,7 @@ export class ResizableWindow {
 
             if (this.childLayout == ResizableLayout.VERTICAL) {
 
-                return this.children[this.children.length-1].calculateTopClearance();
+                return this.children[this.children.length - 1].calculateTopClearance();
             } else {
 
                 return this.children.map((el) => {
@@ -294,8 +307,8 @@ export class ResizableWindow {
     private calculateBottomClearance(): number {
 
         if (this.children.length == 0) {
-            console.log("Window: ",this);
-            console.log("Parameters: ",this.div.getBoundingClientRect().top, this.height, ResizableWindow.MINIMUM_DIMENSIONS, ResizableWindow.RESIZER_THICKNESS);
+            console.log("Window: ", this);
+            console.log("Parameters: ", this.div.getBoundingClientRect().top, this.height, ResizableWindow.MINIMUM_DIMENSIONS, ResizableWindow.RESIZER_THICKNESS);
             return this.div.getBoundingClientRect().top + this.height - ResizableWindow.MINIMUM_DIMENSIONS - ResizableWindow.RESIZER_THICKNESS;
         } else {
 
@@ -321,7 +334,7 @@ export class ResizableWindow {
 
         if (this.activeResizerIndex == undefined) { throw new Error("There is no resizer to move") }
 
-        console.log(x,y);
+        console.log(x, y);
 
         const child1 = this.children[this.activeResizerIndex];
         const child2 = this.children[this.activeResizerIndex + 1];
@@ -335,20 +348,24 @@ export class ResizableWindow {
                 const leftmost = child1.calculateLeftClearance();
                 const rightmost = child2.calculateRightClearance();
 
-                const totalChildWidth = child1.width + child2.width; 
+                const totalChildWidth = child1.width + child2.width;
 
                 const resizerLeft = Math.max(Math.min(x, rightmost), leftmost);
 
                 this.resizers[this.activeResizerIndex].style.setProperty("left", `${resizerLeft}px`);
 
-                child1.width = resizerLeft - child1.div.getBoundingClientRect().left;
-                child2.width = totalChildWidth - child1.width;  // probably no resizerThickness needed
+                //child1.width = resizerLeft - child1.div.getBoundingClientRect().left;
+                //child2.width = totalChildWidth - child1.width;  // probably no resizerThickness needed
+                //child1.div.style.setProperty("width", `${child1.width}px`);
+                //child2.div.style.setProperty("left", `${resizerLeft + ResizableWindow.RESIZER_THICKNESS}px`);
+                //child2.div.style.setProperty("width", `${child2.width}px`);
 
-                child1.div.style.setProperty("width", `${child1.width}px`);
-                child2.div.style.setProperty("left", `${resizerLeft + ResizableWindow.RESIZER_THICKNESS}px`);
-                child2.div.style.setProperty("width", `${child2.width}px`);
-                
-                console.log("Horizontal: ",leftmost,rightmost,resizerLeft);
+                child1.setRightTo(resizerLeft);
+                child2.setLeftTo(resizerLeft);
+
+
+
+                console.log("Horizontal: ", leftmost, rightmost, resizerLeft);
 
                 break;
             case ResizableLayout.VERTICAL:
@@ -356,21 +373,23 @@ export class ResizableWindow {
                 const topmost = child1.calculateTopClearance();
                 const bottommost = child2.calculateBottomClearance();
 
-                const totalChildHeight= child1.height + child2.height;
+                const totalChildHeight = child1.height + child2.height;
 
                 const resizerTop = Math.max(Math.min(y, bottommost), topmost);
 
                 this.resizers[this.activeResizerIndex].style.setProperty("top", `${resizerTop}px`);
 
-                child1.height = resizerTop - child1.div.getBoundingClientRect().top;
-                child2.height = totalChildHeight - child1.height;
+                //child1.height = resizerTop - child1.div.getBoundingClientRect().top;
+                //child2.height = totalChildHeight - child1.height;
+                //child1.div.style.setProperty("height", `${resizerTop}px`);
+                //child2.div.style.setProperty("top", `${resizerTop + ResizableWindow.RESIZER_THICKNESS}px`);
+                //child2.div.style.setProperty("height", `${child2.height}px`);
 
-                child1.div.style.setProperty("height", `${resizerTop}px`);
-                child2.div.style.setProperty("top", `${resizerTop + ResizableWindow.RESIZER_THICKNESS}px`);
-                child2.div.style.setProperty("height", `${child2.height}px`);
-                
+                child1.setBottomTo(resizerTop);
+                child2.setTopTo(resizerTop);
 
-                console.log("Vertical: ",topmost,bottommost,resizerTop);
+
+                console.log("Vertical: ", topmost, bottommost, resizerTop);
 
                 break;
         }
@@ -384,6 +403,89 @@ export class ResizableWindow {
 
 
 
+
+    }
+
+
+    private setTopTo(top: number): void {
+        if (top < 0) { throw new Error(`top is smaller than 0: ${top}`) }
+        const originalLayout = this.div.getBoundingClientRect();
+        const heightDifference = top - originalLayout.top;
+        this.height += heightDifference;
+        this.div.style.top = `${top}px`;
+        this.div.style.height = `${this.height}px`;
+
+        if (this.children.length > 0) {
+            switch (this.childLayout) {
+                case ResizableLayout.HORIZONTAL:
+                    this.children.forEach((child) => {child.setTopTo(top);})
+                    break;                          // all children get "squished"
+                case ResizableLayout.VERTICAL:
+                    this.children[0].setTopTo(top);
+                    break;                          // top child gets "squished"
+            }
+        }
+    }
+
+    private setBottomTo(bottom: number): void {
+        if (bottom > window.innerHeight) { throw new Error(`bottom is greater than window.innerHeight: ${bottom}`) }
+        const originalLayout = this.div.getBoundingClientRect();
+        if (bottom <= originalLayout.top) { throw new Error(`no negative height allowed`) }
+        this.height = bottom - originalLayout.top;
+        this.div.style.height = `${this.height}px`;
+
+        if (this.children.length > 0) {
+            switch (this.childLayout) {
+                case ResizableLayout.HORIZONTAL:
+                    this.children.forEach((child) => {child.setBottomTo(bottom);})
+                    break;                          // all children get "squished"
+                case ResizableLayout.VERTICAL:
+                    this.children[this.children.length-1].setBottomTo(bottom);
+                    break;                          // bottom child gets "squished"
+            }
+        }
+    }
+
+
+    private setLeftTo(left: number): void {
+        if (left < 0) { throw new Error(`left is smaller than 0: ${left}`) }
+        const originalLayout = this.div.getBoundingClientRect();
+        if (left >= originalLayout.right) { throw new Error(`no negative width allowed`) }
+        const widthDifference = originalLayout.left - left;
+        this.width += widthDifference;
+        this.div.style.left = `${left}px`;
+        this.div.style.width = `${this.width}px`;
+
+        if (this.children.length > 0) {
+            switch (this.childLayout) {
+                case ResizableLayout.VERTICAL:
+                    this.children.forEach((child) => {child.setLeftTo(left);})
+                    break;                          // all children get "squished"
+                case ResizableLayout.HORIZONTAL:
+                    this.children[0].setLeftTo(left);
+                    break;                          // left child gets "squished"
+            }
+        }
+
+    }
+
+    private setRightTo(right: number): void {
+        if (right > window.innerWidth) { throw new Error(`right is greater than window.innerWidth: ${right}`) }
+        const originalLayout = this.div.getBoundingClientRect();
+        if (right <= originalLayout.left) { throw new Error(`no negative width allowed`) }
+        this.width = right - originalLayout.left;
+        this.div.style.width = `${this.width}px`;
+
+        if (this.children.length > 0) {
+            switch (this.childLayout) {
+                case ResizableLayout.VERTICAL:
+                    this.children.forEach((child) => {child.setRightTo(right);})
+                    break;                          // all children get "squished"
+                case ResizableLayout.HORIZONTAL:
+                    this.children[this.children.length-1].setRightTo(right);
+                    break;                          // left child gets "squished"
+            }
+        }
 
     }
 
@@ -407,18 +509,7 @@ export class ResizableWindow {
 
 
 
-    private setInitialChild(child: ResizableWindow) {
-        this.children = [child];
-        this.div.append(child.div);
-        console.log("i went here");
-        child.div.style.setProperty("width", `${this.width}px`);
-        child.div.style.setProperty("height", `${this.height}px`);
-        child.div.style.setProperty("left", `${this.div.getBoundingClientRect().left}px`);
-        child.div.style.setProperty("top", `${this.div.getBoundingClientRect().top}px`);
-        child.width = this.width;
-        child.height = this.height;
-        
-    }
+
 
 
 
