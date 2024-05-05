@@ -28,27 +28,3 @@ module.exports = {
     }
 
 }
-
-
-
-//{
-//    "compilerOptions": {
-//        "target": "ESNext",
-//        "module": "ESNext",
-//        "strict": true,
-//        "esModuleInterop": true,
-//        "skipLibCheck": true,
-//        "forceConsistentCasingInFileNames": true,
-//        "outDir": "build",
-//        "types": [
-//            "@webgpu/types"
-//        ],
-//        "moduleResolution": "Node"
-//    },
-//    "include": [
-//        "src/**/*.ts"
-//    ],
-//    "exclude": [
-//        "node_modules"
-//    ]
-//}
