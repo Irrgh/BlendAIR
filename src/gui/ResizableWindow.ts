@@ -365,7 +365,7 @@ export class ResizableWindow {
                 //child2.div.style.setProperty("width", `${child2.width}px`);
 
                 child1.setRightTo(resizerLeft);
-                child2.setLeftTo(resizerLeft);
+                child2.setLeftTo(resizerLeft+ResizableWindow.RESIZER_THICKNESS);
 
 
 
@@ -390,7 +390,7 @@ export class ResizableWindow {
                 //child2.div.style.setProperty("height", `${child2.height}px`);
 
                 child1.setBottomTo(resizerTop);
-                child2.setTopTo(resizerTop);
+                child2.setTopTo(resizerTop+ResizableWindow.RESIZER_THICKNESS);
 
 
                 console.log("Vertical: ", topmost, bottommost, resizerTop);

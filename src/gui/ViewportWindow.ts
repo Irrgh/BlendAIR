@@ -4,25 +4,63 @@ import { ResizableLayout, ResizableType, ResizableWindow } from "./ResizableWind
 
 export class ViewportWindow extends ResizableWindow {
 
-    constructor() {
-        super(null,ResizableLayout.HORIZONTAL,ResizableType.CHILD);
-        this.canvas = document.createElement("canvas");
-        this.viewport = new Viewport(this.canvas);
-        this.div.append(this.canvas);
-        this.viewport.clear();
-        window.requestAnimationFrame(this.render);
+  constructor() {
+    super(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD);
+    this.canvas = document.createElement("canvas");
+    this.viewport = new Viewport(this.canvas);
+    this.div.append(this.canvas);
+    this.viewport.clear();
+  }
 
+  public canvas: HTMLCanvasElement;
+  public viewport: Viewport;
+
+
+
+
+
+
+  public render = async (time: DOMHighResTimeStamp) => {
+    //console.log(time);
+    //console.log(this);
+    //await this.viewport?.clear(Util.randomColor(1));
+
+
+    const vertices = new Float32Array([
+      0.0, 0.6, 0,  1,     1, 0, 0, 1,
+      -0.5,-0.6, 0, 1,     0,1, 0, 1,
+      0.5, -0.6, 0, 1,     0,0, 1, 1,
+      1, 0.5, 1,  1,     1,1,0,1
+    ]);
+
+    const shaders = /* wgsl */ `
+    struct VertexOut {
+      @builtin(position) position : vec4f,
+      @location(0) color : vec4f
     }
-
-    public canvas: HTMLCanvasElement;
-    public viewport: Viewport;
-
     
-    private async render (time:DOMHighResTimeStamp) {
-        console.log(time);
-        //await this.viewport?.clear(Util.randomColor(1));
-    
+    @vertex
+    fn vertex_main(@location(0) position: vec4f,
+                   @location(1) color: vec4f) -> VertexOut
+    {
+      var output : VertexOut;
+      output.position = position;
+      output.color = color;
+      return output;
     }
+    
+    @fragment
+    fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
+    {
+      return fragData.color;
+    }
+    `;
+
+    await this.viewport.render(vertices, shaders);
+
+
+    requestAnimationFrame(this.render);
+  }
 
 
 

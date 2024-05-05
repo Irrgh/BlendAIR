@@ -122,7 +122,7 @@ export class Viewport {
             alphaMode: "premultiplied",
         });
 
-        this.device!.queue.writeBuffer(vertexBuffer, 0, vertices, 0, vertices.length);
+        this.device?.queue.writeBuffer(vertexBuffer, 0, vertices, 0, vertices.length);
 
 
         const vertexBuffers: GPUVertexBufferLayout[] = [
@@ -144,6 +144,22 @@ export class Viewport {
             },
         ];
 
+
+
+
+
+        const bindGroupLayout = this.device?.createBindGroupLayout({
+            entries:[],
+        })
+
+
+
+
+
+
+
+
+
         const pipelineDescriptor: GPURenderPipelineDescriptor = {
             vertex: {
                 module: shaderModule,
@@ -160,7 +176,7 @@ export class Viewport {
                 ],
             },
             primitive: {
-                topology: "triangle-list",
+                topology: "line-strip",
             },
             layout: "auto",
         };
@@ -188,7 +204,8 @@ export class Viewport {
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(renderPipeline);
         passEncoder.setVertexBuffer(0, vertexBuffer);
-        passEncoder.draw(3);
+        passEncoder.label = "pain";
+        passEncoder.draw(4);
 
 
         passEncoder.end();
