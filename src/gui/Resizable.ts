@@ -1,6 +1,6 @@
 export interface Resizable {
 
-    resize():void;
+    resize(width:number, height:number):void;
     allowResize():void;
 
 

@@ -17,7 +17,13 @@ export abstract class Entity {
         this.rotation = rotation || quat.create();
         this.scale = scale || vec3.create();
         this.facing = vec3.fromValues(0,0,-1);
+        this.name = "entity.0001";
     }
+
+    /**
+     * Displayname of the Entity
+     */
+    public name: string
 
 
     /**

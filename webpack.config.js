@@ -3,11 +3,11 @@ const path = require("path");
 
 module.exports = {
     context: __dirname,
-    entry: "./src/app/app.ts",
+    entry: "./tests/app.ts",
     output: {
         filename: "app.js",
         path: path.resolve(__dirname, "build"),
-        publicPath: "/dist/"
+        publicPath: "/build/"
     },
 
     module: {
@@ -17,6 +17,12 @@ module.exports = {
                 exclude: /node_modules/,
                 use: {
                     loader: "ts-loader"
+                }
+            },
+            {
+                test: /\.wgsl$/,
+                use: {
+                    loader: "ts-shader-loader"
                 }
             }
         ]

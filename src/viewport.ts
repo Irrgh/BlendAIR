@@ -3,12 +3,13 @@
  * Manages initialization for WebGPU
  */
 export class Viewport {
+    canvas: HTMLCanvasElement;
 
     /**
      * Constructs a new Viewport in a canvas.
      * @param {HTMLCanvasElement} canvas - The HTML canvas element for rendering. 
      */
-    constructor(private canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
     }
 
@@ -21,12 +22,13 @@ export class Viewport {
     /**
      * Interface for using gpu
      */
-    device: GPUDevice | null = null;
+    device!: GPUDevice;
 
 
-    context: GPUCanvasContext | null = null;
-    canvasFormat: GPUTextureFormat | null = null;
-    initialized:boolean = false;
+    context!: GPUCanvasContext;
+    canvasFormat!: GPUTextureFormat;
+
+    initialized : boolean = false;
 
 
 
@@ -40,29 +42,29 @@ export class Viewport {
             return;
         }
 
+
         if (!navigator.gpu) {
             throw new Error("WebGPU not supported on this browser.");
         }
 
-        this.adapter = await navigator.gpu.requestAdapter();
+        this.adapter = <GPUAdapter> await navigator.gpu.requestAdapter();
         if (!this.adapter) {
             throw new Error("No appropriate GPUAdapter found.");
         }
 
-        this.device = await this.adapter.requestDevice();
+        this.device = <GPUDevice> await this.adapter.requestDevice();
         if (!this.device) {
             throw new Error("No appropriate GPUDevice found.");
         }
 
 
-        this.context = this.canvas.getContext("webgpu");
+        this.context = <GPUCanvasContext>this.canvas.getContext("webgpu");
         this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-        this.context?.configure({
+        this.context.configure({
             device: this.device,
             format: this.canvasFormat
         });
 
-        this.initialized = true;
     }
 
     /**
@@ -70,7 +72,7 @@ export class Viewport {
      */
 
     async clear(color: GPUColorDict = { r: 0, g: 0, b: 0, a: 1 }): Promise<void> {
-        await this.initialize();
+        await this.initialize()
 
         /*  Interface for recording GPU commands */
         const encoder: GPUCommandEncoder = this.device!.createCommandEncoder();
@@ -104,13 +106,14 @@ export class Viewport {
     async render(vertices: Float32Array, shaders: string): Promise<void> {
         await this.initialize();
 
+        
 
         const shaderModule = this.device!.createShaderModule({
             code: shaders,
         });
 
 
-        const vertexBuffer = this.device!.createBuffer({
+        let vertexBuffer = this.device!.createBuffer({
             size: vertices.byteLength, // make it big enough to store vertices in
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
@@ -118,14 +121,15 @@ export class Viewport {
 
         this.context!.configure({
             device: this.device!,
-            format: navigator.gpu.getPreferredCanvasFormat(),
+            format: this.canvasFormat,
             alphaMode: "premultiplied",
         });
 
         this.device?.queue.writeBuffer(vertexBuffer, 0, vertices, 0, vertices.length);
 
 
-        const vertexBuffers: GPUVertexBufferLayout[] = [
+
+        let vertexBuffers: GPUVertexBufferLayout[] = [
             {
                 attributes: [
                     {
@@ -146,18 +150,8 @@ export class Viewport {
 
 
 
-
-
-        const bindGroupLayout = this.device?.createBindGroupLayout({
-            entries:[],
-        })
-
-
-
-
-
-
-
+       
+        //const bindGroup = this.device.createBindGroup(bindGroupLayout);
 
 
         const pipelineDescriptor: GPURenderPipelineDescriptor = {
@@ -189,7 +183,6 @@ export class Viewport {
 
         const commandEncoder = this.device!.createCommandEncoder();
 
-
         const renderPassDescriptor: GPURenderPassDescriptor = {
             colorAttachments: [
                 {
@@ -212,7 +205,10 @@ export class Viewport {
 
         this.device!.queue.submit([commandEncoder.finish()]);
 
+        commandEncoder.clearBuffer(vertexBuffer);
 
+        vertexBuffer.destroy();
+        vertexBuffer.destroy();
 
 
     }
