@@ -31,23 +31,32 @@ export class TriangleMesh {
 
 
 
-    private constructor(vbo: Float32Array, ebo: Int32Array, attr: GPUVertexAttribute[]) {
+    private constructor(vbo: Float32Array, ebo: Int32Array) {
         this.vertexBuffer = vbo;
         this.elementBuffer = ebo;
-        this.attributes = attr;
     }
 
-
+    /**
+     * Parses a string of .obj into a TriangleMesh
+     * @param string 
+     * @returns {@link TriangleMesh}
+     */
     public static parseFromObj(string: string) {
 
         const lines = string.split("\n");
 
-        const tempPos = [];
-        const tempUv = [];
-        const tempNorm = [];
+        const tempPos: number[] = [];
+        const tempUv: number[] = [];
+        const tempNorm: number[] = [];
 
-        const vertices = new Set();
-        const faces = [];
+        /**
+         * We be converted to vbo
+         */
+        const vertices: Vertex[] = [];
+
+
+        const vertexMap = new Map<Vertex, number>()
+        const faces: TriangleFace[] = [];
 
         const attributes: GPUVertexAttribute[] = [];
 
@@ -57,16 +66,11 @@ export class TriangleMesh {
 
 
 
-
-        let i;  // also serves as a indicator for start of face declaration
-
-        for (i = 0; i < lines.length; i++) {
+        for (let i = 0; i < lines.length; i++) {
 
             const currentLine = lines[i];
 
-            if (currentLine.startsWith("# ")) {
-                continue;
-            } else if (currentLine.startsWith("v ")) {
+            if (currentLine.startsWith("v ")) {
                 const segments = currentLine.split(new RegExp("[ ]+"));
                 tempPos.push(parseFloat(segments[1]));
                 tempPos.push(parseFloat(segments[2]));
@@ -100,24 +104,43 @@ export class TriangleMesh {
 
                     const segments = currentLine.split(" ");
 
-                    for (let j = 1; j < 4; j++) {
+                    const vert1 = parseInt(segments[0]);
+                    const vert2 = parseInt(segments[1]);
+                    const vert3 = parseInt(segments[3]);
 
-                        const vertindex = parseInt(segments[j]);
+                    const parsedVertices: Vertex[] = [vert1,vert2,vert3].map( (pointIndex) => {
 
-                        vertices.add({
-                            xPos: tempPos[vertindex],
-                            yPos: tempPos[vertindex + 1],
-                            zPos: tempPos[vertindex + 2],
+                        return {
+                            xPos: tempPos[pointIndex],
+                            yPos: tempPos[pointIndex + 1],
+                            zPos: tempPos[pointIndex + 2],
                             xNorm: 0,
                             yNorm: 0,
                             zNorm: 0,
                             u: 0,
                             v: 0
-                        })
+                        }
+                    });
 
-                    }
+                    const vertexIndicies : number[] = parsedVertices.map((vert) => {
+                        let index = vertexMap.get(vert);
+                        
+                        
 
-                    
+                        if (index) {    // already contained
+                            return index;
+                        } else {
+                            vertices.push(vert)
+                            vertexMap.set(vert,vertices.length);
+                            return vertices.length;
+                        }
+                    });
+
+    
+
+                    faces.push({v1:vertexIndicies[0],v2:vertexIndicies[1],v3:vertexIndicies[2]});
+
+
 
 
 
@@ -126,47 +149,44 @@ export class TriangleMesh {
 
                 }
 
-
-
-
-
-
-
-
-
-
-
-            } else {
-                console.log(currentLine);
-            }
+            } 
         }
 
+        console.log(vertexMap);
 
+        
+        return new TriangleMesh(TriangleMesh.createVbo(vertices),TriangleMesh.creatEbo(faces));
+    }
 
+    /**
+     * Creates a {@link Float32Array} to store vertex data
+     * @param vertices 
+     */
+    public static createVbo (vertices:Vertex[]) {
+        const arr : number[] = [];
+        console.log(vertices);
 
+        for (let i = 0; i < vertices.length;i++) {
+            arr.concat(Object.values(vertices[i]));
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        const vbo = new Float32Array();
+        vbo.set(arr);
+        return vbo;
     }
 
 
+    public static creatEbo (faces:TriangleFace[]) {
+        const arr : number[] = [];
 
+        for (let i = 0; i < faces.length; i++) {
+            arr.concat(Object.values(faces[i]));
+        }
 
-
+        const ebo = new Int32Array();
+        ebo.set(arr);
+        return ebo;
+    }
 
 
 

@@ -1,6 +1,10 @@
 import {WebGPU} from "../src/engine/WebGPU";
 import {Scene} from "../src/engine/Scene";
 import {Viewport} from "../src/engine/Viewport";
+import {TriangleMesh} from "../src/engine/TriangleMesh";
+import {Util} from "../src/util/Util";
+
+const v8 = require('v8');
 
 const initialize = async () => {
 
@@ -28,6 +32,17 @@ const initialize = async () => {
         console.log("button clicked");
         viewport.render();
     }
+
+    const model : string = await (await fetch ("../assets/models/cube.obj")).text();
+
+
+    const mesh : TriangleMesh = TriangleMesh.parseFromObj(model);
+    const mesh1 : TriangleMesh = TriangleMesh.parseFromObj(model);
+
+    console.log(Util.deepEqual(mesh,mesh1));
+
+
+
 
 }
 
