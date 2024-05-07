@@ -42,8 +42,10 @@ export class Viewport {
         this.scene = scene;
         this.canvasFormat = "bgra8unorm";
         this.context = <GPUCanvasContext> canvas.getContext("webgpu");
-
-
+        this.context.configure({
+            device: this.webgpu.device,
+            format: this.canvasFormat
+        });
     }
 
     
@@ -52,7 +54,34 @@ export class Viewport {
      */
     public render () {
 
-        
+        const commandEncoder = this.webgpu.device.createCommandEncoder(); // definitely needs to be recreated every render pass
+
+
+        const renderPassDescriptor: GPURenderPassDescriptor = {     // description of the renderpass
+            colorAttachments: [
+                {
+                    clearValue: {r:Math.random(),g:Math.random(),b:Math.random(),a:1},
+                    loadOp: "clear",
+                    storeOp: "store",
+                    view: this.context.getCurrentTexture().createView(),
+                },
+            ],
+        };
+
+        const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
+        renderPass.end();
+
+
+        this.webgpu.device.queue.submit([commandEncoder.finish()])
+
+
+
+
+
+
+
+
+
     }
 
 

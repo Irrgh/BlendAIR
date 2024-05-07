@@ -3,7 +3,7 @@ export class TriangleMesh {
     /** Includes all Vertex Attributes  */
     public vertexBuffer: Float32Array
 
-    /** Includes indecies for construct */
+    /** 3 indicies construct one triangle face */
     public elementBuffer: Int32Array
 
 
@@ -102,7 +102,7 @@ export class TriangleMesh {
 
                     for (let j = 1; j < 4; j++) {
 
-                        const vertindex = parseInt(segments[0]);
+                        const vertindex = parseInt(segments[j]);
 
                         vertices.add({
                             xPos: tempPos[vertindex],

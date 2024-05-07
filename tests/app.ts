@@ -1,19 +1,34 @@
-import { ResizableWindow, ResizableLayout, ResizableType } from "../build/gui/ResizableWindow.js";
-import { ViewportWindow } from "../build/gui/ViewportWindow.js"
+import {WebGPU} from "../src/engine/WebGPU";
+import {Scene} from "../src/engine/Scene";
+import {Viewport} from "../src/engine/Viewport";
+
+const initialize = async () => {
+
+    const webgpu = await WebGPU.initializeInstance()
+
+    const scene = new Scene();
+    
+    const canvas = document.createElement("canvas");
+    canvas.height = 600;
+    canvas.width = 800;
+    document.body.append(canvas);
+
+    const button = document.createElement("button");
+    button.style.width = "50px";
+    button.style.height = "50px";
+    button.innerText = "Click to render";
+
+    document.body.append(button);
+
+    const viewport = new Viewport(webgpu,canvas,scene);
 
 
+    button.onclick = () => {
 
-const root = ResizableWindow.initializeRootWindow(ResizableLayout.VERTICAL);
+        console.log("button clicked");
+        viewport.render();
+    }
 
-const child = new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD);
+}
 
-root.insertChildBefore(new ResizableWindow(null, ResizableLayout.VERTICAL, ResizableType.CHILD), 0);
-const viewport = new ViewportWindow();
-//requestAnimationFrame(viewport.render);
-root.insertChildBefore(viewport, 0);
-root.insertChildBefore(child, 1);
-
-child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD), 0);
-child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD), 0);
-child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD), 1);
-child.insertChildBefore(new ResizableWindow(null, ResizableLayout.HORIZONTAL, ResizableType.CHILD), 2);
+initialize();

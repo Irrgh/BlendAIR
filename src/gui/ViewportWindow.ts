@@ -1,5 +1,5 @@
-import { Util } from "../util/Util.js";
-import { Viewport } from "../Viewport.js";
+import { Util } from "../util/Util";
+import { Viewport } from "../Viewport";
 import { ResizableLayout, ResizableType, ResizableWindow } from "./ResizableWindow.js";
 
 import shader from "../../assets/shaders/main.wgsl";
