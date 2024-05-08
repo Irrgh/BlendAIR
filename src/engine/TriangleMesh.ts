@@ -1,3 +1,5 @@
+import { Util } from "../util/Util";
+
 export class TriangleMesh {
 
     /** Includes all Vertex Attributes  */
@@ -104,8 +106,8 @@ export class TriangleMesh {
 
                     const segments = currentLine.split(" ");
 
-                    const vert1 = parseInt(segments[0]);
-                    const vert2 = parseInt(segments[1]);
+                    const vert1 = parseInt(segments[1]);
+                    const vert2 = parseInt(segments[2]);
                     const vert3 = parseInt(segments[3]);
 
                     const parsedVertices: Vertex[] = [vert1,vert2,vert3].map( (pointIndex) => {
@@ -123,17 +125,14 @@ export class TriangleMesh {
                     });
 
                     const vertexIndicies : number[] = parsedVertices.map((vert) => {
-                        let index = vertexMap.get(vert);
-                        
-                        
-
-                        if (index) {    // already contained
-                            return index;
-                        } else {
-                            vertices.push(vert)
-                            vertexMap.set(vert,vertices.length);
-                            return vertices.length;
+                        let k;
+                        for (k = 0; k < vertices.length; k++) {
+                            if (Util.deepEqual(vert, vertices[k])) {
+                                return k;
+                            }
                         }
+                        vertices.push(vert);
+                        return k++;
                     });
 
     
@@ -152,9 +151,6 @@ export class TriangleMesh {
             } 
         }
 
-        console.log(vertexMap);
-
-        
         return new TriangleMesh(TriangleMesh.createVbo(vertices),TriangleMesh.creatEbo(faces));
     }
 
@@ -164,15 +160,12 @@ export class TriangleMesh {
      */
     public static createVbo (vertices:Vertex[]) {
         const arr : number[] = [];
-        console.log(vertices);
 
         for (let i = 0; i < vertices.length;i++) {
-            arr.concat(Object.values(vertices[i]));
+            arr.push(...Object.values(vertices[i]));
         }
 
-        const vbo = new Float32Array();
-        vbo.set(arr);
-        return vbo;
+        return new Float32Array(arr);
     }
 
 
@@ -180,15 +173,13 @@ export class TriangleMesh {
         const arr : number[] = [];
 
         for (let i = 0; i < faces.length; i++) {
-            arr.concat(Object.values(faces[i]));
+            
+            arr.push(...Object.values(faces[i]));
         }
-
-        const ebo = new Int32Array();
-        ebo.set(arr);
-        return ebo;
+        return new Int32Array(arr);
     }
 
-
+    
 
 
 

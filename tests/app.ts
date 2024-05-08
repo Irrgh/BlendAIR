@@ -4,7 +4,6 @@ import {Viewport} from "../src/engine/Viewport";
 import {TriangleMesh} from "../src/engine/TriangleMesh";
 import {Util} from "../src/util/Util";
 
-const v8 = require('v8');
 
 const initialize = async () => {
 
@@ -37,10 +36,8 @@ const initialize = async () => {
 
 
     const mesh : TriangleMesh = TriangleMesh.parseFromObj(model);
-    const mesh1 : TriangleMesh = TriangleMesh.parseFromObj(model);
 
-    console.log(Util.deepEqual(mesh,mesh1));
-
+    console.log(mesh);
 
 
 
