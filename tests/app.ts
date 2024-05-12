@@ -4,6 +4,7 @@ import {Viewport} from "../src/engine/Viewport";
 import {TriangleMesh} from "../src/engine/TriangleMesh";
 import {Util} from "../src/util/Util";
 import { MeshInstance } from "../src/entity/MeshInstance";
+import { vec3 } from "gl-matrix";
 
 
 const initialize = async () => {
@@ -27,14 +28,20 @@ const initialize = async () => {
     const viewport = new Viewport(webgpu,canvas,scene);
 
 
-    const model : string = await (await fetch ("../assets/models/plane.obj")).text();
+    const model : string = await (await fetch ("../assets/models/cube.obj")).text();
 
     const mesh : TriangleMesh = TriangleMesh.parseFromObj(model);
 
     console.log(mesh);
 
-    scene.addEntity(new MeshInstance(mesh));
-    viewport.camera.setPosition(1,0,4);
+    const entity = new MeshInstance(mesh)
+    entity.setPosition(0,0,0);
+
+    scene.addEntity(entity);
+    viewport.camera.setPosition(1.2,2,3);
+    console.log(viewport.camera.facing);
+    vec3.normalize(viewport.camera.facing,vec3.fromValues(-1,-1,-1));
+    console.log(viewport.camera.facing);
     //viewport.camera.setOrthographicProjection(400,300,1,1000);
 
 

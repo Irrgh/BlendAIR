@@ -21,7 +21,7 @@ fn vertex_main(@location(0) position: vec3<f32>,
                @location(2) uv : vec2<f32>,
                @builtin(instance_index) instanceId : u32 ) -> VertexOut {
     var output: VertexOut;
-    output.position = camera.view * modelTransforms[instanceId] * vec4<f32>(position,1.0f);
+    output.position = camera.proj * camera.view * modelTransforms[instanceId] * vec4<f32>(position,1.0f);
     output.normal = modelTransforms[instanceId] * vec4<f32>(normal,0.0f);
     output.uv = uv;
     return output;
@@ -29,5 +29,5 @@ fn vertex_main(@location(0) position: vec3<f32>,
     
 @fragment
 fn fragment_main(fragData: VertexOut) -> @location(0) vec4f {
-    return vec4f(0.7,0.7,0.7,1.0);
+    return vec4f(fragData.normal.rgb,1.0);
 }

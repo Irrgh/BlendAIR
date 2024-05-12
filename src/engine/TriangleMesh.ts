@@ -9,7 +9,7 @@ export class TriangleMesh {
     /** 3 indicies construct one triangle face */
     public elementBuffer: Uint32Array
 
-    public instancedBy : Set<MeshInstance>
+    public instancedBy: Set<MeshInstance>
 
     public static attributes: GPUVertexAttribute[] = [
         {
@@ -46,7 +46,7 @@ export class TriangleMesh {
      * @param string 
      * @returns {@link TriangleMesh}
      */
-    public static parseFromObj(string: string):TriangleMesh {
+    public static parseFromObj(string: string): TriangleMesh {
 
         const lines = string.split("\n");
 
@@ -63,7 +63,7 @@ export class TriangleMesh {
         const vertexMap = new Map<Vertex, number>()
         const faces: TriangleFace[] = [];
 
-        const all = new RegExp("f\s\d+\/\d+\/\d+\s\d+\/\d+\/\d+\s\d+\/\d+\/\d+");
+        const all = new RegExp("f [0-9]+\/[0-9]+\/[0-9]+ [0-9]+\/[0-9]+\/[0-9]+ [0-9]+\/[0-9]+\/[0-9]+");
         const posAndUv = new RegExp("f\s\d+\/\d+\s\d+\/\d+\s\d+\/\d+");
         const posAndNorm = new RegExp("f\s\d+\/\/\d+\s\d+\/\/\d+\s\d+\/\/\d+");
 
@@ -92,16 +92,51 @@ export class TriangleMesh {
 
             } else if (currentLine.startsWith("f ")) {
 
+                let parsedVertices: Vertex[]
+
+
                 if (currentLine.includes("/")) {
+
+                    console.log("currentline: ",currentLine);
 
                     if (currentLine.match(all)) {
 
+                        const segments = currentLine.split(" ");
 
-                    } else if (currentLine.match(posAndUv)) {
+                        const verts = segments.slice(1).map((segment: string) => {
+                            return segment.split("/").map((value: string) => {
+                                return parseInt(value)
+                            });
+                        });
 
-                    } else if (currentLine.match(posAndNorm)) {
+                        parsedVertices = verts.map((indices) => {
 
-                    }
+                            // indices [0] ^= pos
+                            // indices [1] ^= uv
+                            // indices [2] ^= norm
+
+                            return {
+                                xPos: tempPos[indices[0] * 3],
+                                yPos: tempPos[indices[0] * 3 + 1],
+                                zPos: tempPos[indices[0] * 3 + 2],
+                                xNorm: tempNorm[indices[2] * 3],
+                                yNorm: tempNorm[indices[2] * 3 + 1],
+                                zNorm: tempNorm[indices[2] * 3 + 2],
+                                u: tempUv[indices[1] * 2],
+                                v: tempUv[indices[1] * 2 + 1]
+                            }
+
+
+
+
+
+                        })
+
+                    //} else if (currentLine.match(posAndUv)) {
+
+                    //} else if (currentLine.match(posAndNorm)) {
+
+                    //}
 
                 } else {
 
@@ -111,14 +146,14 @@ export class TriangleMesh {
                     const vert2 = parseInt(segments[2]);
                     const vert3 = parseInt(segments[3]);
 
-                    const parsedVertices: Vertex[] = [vert1,vert2,vert3].map( (pointIndex) => {
+                    parsedVertices = [vert1, vert2, vert3].map((pointIndex) => {
 
                         pointIndex--;   // indexing starts with 1 in .obj ;)))))))
 
                         return {
-                            xPos: tempPos[pointIndex*3],
-                            yPos: tempPos[pointIndex*3 + 1],
-                            zPos: tempPos[pointIndex*3 + 2],
+                            xPos: tempPos[pointIndex * 3],
+                            yPos: tempPos[pointIndex * 3 + 1],
+                            zPos: tempPos[pointIndex * 3 + 2],
                             xNorm: 0,
                             yNorm: 0,
                             zNorm: 0,
@@ -126,72 +161,76 @@ export class TriangleMesh {
                             v: 0
                         }
                     });
-
-                    console.log(`parsed on line ${i}:`,parsedVertices);
-
-
-                    const vertexIndicies : number[] = parsedVertices.map((vert) => {
-                        let k;
-                        for (k = 0; k < vertices.length; k++) {
-                            if (Util.deepEqual(vert, vertices[k])) {
-                                return k;
-                            }
-                        }
-                        vertices.push(vert);
-                        return k++;
-                    });
-
-    
-
-                    faces.push({v1:vertexIndicies[0],v2:vertexIndicies[1],v3:vertexIndicies[2]});
-
-
-
-
-
-
-
-
                 }
 
-            } 
+
+                console.log(`parsed on line ${i}:`,parsedVertices);
+
+
+                const vertexIndicies: number[] = parsedVertices.map((vert) => {
+                    let k;
+                    for (k = 0; k < vertices.length; k++) {
+                        if (Util.deepEqual(vert, vertices[k])) {
+                            return k;
+                        }
+                    }
+                    vertices.push(vert);
+                    return k++;
+                });
+
+                console.log("tempNorm: ",tempNorm);
+
+
+
+                faces.push({ v1: vertexIndicies[0], v2: vertexIndicies[1], v3: vertexIndicies[2] });
+
+
+            }
+
+
+
+
+
         }
 
-        return new TriangleMesh(TriangleMesh.createVbo(vertices),TriangleMesh.creatEbo(faces));
+    }
+    
+
+        return new TriangleMesh(TriangleMesh.createVbo(vertices), TriangleMesh.creatEbo(faces));
     }
 
     /**
      * Creates a {@link Float32Array} to store vertex data
      * @param vertices 
      */
-    private static createVbo (vertices:Vertex[]):Float32Array {
-        const arr : number[] = [];
+    private static createVbo(vertices: Vertex[]):Float32Array {
+    const arr: number[] = [];
 
-        for (let i = 0; i < vertices.length;i++) {
-            arr.push(...Object.values(vertices[i]));
-        }
-
-        return new Float32Array(arr);
+    for (let i = 0; i < vertices.length; i++) {
+        arr.push(...Object.values(vertices[i]));
     }
 
+    return new Float32Array(arr);
+}
 
-    private static creatEbo (faces:TriangleFace[]):Uint32Array {
-        const arr : number[] = [];
 
-        for (let i = 0; i < faces.length; i++) {
-            
-            arr.push(...Object.values(faces[i]));
-        }
-        return new Uint32Array(arr);
+    private static creatEbo(faces: TriangleFace[]):Uint32Array {
+    const arr: number[] = [];
+
+    for (let i = 0; i < faces.length; i++) {
+
+        arr.push(...Object.values(faces[i]));
     }
+    return new Uint32Array(arr);
+}
 
-    public addMeshInstance (instance : MeshInstance):void {
-        this.instancedBy.add(instance);
-    }
+    public addMeshInstance(instance : MeshInstance): void {
+    this.instancedBy.add(instance);
+}
 
-    public removeMeshInstance (instance: MeshInstance):void {
-        this.instancedBy.delete(instance);
-    }
+    public removeMeshInstance(instance: MeshInstance): void {
+    this.instancedBy.delete(instance);
+}
 
 
 

@@ -10,7 +10,7 @@ export class Camera extends Entity {
         super();
         this.projectionMatrix = mat4.create();
         this.viewMatrix = mat4.create();
-        this.setPerspectiveProjection(70, 16 / 9, 1, 1000);
+        this.setPerspectiveProjection(1.5708, 16 / 9, 1, 100);
 
     }
     /**
@@ -27,7 +27,7 @@ export class Camera extends Entity {
      * Default UP direction for a camera.
      * @todo PLEASE DONT DO THIS!
      */
-    public cameraUp: vec3 = vec3.fromValues(0.1, 0, 0.9);   
+    public cameraUp: vec3 = vec3.fromValues(0.0,1.0,0.0);   
 
 
     /**
@@ -75,10 +75,9 @@ export class Camera extends Entity {
         mat4.identity(this.viewMatrix);
         mat4.lookAt(this.viewMatrix,
             vec3.clone(this.position),
-            direction,
+            vec3.add(vec3.create(),direction,this.position),
             this.cameraUp
         );
-        console.log(this.viewMatrix);
         return this.viewMatrix;
     }
 
