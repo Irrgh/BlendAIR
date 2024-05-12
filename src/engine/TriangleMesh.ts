@@ -1,3 +1,4 @@
+import { MeshInstance } from "../entity/MeshInstance";
 import { Util } from "../util/Util";
 
 export class TriangleMesh {
@@ -6,10 +7,11 @@ export class TriangleMesh {
     public vertexBuffer: Float32Array
 
     /** 3 indicies construct one triangle face */
-    public elementBuffer: Int32Array
+    public elementBuffer: Uint32Array
 
+    public instancedBy : Set<MeshInstance>
 
-    public attributes: GPUVertexAttribute[] = [
+    public static attributes: GPUVertexAttribute[] = [
         {
             shaderLocation: 0,      // position
             offset: 0,
@@ -23,7 +25,7 @@ export class TriangleMesh {
         {
             shaderLocation: 2,      // uv
             offset: 24,
-            format: "float32x3",
+            format: "float32x2",
         }
     ]
 
@@ -33,9 +35,10 @@ export class TriangleMesh {
 
 
 
-    private constructor(vbo: Float32Array, ebo: Int32Array) {
+    private constructor(vbo: Float32Array, ebo: Uint32Array) {
         this.vertexBuffer = vbo;
         this.elementBuffer = ebo;
+        this.instancedBy = new Set<MeshInstance>;
     }
 
     /**
@@ -43,7 +46,7 @@ export class TriangleMesh {
      * @param string 
      * @returns {@link TriangleMesh}
      */
-    public static parseFromObj(string: string) {
+    public static parseFromObj(string: string):TriangleMesh {
 
         const lines = string.split("\n");
 
@@ -59,8 +62,6 @@ export class TriangleMesh {
 
         const vertexMap = new Map<Vertex, number>()
         const faces: TriangleFace[] = [];
-
-        const attributes: GPUVertexAttribute[] = [];
 
         const all = new RegExp("f\s\d+\/\d+\/\d+\s\d+\/\d+\/\d+\s\d+\/\d+\/\d+");
         const posAndUv = new RegExp("f\s\d+\/\d+\s\d+\/\d+\s\d+\/\d+");
@@ -112,10 +113,12 @@ export class TriangleMesh {
 
                     const parsedVertices: Vertex[] = [vert1,vert2,vert3].map( (pointIndex) => {
 
+                        pointIndex--;   // indexing starts with 1 in .obj ;)))))))
+
                         return {
-                            xPos: tempPos[pointIndex],
-                            yPos: tempPos[pointIndex + 1],
-                            zPos: tempPos[pointIndex + 2],
+                            xPos: tempPos[pointIndex*3],
+                            yPos: tempPos[pointIndex*3 + 1],
+                            zPos: tempPos[pointIndex*3 + 2],
                             xNorm: 0,
                             yNorm: 0,
                             zNorm: 0,
@@ -123,6 +126,9 @@ export class TriangleMesh {
                             v: 0
                         }
                     });
+
+                    console.log(`parsed on line ${i}:`,parsedVertices);
+
 
                     const vertexIndicies : number[] = parsedVertices.map((vert) => {
                         let k;
@@ -158,7 +164,7 @@ export class TriangleMesh {
      * Creates a {@link Float32Array} to store vertex data
      * @param vertices 
      */
-    public static createVbo (vertices:Vertex[]) {
+    private static createVbo (vertices:Vertex[]):Float32Array {
         const arr : number[] = [];
 
         for (let i = 0; i < vertices.length;i++) {
@@ -169,18 +175,23 @@ export class TriangleMesh {
     }
 
 
-    public static creatEbo (faces:TriangleFace[]) {
+    private static creatEbo (faces:TriangleFace[]):Uint32Array {
         const arr : number[] = [];
 
         for (let i = 0; i < faces.length; i++) {
             
             arr.push(...Object.values(faces[i]));
         }
-        return new Int32Array(arr);
+        return new Uint32Array(arr);
     }
 
-    
+    public addMeshInstance (instance : MeshInstance):void {
+        this.instancedBy.add(instance);
+    }
 
+    public removeMeshInstance (instance: MeshInstance):void {
+        this.instancedBy.delete(instance);
+    }
 
 
 

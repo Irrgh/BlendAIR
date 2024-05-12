@@ -3,6 +3,7 @@ import {Scene} from "../src/engine/Scene";
 import {Viewport} from "../src/engine/Viewport";
 import {TriangleMesh} from "../src/engine/TriangleMesh";
 import {Util} from "../src/util/Util";
+import { MeshInstance } from "../src/entity/MeshInstance";
 
 
 const initialize = async () => {
@@ -26,20 +27,22 @@ const initialize = async () => {
     const viewport = new Viewport(webgpu,canvas,scene);
 
 
-    button.onclick = () => {
-
-        console.log("button clicked");
-        viewport.render();
-    }
-
-    const model : string = await (await fetch ("../assets/models/cube.obj")).text();
-
+    const model : string = await (await fetch ("../assets/models/plane.obj")).text();
 
     const mesh : TriangleMesh = TriangleMesh.parseFromObj(model);
 
     console.log(mesh);
 
+    scene.addEntity(new MeshInstance(mesh));
+    viewport.camera.setPosition(1,0,4);
+    //viewport.camera.setOrthographicProjection(400,300,1,1000);
 
+
+    button.onclick = () => {
+
+        console.log("button clicked");
+        viewport.render();
+    }
 
 }
 

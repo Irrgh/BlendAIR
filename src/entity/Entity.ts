@@ -15,7 +15,7 @@ export abstract class Entity {
     constructor (position?:vec3, rotation?:quat, scale?:vec3) {
         this.position = position || vec3.create();
         this.rotation = rotation || quat.create();
-        this.scale = scale || vec3.create();
+        this.scale = scale || vec3.fromValues(1,1,1);
         this.facing = vec3.fromValues(0,0,-1);
         this.name = "entity.0001";
     }
@@ -56,5 +56,9 @@ export abstract class Entity {
         return mat4.fromRotationTranslationScale(mat,this.rotation,this.position,this.scale);
     }
 
+
+    public setPosition (x:number,y:number,z:number) {
+        vec3.set(this.position,x,y,z);
+    }
 
 }

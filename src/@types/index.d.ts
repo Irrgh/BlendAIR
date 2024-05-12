@@ -20,4 +20,3 @@ declare type TriangleFace = {
     v3:number
 }
 
-

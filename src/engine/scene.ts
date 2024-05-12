@@ -1,13 +1,15 @@
 import { Camera } from "../entity/Camera";
 import { Entity } from "../entity/Entity";
+import { MeshInstance } from "../entity/MeshInstance";
 import { Viewport } from "../Viewport";
+import { TriangleMesh } from "./TriangleMesh";
 
 export class Scene {
 
     /**
      * All entities except viewport Camera are included in here;
      */
-    entities : Map<String,Entity>
+    entities : Map<String,MeshInstance>
 
     /**
      * @todo All scene changing updates will be routed through here to prompt redrawing in all associated Viewports.
@@ -23,8 +25,9 @@ export class Scene {
 
 
     constructor() {
-        this.entities = new Map<String,Entity>();
+        this.entities = new Map<String,MeshInstance>();
         this.viewports = [];
+
     }
 
     /**
@@ -42,6 +45,17 @@ export class Scene {
     }
 
 
+    public addEntity (entity : MeshInstance) {
+        this.entities.set(entity.name,entity);
+    }
+
+
+
+
+
+
+
+    
 
 
 
