@@ -46,7 +46,7 @@ export class Viewport {
         this.webgpu = webgpu;
         this.canvas = canvas;
         this.scene = scene;
-        this.canvasFormat = "bgra8unorm";
+        this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
         this.context = <GPUCanvasContext>canvas.getContext("webgpu");
         this.context.configure({
             device: this.webgpu.device,
@@ -63,18 +63,51 @@ export class Viewport {
      */
     public render() {
 
-        const commandEncoder = this.webgpu.device.createCommandEncoder(); // definitely needs to be recreated every render pass
+        const depthStencilFormat : GPUTextureFormat = "depth24plus-stencil8"
+
+        const depthStencilState : GPUDepthStencilState = {
+            format: depthStencilFormat,
+            depthWriteEnabled: true, // Enable writing to the depth buffer
+            depthCompare: "less" // Enable depth testing with "less" comparison
+        };
+
+        const depthStencilTexture = this.webgpu.device.createTexture({
+            size: {
+                width: this.canvas.width,
+                height: this.canvas.height,
+                depthOrArrayLayers: 1
+            },
+            format: depthStencilFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+
+        const depthStencilView = depthStencilTexture.createView();
+
+
+
+        const commandEncoder = this.webgpu.device.createCommandEncoder({
+            
+        }); // definitely needs to be recreated every render pass
 
 
         const renderPassDescriptor: GPURenderPassDescriptor = {     // description of the renderpass
             colorAttachments: [
                 {
-                    clearValue: { r: Math.random(), g: Math.random(), b: Math.random(), a: 1 },
+                    clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
                     view: this.context.getCurrentTexture().createView(),
                 },
             ],
+            depthStencilAttachment:{
+                view:depthStencilView,
+                depthLoadOp:"clear",
+                depthStoreOp:"store",
+                stencilLoadOp:"clear",
+                stencilStoreOp:"store",
+                depthClearValue:1.0,
+                stencilClearValue:1.0
+            }
         };
 
 
@@ -270,6 +303,13 @@ export class Viewport {
         });
 
 
+
+
+        
+
+
+
+
         const pipelineDescriptor: GPURenderPipelineDescriptor = {
             vertex: {
                 module: shaderModule,
@@ -288,7 +328,8 @@ export class Viewport {
             primitive: {
                 topology: "triangle-list",
             },
-            layout: pipeLineLayout
+            layout: pipeLineLayout,
+            depthStencil:depthStencilState
         };
 
         const pipeline = this.webgpu.device.createRenderPipeline(pipelineDescriptor);
@@ -309,13 +350,12 @@ export class Viewport {
 
         this.webgpu.device.queue.submit([commandEncoder.finish()])
 
-
-
-
-
-
-
-
+        indexBuffer.destroy();
+        vertexBuffer.destroy();
+        indirectBuffer.destroy();
+        cameraDataBuffer.destroy();
+        transformBuffer.destroy();
+        depthStencilTexture.destroy();
 
     }
 

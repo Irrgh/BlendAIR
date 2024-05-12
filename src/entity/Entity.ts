@@ -61,4 +61,12 @@ export abstract class Entity {
         vec3.set(this.position,x,y,z);
     }
 
+
+    public setZRotation(radians:number) {
+
+        quat.setAxisAngle(this.rotation,vec3.fromValues(0,0,1),radians);
+    }
+
+
+
 }

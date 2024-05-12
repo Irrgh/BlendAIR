@@ -25,30 +25,49 @@ const initialize = async () => {
 
     document.body.append(button);
 
+
     const viewport = new Viewport(webgpu,canvas,scene);
 
 
-    const model : string = await (await fetch ("../assets/models/cube.obj")).text();
+    const model : string = await (await fetch ("../assets/models/suzanne.obj")).text();
 
     const mesh : TriangleMesh = TriangleMesh.parseFromObj(model);
 
-    console.log(mesh);
+
 
     const entity = new MeshInstance(mesh)
     entity.setPosition(0,0,0);
 
     scene.addEntity(entity);
-    viewport.camera.setPosition(1.2,2,3);
-    console.log(viewport.camera.facing);
-    vec3.normalize(viewport.camera.facing,vec3.fromValues(-1,-1,-1));
-    console.log(viewport.camera.facing);
+    viewport.camera.setPosition(3,1,1);
+    
+    vec3.normalize(viewport.camera.facing,vec3.fromValues(-1,-1,0));
+    
     //viewport.camera.setOrthographicProjection(400,300,1,1000);
+
+    let t = 0;
+
+    const renderLoop = () => {
+
+        t += 0.01;
+        entity.setZRotation(t);
+
+
+        //console.log("eee");
+        viewport.render();
+        console.clear();
+        requestAnimationFrame(renderLoop)
+    }
+
+
+
+
 
 
     button.onclick = () => {
 
         console.log("button clicked");
-        viewport.render();
+        renderLoop();
     }
 
 }

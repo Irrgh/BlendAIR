@@ -97,7 +97,7 @@ export class TriangleMesh {
 
                 if (currentLine.includes("/")) {
 
-                    console.log("currentline: ",currentLine);
+                    //console.log("currentline: ",currentLine);
 
                     if (currentLine.match(all)) {
 
@@ -109,6 +109,9 @@ export class TriangleMesh {
                             });
                         });
 
+
+                        i == 34 ? console.log(verts): {};
+
                         parsedVertices = verts.map((indices) => {
 
                             // indices [0] ^= pos
@@ -116,14 +119,14 @@ export class TriangleMesh {
                             // indices [2] ^= norm
 
                             return {
-                                xPos: tempPos[indices[0] * 3],
-                                yPos: tempPos[indices[0] * 3 + 1],
-                                zPos: tempPos[indices[0] * 3 + 2],
-                                xNorm: tempNorm[indices[2] * 3],
-                                yNorm: tempNorm[indices[2] * 3 + 1],
-                                zNorm: tempNorm[indices[2] * 3 + 2],
-                                u: tempUv[indices[1] * 2],
-                                v: tempUv[indices[1] * 2 + 1]
+                                xPos: tempPos[(indices[0]-1) * 3],
+                                yPos: tempPos[(indices[0]-1) * 3 + 1],
+                                zPos: tempPos[(indices[0]-1) * 3 + 2],
+                                xNorm: tempNorm[(indices[2]-1) * 3],
+                                yNorm: tempNorm[(indices[2]-1) * 3 + 1],
+                                zNorm: tempNorm[(indices[2]-1) * 3 + 2],
+                                u: tempUv[(indices[1]-1) * 2],
+                                v: tempUv[(indices[1]-1) * 2 + 1]
                             }
 
 
@@ -163,8 +166,11 @@ export class TriangleMesh {
                     });
                 }
 
-
-                console.log(`parsed on line ${i}:`,parsedVertices);
+                if (i == 34) {
+                    console.log(`parsed on line ${i}:`,parsedVertices);
+                    console.log({...tempPos});
+                }
+                
 
 
                 const vertexIndicies: number[] = parsedVertices.map((vert) => {
@@ -178,7 +184,7 @@ export class TriangleMesh {
                     return k++;
                 });
 
-                console.log("tempNorm: ",tempNorm);
+                //console.log("tempNorm: ",tempNorm);
 
 
 
