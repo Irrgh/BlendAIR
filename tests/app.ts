@@ -30,18 +30,35 @@ const initialize = async () => {
 
 
     const model : string = await (await fetch ("../assets/models/suzanne.obj")).text();
+    const model1 : string = await (await fetch("../assets/models/cube.obj")).text();
 
     const mesh : TriangleMesh = TriangleMesh.parseFromObj(model);
+    const mesh2 : TriangleMesh = TriangleMesh.parseFromObj(model1);
+
+
+    console.log("mesh1: ",mesh);
+    console.log("mesh2: ",mesh2);
+
+
 
 
 
     const entity = new MeshInstance(mesh)
-    entity.setPosition(0,0,0);
+    entity.setPosition(-2,1,1);
+
+    const cube = new MeshInstance(mesh2);
+    cube.setPosition(-1,-1,-4);
+
+    
+    scene.addEntity(cube);
+    scene.addEntity(new MeshInstance(mesh));
+    
 
     scene.addEntity(entity);
-    viewport.camera.setPosition(3,1,1);
+    viewport.camera.setPosition(3,2,3);
+    console.log(scene.entities);
     
-    vec3.normalize(viewport.camera.facing,vec3.fromValues(-1,-1,0));
+    vec3.normalize(viewport.camera.facing,vec3.fromValues(-1,-1,-1));
     
     //viewport.camera.setOrthographicProjection(400,300,1,1000);
 

@@ -153,6 +153,8 @@ export class Viewport {
 
         let PackedTransformArray: Float32Array = new Float32Array();
 
+        let indexOffset = 0;
+
 
         meshInstanceTransforms.forEach((instanceTransforms: number[], mesh: TriangleMesh) => {
 
@@ -172,9 +174,10 @@ export class Viewport {
             newIndirectArray.set([
                 mesh.elementBuffer.length,      // face indices count
                 instanceTransforms.length / 16,      // number of instances
-                0, 0, 0
+                indexOffset, 0 , 0
             ], indirectArray.length);
             indirectArray = newIndirectArray;
+            indexOffset += mesh.elementBuffer.length;
 
             const newTransformArray = new Float32Array(PackedTransformArray.length + instanceTransforms.length);
             newTransformArray.set(PackedTransformArray);
@@ -220,6 +223,14 @@ export class Viewport {
         });
 
 
+        const transformIndexUniform : GPUBuffer = this.webgpu.device.createBuffer({
+            size: 4,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+            label: "transformOffset-uniform"
+        })
+
+
+
         // filling buffers
 
         this.webgpu.device.queue.writeBuffer(vertexBuffer, 0, packedVertexArray);     // vertex
@@ -262,7 +273,12 @@ export class Viewport {
                 }, {
                     binding: 1,
                     visibility: GPUShaderStage.VERTEX,
-                    buffer: { type: "read-only-storage" }
+                    buffer: { type: "read-only-storage",
+                     }
+                }, {
+                    binding:2,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: {type:"uniform"}
                 }
             ]
         });
@@ -279,6 +295,11 @@ export class Viewport {
                     binding: 1,
                     resource: {
                         buffer: transformBuffer
+                    }
+                } , {
+                    binding:2,
+                    resource: {
+                        buffer: transformIndexUniform
                     }
                 }
             ]
@@ -338,13 +359,23 @@ export class Viewport {
         const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
 
         renderPass.setPipeline(pipeline)
-        renderPass.setBindGroup(0,bindGroup);
+        
         renderPass.setVertexBuffer(0,vertexBuffer);
         renderPass.setIndexBuffer(indexBuffer,"uint32");
-        renderPass.drawIndexedIndirect(indirectBuffer,0);
+        renderPass.setBindGroup(0,bindGroup);
+        let transformOffset = 0
+        console.log(indirectArray);
 
-
-
+        for (let k = 0; k < indirectArray.length; k+=5) {
+            
+            this.webgpu.device.queue.writeBuffer(transformIndexUniform,0,<ArrayBuffer> new Uint32Array([transformOffset]));
+            
+            renderPass.drawIndexedIndirect(indirectBuffer,k*4);
+ 
+            transformOffset += indirectArray[k+1];
+            
+        }
+        
         renderPass.end();
 
 
