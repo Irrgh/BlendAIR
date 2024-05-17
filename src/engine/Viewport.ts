@@ -5,6 +5,7 @@ import { MeshInstance } from "../entity/MeshInstance";
 import { mat4 } from "gl-matrix";
 import { TriangleMesh } from "./TriangleMesh";
 import { Camera } from "../entity/Camera";
+import { runtime } from "webpack";
 
 export enum ViewportRenderTypes {
     WIRE,
@@ -61,11 +62,11 @@ export class Viewport {
     /**
      * Redraws the scene
      */
-    public render() {
+    public async render() {
 
-        const depthStencilFormat : GPUTextureFormat = "depth24plus-stencil8"
+        const depthStencilFormat: GPUTextureFormat = "depth24plus-stencil8"
 
-        const depthStencilState : GPUDepthStencilState = {
+        const depthStencilState: GPUDepthStencilState = {
             format: depthStencilFormat,
             depthWriteEnabled: true, // Enable writing to the depth buffer
             depthCompare: "less" // Enable depth testing with "less" comparison
@@ -86,7 +87,7 @@ export class Viewport {
 
 
         const commandEncoder = this.webgpu.device.createCommandEncoder({
-            
+
         }); // definitely needs to be recreated every render pass
 
 
@@ -96,17 +97,17 @@ export class Viewport {
                     clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
-                    view: this.context.getCurrentTexture().createView(),
+                    view: this.context.getCurrentTexture().createView({ label: "canvasTexture" }),
                 },
             ],
-            depthStencilAttachment:{
-                view:depthStencilView,
-                depthLoadOp:"clear",
-                depthStoreOp:"store",
-                stencilLoadOp:"clear",
-                stencilStoreOp:"store",
-                depthClearValue:1.0,
-                stencilClearValue:1.0
+            depthStencilAttachment: {
+                view: depthStencilView,
+                depthLoadOp: "clear",
+                depthStoreOp: "store",
+                stencilLoadOp: "clear",
+                stencilStoreOp: "store",
+                depthClearValue: 1.0,
+                stencilClearValue: 1.0
             }
         };
 
@@ -151,22 +152,26 @@ export class Viewport {
         let indirectArray: Uint32Array = new Uint32Array();
 
 
-        let PackedTransformArray: Float32Array = new Float32Array();
+        let packedTransformArray: Float32Array = new Float32Array();
 
         let indexOffset = 0;
-
+        let vertexCount = 0;
 
         meshInstanceTransforms.forEach((instanceTransforms: number[], mesh: TriangleMesh) => {
 
+            console.log(indexOffset);
+
+
             const newIndexArray = new Uint32Array(packedIndexArray.length + mesh.elementBuffer.length)
             newIndexArray.set(packedIndexArray);
-            newIndexArray.set(mesh.elementBuffer, packedIndexArray.length);
+            newIndexArray.set(mesh.elementBuffer.map((index: number) => { return index + vertexCount }), packedIndexArray.length);
             packedIndexArray = newIndexArray;
 
             const newVertexArray = new Float32Array(packedVertexArray.length + mesh.vertexBuffer.length);
             newVertexArray.set(packedVertexArray);
             newVertexArray.set(mesh.vertexBuffer, packedVertexArray.length);
             packedVertexArray = newVertexArray;
+            vertexCount += mesh.vertexBuffer.length / 8;
 
 
             const newIndirectArray = new Uint32Array(indirectArray.length + 5);
@@ -174,15 +179,15 @@ export class Viewport {
             newIndirectArray.set([
                 mesh.elementBuffer.length,      // face indices count
                 instanceTransforms.length / 16,      // number of instances
-                indexOffset, 0 , 0
+                indexOffset, 0, packedTransformArray.length / 16
             ], indirectArray.length);
             indirectArray = newIndirectArray;
             indexOffset += mesh.elementBuffer.length;
 
-            const newTransformArray = new Float32Array(PackedTransformArray.length + instanceTransforms.length);
-            newTransformArray.set(PackedTransformArray);
-            newTransformArray.set(instanceTransforms, PackedTransformArray.length);
-            PackedTransformArray = newTransformArray;
+            const newTransformArray = new Float32Array(packedTransformArray.length + instanceTransforms.length);
+            newTransformArray.set(packedTransformArray);
+            newTransformArray.set(instanceTransforms, packedTransformArray.length);
+            packedTransformArray = newTransformArray;
 
         });
 
@@ -190,40 +195,40 @@ export class Viewport {
         // creating buffers
 
 
-        const vertexBuffer : GPUBuffer = this.webgpu.device.createBuffer({
+        const vertexBuffer: GPUBuffer = this.webgpu.device.createBuffer({
             size: packedVertexArray.byteLength,          // each vertex is 8 f32
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
             label: "vertex-buffer"
         });
 
-        const indexBuffer : GPUBuffer = this.webgpu.device.createBuffer({
+        const indexBuffer: GPUBuffer = this.webgpu.device.createBuffer({
             size: packedIndexArray.byteLength,            // each face is 3 int32
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
             label: "index-buffer"
         });
 
-        const indirectBuffer : GPUBuffer = this.webgpu.device.createBuffer({
+        const indirectBuffer: GPUBuffer = this.webgpu.device.createBuffer({
             size: indirectArray.byteLength,
             usage: GPUBufferUsage.INDIRECT,
             mappedAtCreation: true,
             label: "indirect-buffer"
         });
 
-        const cameraDataBuffer : GPUBuffer = this.webgpu.device.createBuffer({
+        const cameraDataBuffer: GPUBuffer = this.webgpu.device.createBuffer({
             size: 64 * 2,         // mat4x4 proj and view
             usage: GPUBufferUsage.UNIFORM,
             mappedAtCreation: true,
             label: "cameraData-buffer"
         });
 
-        const transformBuffer : GPUBuffer = this.webgpu.device.createBuffer({
-            size: PackedTransformArray.byteLength,
+        const transformBuffer: GPUBuffer = this.webgpu.device.createBuffer({
+            size: packedTransformArray.byteLength,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
             label: "transform-buffer"
         });
 
 
-        const transformIndexUniform : GPUBuffer = this.webgpu.device.createBuffer({
+        const transformIndexUniform: GPUBuffer = this.webgpu.device.createBuffer({
             size: 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
             label: "transformOffset-uniform"
@@ -255,16 +260,16 @@ export class Viewport {
 
 
 
-        this.webgpu.device.queue.writeBuffer(transformBuffer, 0, PackedTransformArray);   // transforms
+        this.webgpu.device.queue.writeBuffer(transformBuffer, 0, packedTransformArray);   // transforms
 
-        console.log("transformations: ", PackedTransformArray);
+        console.log("transformations: ", packedTransformArray);
 
 
 
 
         // creating bindgroup
 
-        const bindGroupLayout : GPUBindGroupLayout = this.webgpu.device.createBindGroupLayout({
+        const bindGroupLayout: GPUBindGroupLayout = this.webgpu.device.createBindGroupLayout({
             entries: [
                 {
                     binding: 0,
@@ -273,17 +278,18 @@ export class Viewport {
                 }, {
                     binding: 1,
                     visibility: GPUShaderStage.VERTEX,
-                    buffer: { type: "read-only-storage",
-                     }
+                    buffer: {
+                        type: "read-only-storage",
+                    }
                 }, {
-                    binding:2,
+                    binding: 2,
                     visibility: GPUShaderStage.VERTEX,
-                    buffer: {type:"uniform"}
+                    buffer: { type: "uniform" }
                 }
             ]
         });
 
-        const bindGroup : GPUBindGroup = this.webgpu.device.createBindGroup({
+        const bindGroup: GPUBindGroup = this.webgpu.device.createBindGroup({
             layout: bindGroupLayout,
             entries: [
                 {
@@ -296,8 +302,8 @@ export class Viewport {
                     resource: {
                         buffer: transformBuffer
                     }
-                } , {
-                    binding:2,
+                }, {
+                    binding: 2,
                     resource: {
                         buffer: transformIndexUniform
                     }
@@ -308,7 +314,7 @@ export class Viewport {
 
         // setting up pipeline
 
-        const vertexBufferLayout : GPUVertexBufferLayout = {
+        const vertexBufferLayout: GPUVertexBufferLayout = {
             arrayStride: 32,
             attributes: TriangleMesh.attributes,
             stepMode: "vertex"
@@ -319,14 +325,14 @@ export class Viewport {
             bindGroupLayouts: [bindGroupLayout]
         });
 
-        const shaderModule : GPUShaderModule = this.webgpu.device.createShaderModule({
+        const shaderModule: GPUShaderModule = this.webgpu.device.createShaderModule({
             code: shader
         });
 
 
 
 
-        
+
 
 
 
@@ -350,7 +356,7 @@ export class Viewport {
                 topology: "triangle-list",
             },
             layout: pipeLineLayout,
-            depthStencil:depthStencilState
+            depthStencil: depthStencilState
         };
 
         const pipeline = this.webgpu.device.createRenderPipeline(pipelineDescriptor);
@@ -358,24 +364,27 @@ export class Viewport {
 
         const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-        renderPass.setPipeline(pipeline)
-        
-        renderPass.setVertexBuffer(0,vertexBuffer);
-        renderPass.setIndexBuffer(indexBuffer,"uint32");
-        renderPass.setBindGroup(0,bindGroup);
+        renderPass.setPipeline(pipeline);
+        renderPass.setVertexBuffer(0, vertexBuffer);
+        renderPass.setIndexBuffer(indexBuffer, "uint32");
+        renderPass.setBindGroup(0, bindGroup);
+
+
         let transformOffset = 0
         console.log(indirectArray);
 
-        for (let k = 0; k < indirectArray.length; k+=5) {
-            
-            this.webgpu.device.queue.writeBuffer(transformIndexUniform,0,<ArrayBuffer> new Uint32Array([transformOffset]));
-            
-            renderPass.drawIndexedIndirect(indirectBuffer,k*4);
- 
-            transformOffset += indirectArray[k+1];
-            
+        for (let k = 0; k < indirectArray.length; k += 5) {
+
+            console.log(transformOffset);
+            //this.webgpu.device.queue.writeBuffer(transformIndexUniform,0,new Uint32Array([transformOffset]));
+
+
+            renderPass.drawIndexed(indirectArray[k], indirectArray[k + 1], indirectArray[k + 2], 0, indirectArray[k + 4]);
+
+            transformOffset += indirectArray[k + 1];  // number of instances
+
         }
-        
+
         renderPass.end();
 
 
