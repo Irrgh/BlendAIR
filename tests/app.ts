@@ -40,29 +40,23 @@ const initialize = async () => {
     console.log("mesh2: ", mesh2);
 
 
+    for (let i = 0; i < 10000; i++) {
+
+        let entity : MeshInstance;
+
+        Math.random() < 0.5 ? entity = new MeshInstance(mesh) : entity = new MeshInstance(mesh2);
+
+        entity.setPosition(Math.random()*10-2.5,Math.random()*10-2.5,Math.random()*10-2.5);
+        vec3.scale(entity.scale,entity.scale,0.1);
+        vec3.random(entity.facing,1);
+        scene.addEntity(entity);
 
 
 
-    const entity = new MeshInstance(mesh)
-    entity.setPosition(-2, 1, 1);
-
-    const cube = new MeshInstance(mesh2);
-    cube.setPosition(3, -1, -2);
+    }
 
 
-    const entity2 = new MeshInstance(mesh);
-    entity2.setPosition(1, -3, -1);
-
-    scene.addEntity(entity);
-    scene.addEntity(cube);
     
-    scene.addEntity(new MeshInstance(mesh2));
-    scene.addEntity(entity2);
-
-
-
-    viewport.camera.setPosition(3, 2, 3);
-    console.log(scene.entities);
 
     vec3.normalize(viewport.camera.facing, vec3.fromValues(-1, -1, -1));
 
@@ -73,8 +67,10 @@ const initialize = async () => {
     const renderLoop = () => {
 
         t += 0.01;
-        entity.setZRotation(t);
-        quat.setAxisAngle(cube.rotation,vec3.fromValues(0,1,0),t);
+        
+        scene.entities.forEach( (entity : MeshInstance, uuid : String) => {
+            quat.setAxisAngle(entity.rotation,entity.facing,t);
+        })
 
         //console.log("eee");
         viewport.render();
