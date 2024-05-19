@@ -20,3 +20,9 @@ declare type TriangleFace = {
     v3:number
 }
 
+declare type RenderLayers = {
+    albedo : GPUTexture,
+    depth : GPUTexture,
+    normal : GPUTexture,
+    uv : GPUTexture
+}

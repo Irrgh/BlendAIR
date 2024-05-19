@@ -6,6 +6,7 @@ import { mat4 } from "gl-matrix";
 import { TriangleMesh } from "./TriangleMesh";
 import { Camera } from "../entity/Camera";
 import { Resizable } from "../gui/Resizable";
+import { Util } from "../util/Util";
 
 export enum ViewportRenderTypes {
     WIRE,
@@ -41,14 +42,21 @@ export class Viewport implements Resizable {
      */
     scene: Scene
 
+    /**
+     * {@link Camera} Object used for rendering.
+     */
     camera: Camera;
 
 
 
+    /**
+     * Results of the last Render are stored here
+     */
+    renderResults! : RenderLayers
+    depthStencilFormat: GPUTextureFormat = "depth24plus-stencil8";
 
-
-
-
+    width:number;
+    height:number;
     
 
 
@@ -63,8 +71,14 @@ export class Viewport implements Resizable {
             format: this.canvasFormat
         });
 
-        this.camera = new Camera();
+        this.width = canvas.width;
+        this.height =  canvas.height;
+        const aspect = this.width/this.height;
 
+        this.camera = new Camera();
+        this.camera.setPerspectiveProjection(Util.degreeToRadians(90),aspect,0.1,100);
+
+        this.createRenderResults()
     }
 
 
@@ -72,10 +86,86 @@ export class Viewport implements Resizable {
         throw new Error("Method not implemented.");
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
     }
-    
+
     allowResize(): boolean {
         throw new Error("Method not implemented.");
     }
+
+
+
+
+    /**
+     * Creates new textures for the {@link renderResults} according to the {@link width} and {@link height} of ``this`` {@link Viewport}.
+     * Destroys all the old textures before creating new ones.
+     */
+    public createRenderResults ():void {
+
+        const device = this.webgpu.getDevice();
+
+        const usage = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING;
+
+        if (this.renderResults) {
+            Object.values(this.renderResults).forEach((texture) => {texture.destroy()});
+        }
+
+        const albedo = device.createTexture({
+            size: {
+                width:this.width,
+                height:this.height,
+                depthOrArrayLayers:1
+            },
+            format: this.canvasFormat,
+            usage: usage,
+            label:"albedo"
+        });
+
+        const depth = device.createTexture({
+            size: {
+                width:this.width,
+                height:this.height,
+                depthOrArrayLayers:1
+            },
+            format: this.depthStencilFormat,
+            usage: usage,
+            label:"depth"
+        });
+
+        const normal = device.createTexture({
+            size: {
+                width:this.width,
+                height:this.height,
+                depthOrArrayLayers:1
+            },
+            format: this.canvasFormat,
+            usage: usage,
+            label:"normal"
+        });
+
+        const uv = device.createTexture({
+            size: {
+                width:this.width,
+                height:this.height,
+                depthOrArrayLayers:1
+            },
+            format: this.canvasFormat,
+            usage: usage,
+            label:"uv"
+        });
+
+
+        this.renderResults = {
+            albedo:albedo,
+            depth:depth,
+            normal:normal,
+            uv:uv
+        };
+    }
+
+
+
+
+
+
 
 
     /**
