@@ -1,8 +1,8 @@
 import { Camera } from "../entity/Camera";
 import { Entity } from "../entity/Entity";
 import { MeshInstance } from "../entity/MeshInstance";
-import { Viewport } from "../Viewport";
 import { TriangleMesh } from "./TriangleMesh";
+import { Viewport } from "./Viewport";
 
 export class Scene {
 

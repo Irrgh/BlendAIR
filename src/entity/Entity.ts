@@ -17,7 +17,7 @@ export abstract class Entity {
         this.rotation = rotation || quat.create();
         this.scale = scale || vec3.fromValues(1,1,1);
         this.facing = vec3.fromValues(0,0,-1);
-        this.name = window.crypto.randomUUID();
+        this.name = window.crypto.randomUUID(); /** @todo this probably shouldn't stay like this */
     }
 
     /**
@@ -62,10 +62,25 @@ export abstract class Entity {
     }
 
 
-    public setZRotation(radians:number) {
-
-        quat.setAxisAngle(this.rotation,vec3.fromValues(0,0,1),radians);
+    public setXRotation(radians:number):void {
+        quat.setAxisAngle(this.rotation,vec3.fromValues(1,0,0),radians);
+        vec3.rotateX(this.facing,this.facing,this.position,radians);
     }
+
+    public setYRotation(radians:number):void {
+        quat.setAxisAngle(this.rotation,vec3.fromValues(0,1,0),radians);
+        vec3.rotateY(this.facing,this.facing,this.position,radians);
+    }
+
+
+    public setZRotation(radians:number):void {
+        quat.setAxisAngle(this.rotation,vec3.fromValues(0,0,1),radians);
+        vec3.rotateZ(this.facing,this.facing,this.position,radians);
+    }
+
+
+
+
 
 
 

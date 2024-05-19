@@ -5,6 +5,7 @@ import { MeshInstance } from "../entity/MeshInstance";
 import { mat4 } from "gl-matrix";
 import { TriangleMesh } from "./TriangleMesh";
 import { Camera } from "../entity/Camera";
+import { Resizable } from "../gui/Resizable";
 
 export enum ViewportRenderTypes {
     WIRE,
@@ -16,7 +17,7 @@ export enum ViewportRenderTypes {
 
 
 
-export class Viewport {
+export class Viewport implements Resizable {
 
 
 
@@ -43,7 +44,7 @@ export class Viewport {
     camera: Camera;
 
 
-    
+
 
 
 
@@ -64,6 +65,16 @@ export class Viewport {
 
         this.camera = new Camera();
 
+    }
+
+
+    resize(width: number, height: number): void {
+        throw new Error("Method not implemented.");
+        // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
+    }
+    
+    allowResize(): boolean {
+        throw new Error("Method not implemented.");
     }
 
 

@@ -32,8 +32,12 @@ export class Util {
         return true;
       }
       
+      public static degreeToRadians (deg:number):number {
+        return deg * (Math.PI / 180);
+      }
 
-
-
+      public static radiansToDegree (radians:number):number {
+        return radians * (180 / Math.PI);
+      }
 
 }
