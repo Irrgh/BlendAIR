@@ -46,6 +46,11 @@ export class Viewport {
     
 
 
+
+
+    
+
+
     constructor(webgpu: WebGPU, canvas: HTMLCanvasElement, scene: Scene) {
         this.webgpu = webgpu;
         this.canvas = canvas;

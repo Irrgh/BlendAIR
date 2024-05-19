@@ -15,13 +15,13 @@ export class WebGPU {
     /**
      * Map of buffers with Buffer label serving as key.
      */
-    private buffers!: Map<String,GPUBuffer>
+    private sharedBuffers!: Map<String,GPUBuffer>
 
 
     /**
      * Map of textures with Texture label serving as key.
      */
-    private textures!: Map<String,GPUTexture>;
+    private sharedTextures!: Map<String,GPUTexture>;
 
 
 
@@ -59,8 +59,8 @@ export class WebGPU {
             // Handle error gracefully, e.g., display a message to the user
         }
 
-        this.buffers = new Map<String,GPUBuffer>();
-        this.textures = new Map<String,GPUTexture>();
+        this.sharedBuffers = new Map<String,GPUBuffer>();
+        this.sharedTextures = new Map<String,GPUTexture>();
 
 
     }
@@ -84,13 +84,14 @@ export class WebGPU {
     /**
      * Creates a new {@link GPUBuffer} according to the {@link GPUBufferDescriptor}.
      * @param descriptor Description of the {@link GPUBuffer} to create.
-     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link buffers}.
+     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link sharedBuffers}.
      * @returns The {@link @GPUBuffer}
      */
-    public createBuffer(descriptor:GPUBufferDescriptor, label:String):GPUBuffer {
+    public createBuffer(descriptor:GPUBufferDescriptor, label:string):GPUBuffer {
+        descriptor.label = label;
         const buffer = this.device.createBuffer(descriptor);
-        this.buffers.get(label)?.destroy();     // kills old buffer if needed
-        this.buffers.set(label,buffer);
+        this.sharedBuffers.get(label)?.destroy();     // kills old buffer if needed
+        this.sharedBuffers.set(label,buffer);
         return buffer;
     }
 
@@ -98,9 +99,9 @@ export class WebGPU {
      * Destroys the {@link GPUBuffer} specified by the {@link label}.
      * @param label Label of the buffer to destroy.
      */
-    public destroyBuffer(label:String):void {
-        this.buffers.get(label)?.destroy;
-        this.buffers.delete(label);
+    public destroyBuffer(label:string):void {
+        this.sharedBuffers.get(label)?.destroy;
+        this.sharedBuffers.delete(label);
     }
 
     /**
@@ -108,8 +109,8 @@ export class WebGPU {
      * @param label Label of the buffer to retrieve.
      * @returns The {@link GPUBuffer}. If no buffer with {@link label} exists an Error is thrown.
      */
-    public getBuffer(label:String): GPUBuffer{
-        const buffer = this.buffers.get(label);
+    public getBuffer(label:string): GPUBuffer{
+        const buffer = this.sharedBuffers.get(label);
         if (buffer) {return buffer}
         throw new Error (`There is no buffer with the label: ${label}`);
     }
@@ -122,20 +123,21 @@ export class WebGPU {
      * @returns the internal Map of {@link GPUBuffer}s
      */
     public getBuffers() : Map<String,GPUBuffer> {
-        return this.buffers;
+        return this.sharedBuffers;
     }
 
 
     /**
      * Creates a new {@link GPUTexture} according to the {@link GPUTextureDescriptor}.
      * @param descriptor Description of the {@link GPUTexture} to create.
-     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link textures}.
+     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link sharedTextures}.
      * @returns The {@link @GPUTexture}.
      */
-    public createTexture (descriptor:GPUTextureDescriptor, label:String):GPUTexture {
+    public createTexture (descriptor:GPUTextureDescriptor, label:string):GPUTexture {
+        descriptor.label = label;
         const texture = this.device.createTexture(descriptor);
-        this.textures.get(label)?.destroy();
-        this.textures.set(label,texture);
+        this.sharedTextures.get(label)?.destroy();
+        this.sharedTextures.set(label,texture);
         return texture;
     }
 
@@ -143,9 +145,9 @@ export class WebGPU {
      * Destroys the {@link GPUTexture} specified by the {@link label}.
      * @param label Label of the texture to destroy.
      */
-    public destroyTexture (label:String):void {
-        this.textures.get(label)?.destroy();
-        this.textures.delete(label);
+    public destroyTexture (label:string):void {
+        this.sharedTextures.get(label)?.destroy();
+        this.sharedTextures.delete(label);
     }
 
     /**
@@ -153,8 +155,8 @@ export class WebGPU {
      * @param label Label of the texture to retrieve.
      * @returns The {@link GPUTexture}. If no texture with {@link label} exists an Error is thrown.
      */
-    public getTexture (label:String):GPUTexture {
-        const texture = this.textures.get(label);
+    public getTexture (label:string):GPUTexture {
+        const texture = this.sharedTextures.get(label);
         if (texture) {return texture}
         throw new Error(`There is no texture with the label: ${label}`);
     }
@@ -165,8 +167,13 @@ export class WebGPU {
      * @returns the internal Map of {@link GPUTexture}s
      */
     public getTextures ():Map<String,GPUTexture> {
-        return this.textures;
+        return this.sharedTextures;
     }
+
+
+    
+
+
 
 
 
