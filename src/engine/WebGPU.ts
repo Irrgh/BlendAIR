@@ -3,8 +3,8 @@
  */
 export class WebGPU {
 
-    private constructor () {}
-    
+    private constructor() { }
+
     /**
      * Physical GPU device
      */
@@ -15,13 +15,13 @@ export class WebGPU {
     /**
      * Map of buffers with Buffer label serving as key.
      */
-    private sharedBuffers!: Map<String,GPUBuffer>
+    private sharedBuffers!: Map<String, GPUBuffer>
 
 
     /**
      * Map of textures with Texture label serving as key.
      */
-    private sharedTextures!: Map<String,GPUTexture>;
+    private sharedTextures!: Map<String, GPUTexture>;
 
 
 
@@ -31,26 +31,26 @@ export class WebGPU {
     /**
      * Initializes a new WebGPU instance and returns it.
      */
-    public static async initializeInstance ():Promise<WebGPU> {
+    public static async initializeInstance(): Promise<WebGPU> {
         const webgpu = new WebGPU();
         await webgpu.init();
         return webgpu;
     }
 
 
-    private async init ():Promise<void> {
+    private async init(): Promise<void> {
 
         if (!navigator.gpu) {
             throw new Error("WebGPU not supported on this browser.");
         }
-        
+
         try {
-            this.adapter = <GPUAdapter> await navigator.gpu.requestAdapter();
+            this.adapter = <GPUAdapter>await navigator.gpu.requestAdapter();
             if (!this.adapter) {
                 throw new Error("No appropriate GPUAdapter found.");
             }
-        
-            this.device = <GPUDevice> await this.adapter.requestDevice();
+
+            this.device = <GPUDevice>await this.adapter.requestDevice();
             if (!this.device) {
                 throw new Error("No appropriate GPUDevice found.");
             }
@@ -59,8 +59,8 @@ export class WebGPU {
             // Handle error gracefully, e.g., display a message to the user
         }
 
-        this.sharedBuffers = new Map<String,GPUBuffer>();
-        this.sharedTextures = new Map<String,GPUTexture>();
+        this.sharedBuffers = new Map<String, GPUBuffer>();
+        this.sharedTextures = new Map<String, GPUTexture>();
 
 
     }
@@ -69,7 +69,7 @@ export class WebGPU {
      * Returns the {@link GPUAdapter} associated with ``this`` {@link WebGPU} instance.
      * @returns The {@link adapter}
      */
-    public getAdapter():GPUAdapter {
+    public getAdapter(): GPUAdapter {
         return this.adapter;
     }
 
@@ -77,7 +77,7 @@ export class WebGPU {
      * Returns the {@link GPUDevice} associated with ``this`` {@link WebGPU} instance.
      * @returns The {@link device}
      */
-    public getDevice():GPUDevice {
+    public getDevice(): GPUDevice {
         return this.device
     }
 
@@ -87,11 +87,11 @@ export class WebGPU {
      * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link sharedBuffers}.
      * @returns The {@link @GPUBuffer}
      */
-    public createBuffer(descriptor:GPUBufferDescriptor, label:string):GPUBuffer {
+    public createBuffer(descriptor: GPUBufferDescriptor, label: string): GPUBuffer {
         descriptor.label = label;
         const buffer = this.device.createBuffer(descriptor);
         this.sharedBuffers.get(label)?.destroy();     // kills old buffer if needed
-        this.sharedBuffers.set(label,buffer);
+        this.sharedBuffers.set(label, buffer);
         return buffer;
     }
 
@@ -99,7 +99,7 @@ export class WebGPU {
      * Destroys the {@link GPUBuffer} specified by the {@link label}.
      * @param label Label of the buffer to destroy.
      */
-    public destroyBuffer(label:string):void {
+    public destroyBuffer(label: string): void {
         this.sharedBuffers.get(label)?.destroy;
         this.sharedBuffers.delete(label);
     }
@@ -109,10 +109,10 @@ export class WebGPU {
      * @param label Label of the buffer to retrieve.
      * @returns The {@link GPUBuffer}. If no buffer with {@link label} exists an Error is thrown.
      */
-    public getBuffer(label:string): GPUBuffer{
+    public getBuffer(label: string): GPUBuffer {
         const buffer = this.sharedBuffers.get(label);
-        if (buffer) {return buffer}
-        throw new Error (`There is no buffer with the label: ${label}`);
+        if (buffer) { return buffer }
+        throw new Error(`There is no buffer with the label: ${label}`);
     }
 
 
@@ -122,7 +122,7 @@ export class WebGPU {
      * Needed incase you need direct access to the Map. Like looping over all buffers.
      * @returns the internal Map of {@link GPUBuffer}s
      */
-    public getBuffers() : Map<String,GPUBuffer> {
+    public getBuffers(): Map<String, GPUBuffer> {
         return this.sharedBuffers;
     }
 
@@ -133,11 +133,11 @@ export class WebGPU {
      * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link sharedTextures}.
      * @returns The {@link @GPUTexture}.
      */
-    public createTexture (descriptor:GPUTextureDescriptor, label:string):GPUTexture {
+    public createTexture(descriptor: GPUTextureDescriptor, label: string): GPUTexture {
         descriptor.label = label;
         const texture = this.device.createTexture(descriptor);
         this.sharedTextures.get(label)?.destroy();
-        this.sharedTextures.set(label,texture);
+        this.sharedTextures.set(label, texture);
         return texture;
     }
 
@@ -145,7 +145,7 @@ export class WebGPU {
      * Destroys the {@link GPUTexture} specified by the {@link label}.
      * @param label Label of the texture to destroy.
      */
-    public destroyTexture (label:string):void {
+    public destroyTexture(label: string): void {
         this.sharedTextures.get(label)?.destroy();
         this.sharedTextures.delete(label);
     }
@@ -155,9 +155,9 @@ export class WebGPU {
      * @param label Label of the texture to retrieve.
      * @returns The {@link GPUTexture}. If no texture with {@link label} exists an Error is thrown.
      */
-    public getTexture (label:string):GPUTexture {
+    public getTexture(label: string): GPUTexture {
         const texture = this.sharedTextures.get(label);
-        if (texture) {return texture}
+        if (texture) { return texture }
         throw new Error(`There is no texture with the label: ${label}`);
     }
 
@@ -166,12 +166,44 @@ export class WebGPU {
      * Needed incase you need direct access to the Map. Like looping over all textures.
      * @returns the internal Map of {@link GPUTexture}s
      */
-    public getTextures ():Map<String,GPUTexture> {
+    public getTextures(): Map<String, GPUTexture> {
         return this.sharedTextures;
     }
 
 
-    
+
+    /**
+     * Loads a image file as {@link GPUTexture} into {@link sharedTextures} with filename as key.
+     * Throws an error if {@link file} type does not match `image/*`
+     * @param file {@link File} to load as a texture.
+     */
+    public async loadTextureFromFile(file: File) {
+
+        if (!file.type.includes("image")) {
+            throw new Error(`Type: ${file.type} is not a image type.`);
+        }
+
+        const blob = await file.arrayBuffer()
+        const imageBitmap = await createImageBitmap(new Blob([blob]));
+
+        const descriptor: GPUTextureDescriptor = {
+            size: { width: imageBitmap.width, height: imageBitmap.height },
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+            label:file.name
+        }
+
+
+        const texture = this.createTexture(descriptor, file.name);
+
+        this.device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: texture },
+            [imageBitmap.width, imageBitmap.height, 1]      // width height depth
+        );
+
+    }
+
 
 
 

@@ -25,7 +25,7 @@ export class Camera extends Entity {
 
     /**
      * Default UP direction for a camera.
-     * @todo PLEASE DONT DO THIS!
+     * @todo PLEASE DON'T DO THIS!
      */
     public cameraUp: vec3 = vec3.fromValues(0.0,0.0,1.0);   
 
