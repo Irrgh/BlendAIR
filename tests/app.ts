@@ -5,6 +5,7 @@ import { TriangleMesh } from "../src/engine/TriangleMesh";
 import { Util } from "../src/util/Util";
 import { MeshInstance } from "../src/entity/MeshInstance";
 import { quat, vec3 } from "gl-matrix";
+import { BlenderNavigator } from '../src/engine/BlenderNavigator';
 
 
 const initialize = async () => {
@@ -27,7 +28,7 @@ const initialize = async () => {
 
 
     const viewport = new Viewport(webgpu, canvas, scene);
-
+    viewport.setNavigator(new BlenderNavigator(viewport));
 
     const model: string = await (await fetch("../assets/models/suzanne_smooth.obj")).text();
     const model1: string = await (await fetch("../assets/models/cube.obj")).text();
@@ -72,8 +73,13 @@ const initialize = async () => {
             quat.setAxisAngle(entity.rotation,entity.facing,t);
         })
 
+        
+        const startTime = performance.now();
         //console.log("eee");
         viewport.render();
+
+        console.log(`render time in ms: ${performance.now() - startTime}`);
+
         console.clear();
         requestAnimationFrame(renderLoop)
     }

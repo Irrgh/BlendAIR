@@ -7,6 +7,7 @@ import { TriangleMesh } from "./TriangleMesh";
 import { Camera } from "../entity/Camera";
 import { Resizable } from "../gui/Resizable";
 import { Util } from "../util/Util";
+import { ViewportNavigator } from './ViewportNavigator';
 
 export enum ViewportRenderTypes {
     WIRE,
@@ -54,31 +55,32 @@ export class Viewport implements Resizable {
      */
     renderResults!: RenderLayers
 
-    depthStencilFormat: GPUTextureFormat = "depth24plus-stencil8";
+    private depthStencilFormat: GPUTextureFormat = "depth24plus-stencil8";
 
-    depthStencilState: GPUDepthStencilState = {
+    private depthStencilState: GPUDepthStencilState = {
         format: this.depthStencilFormat,
         depthWriteEnabled: true, // Enable writing to the depth buffer
         depthCompare: "less" // Enable depth testing with "less" comparison
     };
 
 
-    vertexBuffer!: GPUBuffer;
-    indexBuffer!: GPUBuffer;
-    transformBuffer!: GPUBuffer;
-    cameradataUniform!: GPUBuffer;
+    private vertexBuffer!: GPUBuffer;
+    private indexBuffer!: GPUBuffer;
+    private transformBuffer!: GPUBuffer;
+    private cameradataUniform!: GPUBuffer;
 
-    bindgroup!:GPUBindGroup;
+    private bindgroup!:GPUBindGroup;
 
-    drawParameters!: Uint32Array;
-    pipeLineLayout!: GPUPipelineLayout;
+    private drawParameters!: Uint32Array;
+    private pipeLineLayout!: GPUPipelineLayout;
 
 
 
 
     width: number;
     height: number;
-    
+
+    navigator:ViewportNavigator | undefined;
 
 
 
@@ -103,8 +105,15 @@ export class Viewport implements Resizable {
         this.createRenderResults();
         this.createMeshBuffers();
 
-        this.createBindgroup();
+        //this.createBindgroup();
     }
+
+    setNavigator(viewportNavigator:ViewportNavigator):void {
+        this.navigator?.stop();
+        this.navigator = viewportNavigator;
+        this.navigator.use();
+    }
+
 
 
     resize(width: number, height: number): void {
@@ -229,7 +238,9 @@ export class Viewport implements Resizable {
                 );
 
                 const instances: MeshInstance[] = Array.from(mesh.instancedBy);
-                instances.forEach((entity) => {
+
+                
+                instances.forEach((entity:MeshInstance) => {
                     transformAccumulator.push(...entity.getWorldTransform());
                 })
 
@@ -240,6 +251,7 @@ export class Viewport implements Resizable {
 
             }
         });
+
 
         const device = this.webgpu.getDevice();
 
@@ -270,18 +282,6 @@ export class Viewport implements Resizable {
             label:"transform"
         });
 
-        this.cameradataUniform?.destroy();
-
-        this.cameradataUniform = device.createBuffer({
-            size: 64*2,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-            mappedAtCreation:true,
-            label:"camera"
-        })
-
-
-
-
         const vertexArray = new Float32Array(vertexSize * 8);     // eight floats per vertex
 
         vertexAccumulator.reduce((offset: number, current: Float32Array) => {
@@ -301,10 +301,7 @@ export class Viewport implements Resizable {
 
 
 
-        const cameraDataBufferMap: Float32Array = new Float32Array(this.cameradataUniform.getMappedRange());     // cameraData
-        cameraDataBufferMap.set(this.camera.getViewMatrix());
-        cameraDataBufferMap.set(this.camera.getProjectionMatrix(), 16);      // offset of one mat4x4
-        this.cameradataUniform.unmap();
+        this.updateCameraUniform();
 
 
 
@@ -318,8 +315,25 @@ export class Viewport implements Resizable {
     }
 
 
-    public createBindgroup(): void {
+    private updateCameraUniform() {
 
+        this.cameradataUniform?.destroy();
+
+        this.cameradataUniform = this.webgpu.getDevice().createBuffer({
+            size: 64*2,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+            mappedAtCreation:true,
+            label:"camera"
+        })
+
+        const cameraDataBufferMap: Float32Array = new Float32Array(this.cameradataUniform.getMappedRange()); // cameraData
+        cameraDataBufferMap.set(this.camera.getViewMatrix());
+        cameraDataBufferMap.set(this.camera.getProjectionMatrix(), 16); // offset of one mat4x4
+        this.cameradataUniform.unmap();
+    }
+
+    public createBindgroup(): void {
+        
         const device = this.webgpu.getDevice();
 
         const bindGroupLayout: GPUBindGroupLayout = device.createBindGroupLayout({
@@ -351,7 +365,7 @@ export class Viewport implements Resizable {
                     binding: 1,
                     resource: {
                         buffer: this.transformBuffer,
-                        
+
                     }
                 }
             ]
@@ -379,9 +393,12 @@ export class Viewport implements Resizable {
      */
     public async render() {
 
+        const time = performance.now();
         this.createMeshBuffers();
+        console.log(`creating buffers took: ${performance.now() - time} ms`);
+        
+        this.createBindgroup();
 
-    
 
         const depthStencilView = this.renderResults.depth.createView();
 
@@ -416,96 +433,10 @@ export class Viewport implements Resizable {
 
 
 
-        const meshInstanceTransforms = new Map<TriangleMesh, number[]>();        // retrieves all worldTransForm from the entities 
-        /** @todo all of this needs to be implemented for Rendering of all {@link Entity} instead of only {@link MeshInstance} */
-        this.scene.entities.forEach((entity: MeshInstance, key: String) => {
-
-            const transforms = meshInstanceTransforms.get(entity.mesh);
-            if (transforms) {
-                transforms.push(...entity.getWorldTransform());
-            } else {
-                meshInstanceTransforms.set(entity.mesh, [...entity.getWorldTransform()]);
-            }
-
-        });
-
-        /**
-         * Contains all indices describing triangle faces.
-         * Will be converted into a GPUBuffer after being filled.
-         */
-        let packedIndexArray: Uint32Array = new Uint32Array();
-
-        /**
-         * Contains all vertices necessary for rendering.
-         * Will be converted in a GPUBuffer after being filled.
-         */
-        let packedVertexArray: Float32Array = new Float32Array();
-
-        /**
-         * Describes how the different mesh are drawn:
-         * uint32[0] = 3; // The indexCount value
-         * uint32[1] = 1; // The instanceCount value
-         * uint32[2] = 0; // The firstIndex value
-         * uint32[3] = 0; // The baseVertex value
-         * uint32[4] = 0; // The firstInstance value
-         */
-        let indirectArray: Uint32Array = new Uint32Array();
-
-
-        let packedTransformArray: Float32Array = new Float32Array();
-
-        let indexOffset = 0;
-        let vertexCount = 0;
-
-        meshInstanceTransforms.forEach((instanceTransforms: number[], mesh: TriangleMesh) => {
-
-            console.log(indexOffset);
-
-
-            const newIndexArray = new Uint32Array(packedIndexArray.length + mesh.elementBuffer.length)
-            newIndexArray.set(packedIndexArray);
-            newIndexArray.set(mesh.elementBuffer.map((index: number) => { return index + vertexCount }), packedIndexArray.length);
-            packedIndexArray = newIndexArray;
-
-            const newVertexArray = new Float32Array(packedVertexArray.length + mesh.vertexBuffer.length);
-            newVertexArray.set(packedVertexArray);
-            newVertexArray.set(mesh.vertexBuffer, packedVertexArray.length);
-            packedVertexArray = newVertexArray;
-            vertexCount += mesh.vertexBuffer.length / 8;
-
-
-            const newIndirectArray = new Uint32Array(indirectArray.length + 5);
-            newIndirectArray.set(indirectArray);
-            newIndirectArray.set([
-                mesh.elementBuffer.length,      // face indices count
-                instanceTransforms.length / 16,      // number of instances
-                indexOffset, 0, packedTransformArray.length / 16
-            ], indirectArray.length);
-            indirectArray = newIndirectArray;
-            indexOffset += mesh.elementBuffer.length;
-
-            const newTransformArray = new Float32Array(packedTransformArray.length + instanceTransforms.length);
-            newTransformArray.set(packedTransformArray);
-            newTransformArray.set(instanceTransforms, packedTransformArray.length);
-            packedTransformArray = newTransformArray;
-
-        });
-
-
         // creating buffers
 
 
-        const vertexBuffer: GPUBuffer = this.webgpu.createBuffer({
-            size: packedVertexArray.byteLength,          // each vertex is 8 f32
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
-            label: "vertex-buffer"
-        }, "vertex-buffer");
-
-        const indexBuffer: GPUBuffer = this.webgpu.createBuffer({
-            size: packedIndexArray.byteLength,            // each face is 3 int32
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
-            label: "index-buffer"
-        }, "index-buffer");
+        
 
         const cameraDataBuffer: GPUBuffer = this.webgpu.createBuffer({
             size: 64 * 2,         // mat4x4 proj and view
@@ -513,32 +444,6 @@ export class Viewport implements Resizable {
             mappedAtCreation: true,
             label: "cameraData-buffer"
         }, "cameraData-buffer");
-
-        const transformBuffer: GPUBuffer = this.webgpu.createBuffer({
-            size: packedTransformArray.byteLength,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
-            label: "transform-buffer"
-        }, "transform-buffer");
-
-
-
-
-        // filling buffers
-
-        this.webgpu.getDevice().queue.writeBuffer(vertexBuffer, 0, packedVertexArray);     // vertex
-        this.webgpu.getDevice().queue.writeBuffer(indexBuffer, 0, packedIndexArray);       // index
-
-
-        
-
-
-        this.webgpu.getDevice().queue.writeBuffer(transformBuffer, 0, packedTransformArray);   // transforms
-
-
-
-
-
-        // creating bindgroup
 
         
 
@@ -600,14 +505,14 @@ export class Viewport implements Resizable {
 
 
 
-        console.log(indirectArray);
+        console.log(this.drawParameters);
 
-        for (let k = 0; k < indirectArray.length; k += 5) {
+        for (let k = 0; k < this.drawParameters.length; k += 5) {
 
 
             //this.webgpu.getDevice().queue.writeBuffer(transformIndexUniform,0,new Uint32Array([transformOffset]));
 
-            renderPass.drawIndexed(indirectArray[k], indirectArray[k + 1], indirectArray[k + 2], 0, indirectArray[k + 4]);
+            renderPass.drawIndexed(this.drawParameters[k], this.drawParameters[k + 1], this.drawParameters[k + 2], 0, this.drawParameters[k + 4]);
 
 
 
@@ -618,10 +523,8 @@ export class Viewport implements Resizable {
 
         this.webgpu.getDevice().queue.submit([commandEncoder.finish()])
 
-        indexBuffer.destroy();
-        vertexBuffer.destroy();
         cameraDataBuffer.destroy();
-        transformBuffer.destroy();
+        
         //depthStencilTexture.destroy();
 
     }

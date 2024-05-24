@@ -8,6 +8,7 @@ export class MeshInstance extends Entity {
     constructor (mesh : TriangleMesh) {
         super();
         this.mesh = mesh;
+        this.mesh.addMeshInstance(this);
     }
 
 
