@@ -1,23 +1,21 @@
 import { ViewportNavigator } from "./ViewportNavigator";
 import { Viewport } from './Viewport';
-import { vec2, vec3 } from "gl-matrix";
+import { mat4, vec2, vec3 } from "gl-matrix";
 
 export class BlenderNavigator extends ViewportNavigator {
 
     constructor(viewport: Viewport) {
         super(viewport);
+        this.cameraOrbitDistance = vec3.distance(this.viewport.camera.position,this.cameraOrbitCenter);
     }
 
-    dragStart: vec2 = [0, 0];
-    dragHead: vec2 = [0, 0];
-
-    mouseButtonsPressed: boolean[] = [];
-
+   private cameraOrbitCenter : vec3 = [0,0,0]; 
+   private cameraOrbitDistance : number;
 
 
 
     use(): void {
-
+        super.use();
 
         this.viewport.canvas.addEventListener("contextmenu", this.disableContextmenu);
         
@@ -25,7 +23,19 @@ export class BlenderNavigator extends ViewportNavigator {
 
         this.viewport.canvas.addEventListener("mousedown", this.mouseMove);
 
+        this.viewport.canvas.addEventListener("wheel", (event : WheelEvent) => {
 
+            console.log(event.deltaY);
+            this.cameraOrbitDistance +=  Math.log(this.cameraOrbitDistance) * event.deltaY * 0.001;
+
+            const camera = this.viewport.camera;
+
+            const offset = vec3.scale([0,0,0],camera.facing,-this.cameraOrbitDistance);
+
+            camera.position = vec3.add([0,0,0],this.cameraOrbitCenter,offset);
+            console.log(camera.position);
+
+        });
 
 
 
@@ -42,45 +52,57 @@ export class BlenderNavigator extends ViewportNavigator {
     }
 
     mouseMove = async (event: MouseEvent) => {
-        if (event.button === 2) {
+        event.preventDefault();
 
-            this.dragStart = [event.screenX, event.screenY];
 
+
+
+
+
+        if ((event.button === 1 || (event.button === 0 && this.keyboardButtonsPressed.has("AltLeft")))) {
 
             await this.viewport.canvas.requestPointerLock();
 
-            this.dragHead = vec2.clone(this.dragStart);
+        
+            let u = this.viewport.camera.getRightVector();
+            let v = this.viewport.camera.getUpVector();
 
             const pointerMove = (event:PointerEvent) => {
-                vec2.set(this.dragHead, event.screenX, event.screenY);
 
                 const diff = vec2.fromValues(event.movementX, event.movementY);
 
                 const facing = this.viewport.camera.facing;
 
-                let u: vec3;
-                let v: vec3 = [0, 0, 0];
+                
 
-                if (facing[0] !== 0 || facing[1] !== 0) {
-                    u = vec3.fromValues(facing[1], -facing[0], 0);
-                } else {
-                    u = [1, 0, 0];
-                }
 
-                vec3.normalize(u, u);
-                vec3.normalize(v, v);
-                vec3.cross(v, facing, u);
+                vec3.scale(u, u, diff[0] * this.cameraOrbitDistance);
+                vec3.scale(v, v, diff[1] * this.cameraOrbitDistance);
+                
 
-                vec3.scale(u, u, diff[0]);
-                vec3.scale(v, v, diff[1]);
 
                 vec3.add(u, u, v);
 
                 vec3.scale(u, u, -1 / 1000);
 
-                const newPos = vec3.add([0, 0, 0], u, this.viewport.camera.position);
-                vec3.add(this.viewport.camera.position, newPos, [0, 0, 0]);
+                vec3.add(this.viewport.camera.position, u, this.viewport.camera.position);
+                vec3.add(this.cameraOrbitCenter,u,this.cameraOrbitCenter);
             }
+
+            const pointerRotate = (event:PointerEvent) => {
+
+                const diff = vec2.fromValues(event.movementX, event.movementY);
+
+                // build orbit please
+
+
+
+
+
+            }
+
+
+
 
 
 
@@ -95,8 +117,20 @@ export class BlenderNavigator extends ViewportNavigator {
             });
 
 
-        }
+        } 
+
+        
+
+
+
     }
+
+    
+
+
+
+
+
 
 
 

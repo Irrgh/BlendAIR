@@ -26,3 +26,6 @@ declare type RenderLayers = {
     normal : GPUTexture,
     uv : GPUTexture
 }
+
+declare type KeyCombination = string[]
+

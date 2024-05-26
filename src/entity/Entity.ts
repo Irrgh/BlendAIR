@@ -79,6 +79,33 @@ export abstract class Entity {
     }
 
 
+    /**
+     * Calculates the right facing vector. 
+     * @returns The {@link  vec3} facing right of {@link facing}
+     */
+    public getRightVector():vec3 {
+        let u : vec3;
+
+        if (this.facing[0] !== 0 || this.facing[1] !== 0) {
+            u = vec3.fromValues(this.facing[1], -this.facing[0], 0);
+        } else {
+            u = [1, 0, 0];
+        }
+        return u;
+    }
+
+    public getUpVector():vec3 {
+        let v : vec3 = [0,0,0];
+        return vec3.cross(v,this.facing,this.getRightVector());
+    }
+
+
+
+
+
+
+
+
 
 
 
