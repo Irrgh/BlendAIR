@@ -1,16 +1,20 @@
 import { ViewportNavigator } from "./ViewportNavigator";
 import { Viewport } from './Viewport';
 import { mat4, vec2, vec3 } from "gl-matrix";
+import { KeyListener } from './KeyListener';
+import { App } from '../../tests/app'
 
 export class BlenderNavigator extends ViewportNavigator {
 
     constructor(viewport: Viewport) {
         super(viewport);
-        this.cameraOrbitDistance = vec3.distance(this.viewport.camera.position,this.cameraOrbitCenter);
+        this.cameraOrbitDistance = vec3.distance(this.viewport.camera.position, this.cameraOrbitCenter);
     }
 
-   private cameraOrbitCenter : vec3 = [0,0,0]; 
-   private cameraOrbitDistance : number;
+    private cameraOrbitCenter: vec3 = [0, 0, 0];
+    private cameraOrbitDistance: number;
+
+
 
 
 
@@ -18,21 +22,21 @@ export class BlenderNavigator extends ViewportNavigator {
         super.use();
 
         this.viewport.canvas.addEventListener("contextmenu", this.disableContextmenu);
-        
+
 
 
         this.viewport.canvas.addEventListener("mousedown", this.mouseMove);
 
-        this.viewport.canvas.addEventListener("wheel", (event : WheelEvent) => {
+        this.viewport.canvas.addEventListener("wheel", (event: WheelEvent) => {
 
             console.log(event.deltaY);
-            this.cameraOrbitDistance +=  Math.log(this.cameraOrbitDistance) * event.deltaY * 0.001;
+            this.cameraOrbitDistance += Math.log(this.cameraOrbitDistance) * event.deltaY * 0.001 *(KeyListener.combinationPressed("ShiftLeft") ? 0.1 : 1);
 
             const camera = this.viewport.camera;
 
-            const offset = vec3.scale([0,0,0],camera.facing,-this.cameraOrbitDistance);
+            const offset = vec3.scale([0, 0, 0], camera.facing, -this.cameraOrbitDistance);
 
-            camera.position = vec3.add([0,0,0],this.cameraOrbitCenter,offset);
+            camera.position = vec3.add([0, 0, 0], this.cameraOrbitCenter, offset);
             console.log(camera.position);
 
         });
@@ -59,26 +63,26 @@ export class BlenderNavigator extends ViewportNavigator {
 
 
 
-        if ((event.button === 1 || (event.button === 0 && this.keyboardButtonsPressed.has("AltLeft")))) {
+        if ((event.button === 1 || (event.button === 0 && KeyListener.combinationPressed("AltLeft")))) {
 
             await this.viewport.canvas.requestPointerLock();
 
-        
-            let u = this.viewport.camera.getRightVector();
-            let v = this.viewport.camera.getUpVector();
 
-            const pointerMove = (event:PointerEvent) => {
+
+
+            const pointerMove = (event: PointerEvent) => {
 
                 const diff = vec2.fromValues(event.movementX, event.movementY);
 
                 const facing = this.viewport.camera.facing;
 
-                
+                let u = this.viewport.camera.getRightVector();
+                let v = this.viewport.camera.getUpVector();
 
 
                 vec3.scale(u, u, diff[0] * this.cameraOrbitDistance);
                 vec3.scale(v, v, diff[1] * this.cameraOrbitDistance);
-                
+
 
 
                 vec3.add(u, u, v);
@@ -86,15 +90,16 @@ export class BlenderNavigator extends ViewportNavigator {
                 vec3.scale(u, u, -1 / 1000);
 
                 vec3.add(this.viewport.camera.position, u, this.viewport.camera.position);
-                vec3.add(this.cameraOrbitCenter,u,this.cameraOrbitCenter);
+                vec3.add(this.cameraOrbitCenter, u, this.cameraOrbitCenter);
             }
 
-            const pointerRotate = (event:PointerEvent) => {
+            const pointerRotate = (event: PointerEvent) => {
 
                 const diff = vec2.fromValues(event.movementX, event.movementY);
 
                 // build orbit please
-
+                let u = this.viewport.camera.getRightVector();
+                let v = this.viewport.camera.getUpVector();
 
 
 
@@ -111,21 +116,21 @@ export class BlenderNavigator extends ViewportNavigator {
 
             this.viewport.canvas.addEventListener("pointerup", (event: PointerEvent) => {
 
-                this.viewport.canvas.removeEventListener("pointermove",pointerMove);
+                this.viewport.canvas.removeEventListener("pointermove", pointerMove);
                 document.exitPointerLock();
 
             });
 
 
-        } 
+        }
 
-        
+
 
 
 
     }
 
-    
+
 
 
 
