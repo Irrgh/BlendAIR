@@ -52,7 +52,7 @@ export class Util {
     const y = vec[1];
     const z = vec[2];
 
-    let azimuth = Math.atan2(z, y);
+    let azimuth = Math.atan2(y, x);
     // Compute the length of the vector (r)
     let r = Math.sqrt(x * x + y * y + z * z);
 
@@ -68,9 +68,9 @@ export class Util {
 
 
   public static sphericalToCartesian (vec:SphericalCoordinate):vec3 {
-    const x = vec.r * Math.sin(vec.phi) * Math.cos(vec.theta)
-    const y = vec.r * Math.sin(vec.phi)
-    const z = vec.r * Math.cos(vec.phi)
+    const x = vec.r * Math.sin(vec.phi) * Math.cos(vec.theta);
+    const y = vec.r * Math.sin(vec.phi) * Math.sin(vec.theta);
+    const z = vec.r * Math.cos(vec.phi);
 
 
     return [x,y,z];
