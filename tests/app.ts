@@ -1,6 +1,6 @@
 import { WebGPU } from "../src/engine/WebGPU";
 import { Scene } from "../src/engine/Scene";
-import { Viewport } from "../src/engine/Viewport";
+import { Viewport } from '../src/engine/Viewport';
 import { TriangleMesh } from "../src/engine/TriangleMesh";
 import { Util } from "../src/util/Util";
 import { MeshInstance } from "../src/entity/MeshInstance";
@@ -69,7 +69,9 @@ export class App {
     
             entity.setPosition(Math.random()*10-2.5,Math.random()*10-2.5,Math.random()*10-2.5);
             vec3.scale(entity.scale,entity.scale,0.1);
-            vec3.random(entity.facing,1);
+            
+            entity.setFacing(vec3.random([0,0,0]));
+
             scene.addEntity(entity);
     
     
@@ -79,7 +81,7 @@ export class App {
     
         
     
-        vec3.normalize(viewport.camera.facing, vec3.fromValues(-1, -1, -1));
+        quat.setAxisAngle(viewport.camera.rotation,[-1,-1,-1],0);
     
         //viewport.camera.setOrthographicProjection(400,300,1,1000);
     
@@ -90,7 +92,16 @@ export class App {
             t += 0.01;
             
             scene.entities.forEach( (entity : MeshInstance, uuid : String) => {
-                quat.setAxisAngle(entity.rotation,entity.facing,t);
+
+
+                const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);
+                quat.multiply(entity.rotation,increment,entity.rotation);
+
+                
+                const vec : vec3 = [0,0,0];
+
+                
+
             })
     
             

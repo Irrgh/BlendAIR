@@ -9,8 +9,8 @@ export class BlenderNavigator extends ViewportNavigator {
 
     constructor(viewport: Viewport) {
         super(viewport);
-        this.polarFacing = Util.cartesianToSpherical(this.viewport.camera.facing);
-        this.cameraOrbitCenter = vec3.add([0,0,0],this.viewport.camera.facing,this.viewport.camera.position);
+        this.polarFacing = Util.cartesianToSpherical(this.viewport.camera.getForward());
+        this.cameraOrbitCenter = vec3.add([0,0,0],this.viewport.camera.getForward(),this.viewport.camera.position);
     }
 
 
@@ -25,8 +25,6 @@ export class BlenderNavigator extends ViewportNavigator {
 
         this.viewport.canvas.addEventListener("contextmenu", this.disableContextmenu);
 
-
-
         this.viewport.canvas.addEventListener("mousedown", this.mouseMove);
 
         this.viewport.canvas.addEventListener("wheel", (event: WheelEvent) => {
@@ -36,7 +34,7 @@ export class BlenderNavigator extends ViewportNavigator {
 
             const camera = this.viewport.camera;
 
-            const offset = vec3.scale([0, 0, 0], camera.facing, -this.polarFacing.r);
+            const offset = vec3.scale([0, 0, 0], camera.getForward(), -this.polarFacing.r);
 
             camera.position = vec3.add([0, 0, 0], this.cameraOrbitCenter, offset);
             console.log(this.polarFacing);
@@ -76,10 +74,12 @@ export class BlenderNavigator extends ViewportNavigator {
 
                 const diff = vec2.fromValues(event.movementX, event.movementY);
 
-                const facing = this.viewport.camera.facing;
+                const facing = this.viewport.camera.getForward();
 
-                let u = this.viewport.camera.getRightVector();
-                let v = this.viewport.camera.getUpVector();
+
+
+                let u = this.viewport.camera.getRight();
+                let v = this.viewport.camera.getUp();
 
 
                 vec3.scale(u, u, diff[0] * this.polarFacing.r);
@@ -90,6 +90,7 @@ export class BlenderNavigator extends ViewportNavigator {
                 vec3.add(u, u, v);
 
                 vec3.scale(u, u, -1 / 1000);
+                
 
                 vec3.add(this.viewport.camera.position, u, this.viewport.camera.position);
                 vec3.add(this.cameraOrbitCenter, u, this.cameraOrbitCenter);
@@ -100,8 +101,8 @@ export class BlenderNavigator extends ViewportNavigator {
                 const diff = vec2.fromValues(event.movementX, event.movementY);
 
                 // build orbit please
-                let u = this.viewport.camera.getRightVector();
-                let v = this.viewport.camera.getUpVector();
+                let u = this.viewport.camera.getRight();
+                let v = this.viewport.camera.getUp();
 
 
                 this.polarFacing.theta += diff[0] * 0.005;
@@ -109,8 +110,8 @@ export class BlenderNavigator extends ViewportNavigator {
 
                 const pos = Util.sphericalToCartesian(this.polarFacing);
                 this.viewport.camera.position = vec3.add([0,0,0],pos,this.cameraOrbitCenter);
-                this.viewport.camera.facing = vec3.normalize([0,0,0],vec3.sub([0,0,0],this.cameraOrbitCenter,this.viewport.camera.position));
-                this.viewport.camera.cameraUp = this.viewport.camera.getUpVector();
+                this.viewport.camera.setFacing(vec3.normalize([0,0,0],vec3.sub([0,0,0],this.cameraOrbitCenter,this.viewport.camera.position)));
+                //this.viewport.camera.cameraUp = this.viewport.camera.getUp();
 
             }
 

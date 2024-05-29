@@ -16,7 +16,7 @@ export abstract class Entity {
         this.position = position || vec3.create();
         this.rotation = rotation || quat.create();
         this.scale = scale || vec3.fromValues(1,1,1);
-        this.facing = vec3.fromValues(0,0,-1);
+        //this.facing = vec3.fromValues(0,0,-1);
         this.name = window.crypto.randomUUID(); /** @todo this probably shouldn't stay like this */
     }
 
@@ -44,7 +44,13 @@ export abstract class Entity {
     /**
      * Represent the direction the the entity facing.
      */
-    public facing: vec3;
+    private forward: vec3 = [0,1,0];
+
+    private up : vec3 = [0,0,1];
+
+    private right : vec3 = [1,0,0];
+
+
 
     /**
      * Returns the transformation matrix of the entity.
@@ -64,18 +70,15 @@ export abstract class Entity {
 
     public setXRotation(radians:number):void {
         quat.setAxisAngle(this.rotation,vec3.fromValues(1,0,0),radians);
-        vec3.rotateX(this.facing,this.facing,this.position,radians);
     }
 
     public setYRotation(radians:number):void {
         quat.setAxisAngle(this.rotation,vec3.fromValues(0,1,0),radians);
-        vec3.rotateY(this.facing,this.facing,this.position,radians);
     }
 
 
     public setZRotation(radians:number):void {
         quat.setAxisAngle(this.rotation,vec3.fromValues(0,0,1),radians);
-        vec3.rotateZ(this.facing,this.facing,this.position,radians);
     }
 
 
@@ -83,37 +86,63 @@ export abstract class Entity {
      * Calculates the right facing vector. 
      * @returns The {@link  vec3} facing right of {@link facing}
      */
-    public getRightVector():vec3 {
-        let u : vec3;
+    public getRight():vec3 {
+        const vec : vec3 = [0,0,0];
+        vec3.transformQuat(vec,this.right,this.rotation);
+        return vec;
+    }
 
-        if (this.facing[0] !== 0 || this.facing[1] !== 0) {
-            u = vec3.fromValues(this.facing[1], -this.facing[0], 0);
+    public getUp():vec3 {
+        const vec : vec3 = [0,0,0];
+        vec3.transformQuat(vec,this.up,this.rotation);
+        return vec;
+    }
+
+    public getForward():vec3 {
+        const vec : vec3 = [0,0,0];
+        vec3.transformQuat(vec,this.forward,this.rotation);
+        return vec;
+    }
+
+
+    /**
+     * Sets the {@link rotation} quaternion to face forward in the direction of {@link vec3} `dir`.
+     * @param dir A normalized {@link vec3}.
+     */
+    public setFacing(dir:vec3):void {
+        
+        const targetDirection = vec3.normalize([0,0,0], dir);
+    
+        const dot = vec3.dot(this.forward, targetDirection);
+    
+        if (dot < -0.999999) {
+            // Vectors are opposite; 180-degree rotation around any orthogonal axis (e.g., Z-axis)
+            quat.setAxisAngle(this.rotation, [0, 0, 1], Math.PI);
+        } else if (dot > 0.999999) {
+            // Vectors are already aligned
+            quat.identity(this.rotation);
         } else {
-            u = [1, 0, 0];
+            const rotationAxis = vec3.cross(vec3.create(), this.forward, targetDirection);
+            const rotationAngle = Math.acos(dot);
+            quat.setAxisAngle(this.rotation, rotationAxis, rotationAngle);
         }
-        return u;
+
+
+
     }
-
-    public getUpVector():vec3 {
-        let v : vec3 = [0,0,0];
-        return vec3.cross(v,this.facing,this.getRightVector());
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
