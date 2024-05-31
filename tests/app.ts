@@ -96,17 +96,11 @@ export class App {
 
                 const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);
                 quat.multiply(entity.rotation,increment,entity.rotation);
-
-                
-                const vec : vec3 = [0,0,0];
-
-                
-
+                quat.normalize(entity.rotation,entity.rotation);
             })
     
             
             const startTime = performance.now();
-            //console.log("eee");
             viewport.render();
     
             console.log(`render time in ms: ${performance.now() - startTime}`);

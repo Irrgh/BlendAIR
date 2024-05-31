@@ -73,8 +73,8 @@ export class Camera extends Entity {
         const direction = vec3.clone(this.getForward());
         mat4.identity(this.viewMatrix);
         mat4.lookAt(this.viewMatrix,
-            vec3.clone(this.position),
-            vec3.add([0,0,0],direction,this.position),
+            this.position,
+            vec3.add(vec3.create(),direction,this.position),
             this.getUp()
         );
         return this.viewMatrix;

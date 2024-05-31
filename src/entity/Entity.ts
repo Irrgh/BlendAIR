@@ -1,4 +1,5 @@
-import  {vec3, quat, mat4}  from "gl-matrix";
+import { vec3, quat, mat4, mat3 } from "gl-matrix";
+import { Camera } from "./Camera";
 
 
 /**
@@ -12,10 +13,10 @@ export abstract class Entity {
      * @param {quat} rotation  rotation of entity
      * @param {vec3} scale scale of entity
      */
-    constructor (position?:vec3, rotation?:quat, scale?:vec3) {
+    constructor(position?: vec3, rotation?: quat, scale?: vec3) {
         this.position = position || vec3.create();
         this.rotation = rotation || quat.create();
-        this.scale = scale || vec3.fromValues(1,1,1);
+        this.scale = scale || vec3.fromValues(1, 1, 1);
         //this.facing = vec3.fromValues(0,0,-1);
         this.name = window.crypto.randomUUID(); /** @todo this probably shouldn't stay like this */
     }
@@ -44,11 +45,11 @@ export abstract class Entity {
     /**
      * Represent the direction the the entity facing.
      */
-    private forward: vec3 = [0,1,0];
+    private forward: vec3 = [0, 1, 0];
 
-    private up : vec3 = [0,0,1];
+    private up: vec3 = [0, 0, 1];
 
-    private right : vec3 = [1,0,0];
+    private right: vec3 = [1, 0, 0];
 
 
 
@@ -57,28 +58,28 @@ export abstract class Entity {
      * Used inside the Shaders for transformation for local to world space.
      * @returns {mat4} matrix representing a the world transform.
      */
-    public getWorldTransform():mat4 {
+    public getWorldTransform(): mat4 {
         const mat = mat4.create();
-        return mat4.fromRotationTranslationScale(mat,this.rotation,this.position,this.scale);
+        return mat4.fromRotationTranslationScale(mat, this.rotation, this.position, this.scale);
     }
 
 
-    public setPosition (x:number,y:number,z:number) {
-        vec3.set(this.position,x,y,z);
+    public setPosition(x: number, y: number, z: number) {
+        vec3.set(this.position, x, y, z);
     }
 
 
-    public setXRotation(radians:number):void {
-        quat.setAxisAngle(this.rotation,vec3.fromValues(1,0,0),radians);
+    public setXRotation(radians: number): void {
+        quat.setAxisAngle(this.rotation, vec3.fromValues(1, 0, 0), radians);
     }
 
-    public setYRotation(radians:number):void {
-        quat.setAxisAngle(this.rotation,vec3.fromValues(0,1,0),radians);
+    public setYRotation(radians: number): void {
+        quat.setAxisAngle(this.rotation, vec3.fromValues(0, 1, 0), radians);
     }
 
 
-    public setZRotation(radians:number):void {
-        quat.setAxisAngle(this.rotation,vec3.fromValues(0,0,1),radians);
+    public setZRotation(radians: number): void {
+        quat.setAxisAngle(this.rotation, vec3.fromValues(0, 0, 1), radians);
     }
 
 
@@ -86,21 +87,21 @@ export abstract class Entity {
      * Calculates the right facing vector. 
      * @returns The {@link  vec3} facing right of {@link facing}
      */
-    public getRight():vec3 {
-        const vec : vec3 = [0,0,0];
-        vec3.transformQuat(vec,this.right,this.rotation);
+    public getRight(): vec3 {
+        const vec: vec3 = [0, 0, 0];
+        vec3.transformQuat(vec, this.right, this.rotation);
         return vec;
     }
 
-    public getUp():vec3 {
-        const vec : vec3 = [0,0,0];
-        vec3.transformQuat(vec,this.up,this.rotation);
+    public getUp(): vec3 {
+        const vec: vec3 = [0, 0, 0];
+        vec3.transformQuat(vec, this.up, this.rotation);
         return vec;
     }
 
-    public getForward():vec3 {
-        const vec : vec3 = [0,0,0];
-        vec3.transformQuat(vec,this.forward,this.rotation);
+    public getForward(): vec3 {
+        const vec: vec3 = [0, 0, 0];
+        vec3.transformQuat(vec, this.forward, this.rotation);
         return vec;
     }
 
@@ -109,12 +110,11 @@ export abstract class Entity {
      * Sets the {@link rotation} quaternion to face forward in the direction of {@link vec3} `dir`.
      * @param dir A normalized {@link vec3}.
      */
-    public setFacing(dir:vec3):void {
+    public setFacing(dir: vec3): void {
+
+        const targetDirection = vec3.normalize(vec3.create(), dir);
+        const dot = vec3.dot(this.getForward(), targetDirection);
         
-        const targetDirection = vec3.normalize([0,0,0], dir);
-    
-        const dot = vec3.dot(this.forward, targetDirection);
-    
         if (dot < -0.999999) {
             // Vectors are opposite; 180-degree rotation around any orthogonal axis (e.g., Z-axis)
             quat.setAxisAngle(this.rotation, [0, 0, 1], Math.PI);
@@ -122,12 +122,11 @@ export abstract class Entity {
             // Vectors are already aligned
             quat.identity(this.rotation);
         } else {
-            const rotationAxis = vec3.cross(vec3.create(), this.forward, targetDirection);
+            const rotationAxis = vec3.cross(vec3.create(), this.getForward(), targetDirection);
             const rotationAngle = Math.acos(dot);
             quat.setAxisAngle(this.rotation, rotationAxis, rotationAngle);
         }
-
-
+        
 
     }
 

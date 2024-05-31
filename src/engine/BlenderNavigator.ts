@@ -29,15 +29,13 @@ export class BlenderNavigator extends ViewportNavigator {
 
         this.viewport.canvas.addEventListener("wheel", (event: WheelEvent) => {
 
-            console.log(event.deltaY);
             this.polarFacing.r += Math.max(Math.log(this.polarFacing.r),0.1) * event.deltaY * 0.001 *(KeyListener.combinationPressed("ShiftLeft") ? 0.1 : 1);
 
             const camera = this.viewport.camera;
 
             const offset = vec3.scale([0, 0, 0], camera.getForward(), -this.polarFacing.r);
 
-            camera.position = vec3.add([0, 0, 0], this.cameraOrbitCenter, offset);
-            console.log(this.polarFacing);
+            vec3.add(camera.position, this.cameraOrbitCenter, offset);
 
         });
 
@@ -74,10 +72,6 @@ export class BlenderNavigator extends ViewportNavigator {
 
                 const diff = vec2.fromValues(event.movementX, event.movementY);
 
-                const facing = this.viewport.camera.getForward();
-
-
-
                 let u = this.viewport.camera.getRight();
                 let v = this.viewport.camera.getUp();
 
@@ -109,8 +103,23 @@ export class BlenderNavigator extends ViewportNavigator {
                 this.polarFacing.phi += diff[1] * 0.005;
 
                 const pos = Util.sphericalToCartesian(this.polarFacing);
-                this.viewport.camera.position = vec3.add([0,0,0],pos,this.cameraOrbitCenter);
-                this.viewport.camera.setFacing(vec3.normalize([0,0,0],vec3.sub([0,0,0],this.cameraOrbitCenter,this.viewport.camera.position)));
+                //this.viewport.camera.position = vec3.add([0,0,0],pos,this.cameraOrbitCenter);
+                
+                const horizontalRot : quat = quat.create();
+                const verticalRot : quat = quat.create();
+
+                quat.setAxisAngle(horizontalRot,[0,0,1],diff[0]*0.005);
+                quat.setAxisAngle(verticalRot, u, diff[1] * 0.005);
+                
+                const oldRotation = this.viewport.camera.rotation;
+
+                quat.mul(oldRotation,horizontalRot,oldRotation);
+                quat.normalize(oldRotation,oldRotation);
+                quat.mul(oldRotation,verticalRot,oldRotation);
+                quat.normalize(oldRotation,oldRotation);
+
+
+
                 //this.viewport.camera.cameraUp = this.viewport.camera.getUp();
 
             }
