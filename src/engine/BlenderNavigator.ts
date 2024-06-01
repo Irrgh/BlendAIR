@@ -10,6 +10,7 @@ export class BlenderNavigator extends ViewportNavigator {
     constructor(viewport: Viewport) {
         super(viewport);
         this.polarFacing = Util.cartesianToSpherical(this.viewport.camera.getForward());
+        this.polarFacing.phi -= Math.PI/2;
         this.cameraOrbitCenter = vec3.add([0,0,0],this.viewport.camera.getForward(),this.viewport.camera.position);
     }
 
@@ -25,7 +26,7 @@ export class BlenderNavigator extends ViewportNavigator {
 
         this.viewport.canvas.addEventListener("contextmenu", this.disableContextmenu);
 
-        this.viewport.canvas.addEventListener("mousedown", this.mouseMove);
+        this.viewport.canvas.addEventListener("mousedown", this.mouseDown);
 
         this.viewport.canvas.addEventListener("wheel", (event: WheelEvent) => {
 
@@ -53,10 +54,11 @@ export class BlenderNavigator extends ViewportNavigator {
         event.preventDefault();
     }
 
-    mouseMove = async (event: MouseEvent) => {
+    mouseDown = async (event: MouseEvent) => {
         event.preventDefault();
 
-
+        const startUp : vec3 = this.viewport.camera.getUp();
+        const horizontalRotationSign = vec3.dot([0,0,1],startUp) > 0 ? 1 : -1
 
 
 
@@ -70,7 +72,7 @@ export class BlenderNavigator extends ViewportNavigator {
 
             const pointerMove = (event: PointerEvent) => {
 
-                const diff = vec2.fromValues(event.movementX, event.movementY);
+                const diff = vec2.fromValues(event.movementX, -event.movementY);
 
                 let u = this.viewport.camera.getRight();
                 let v = this.viewport.camera.getUp();
@@ -99,22 +101,21 @@ export class BlenderNavigator extends ViewportNavigator {
                 let v = this.viewport.camera.getUp();
 
 
-                this.polarFacing.theta += diff[0] * 0.005;
+                this.polarFacing.theta += diff[0] * 0.005 * horizontalRotationSign;
                 this.polarFacing.phi += diff[1] * 0.005;
 
                 const pos = Util.sphericalToCartesian(this.polarFacing);
-                //this.viewport.camera.position = vec3.add([0,0,0],pos,this.cameraOrbitCenter);
+                vec3.add(this.viewport.camera.position,pos,this.cameraOrbitCenter);
                 
                 const horizontalRot : quat = quat.create();
                 const verticalRot : quat = quat.create();
 
-                quat.setAxisAngle(horizontalRot,[0,0,1],diff[0]*0.005);
-                quat.setAxisAngle(verticalRot, u, diff[1] * 0.005);
+                quat.setAxisAngle(horizontalRot,[0,0,1],diff[0]*0.005*horizontalRotationSign);
+                quat.setAxisAngle(verticalRot, u, -diff[1] * 0.005);
                 
                 const oldRotation = this.viewport.camera.rotation;
 
                 quat.mul(oldRotation,horizontalRot,oldRotation);
-                quat.normalize(oldRotation,oldRotation);
                 quat.mul(oldRotation,verticalRot,oldRotation);
                 quat.normalize(oldRotation,oldRotation);
 
