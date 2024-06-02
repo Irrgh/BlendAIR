@@ -492,7 +492,8 @@ export class Viewport implements Resizable {
                 ],
             },
             primitive: {
-                topology: "triangle-list",
+                topology: "line-strip",
+                stripIndexFormat:"uint32"
             },
             layout: this.pipeLineLayout,
             depthStencil: this.depthStencilState

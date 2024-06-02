@@ -8,11 +8,11 @@ export abstract class ContentWindow {
 
 
 
-    parent : StructureWindow;
+    //parent : StructureWindow;
 
-    headerElement : HTMLDivElement;
+    //headerElement : HTMLDivElement;
 
-    contentElement: HTMLDivElement | HTMLCanvasElement
+    //contentElement: HTMLDivElement | HTMLCanvasElement
 
     constructor () {
 

@@ -44,7 +44,8 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f {
 
 
 
-    var color = normal * dot(normal,normalize(vec3<f32>(1.0,2.0,3.0)));
+    //var color = normal * dot(normal,normalize(vec3<f32>(1.0,2.0,3.0)));
+    var color = vec3<f32>(1.0,1.0,1.0) / pos.z;
 
     return vec4<f32>(color,1.0);
 }
