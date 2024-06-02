@@ -20,17 +20,53 @@ declare type TriangleFace = {
     v3: number
 }
 
+
+
+/**
+ * Describes the result of a render op on a {@link Viewport} 
+ */
 declare type RenderLayers = {
+    /**
+     * Color pass of a render.
+     */
     albedo: GPUTexture,
+    /**
+     * Depth pass of a render. Is used for post processing effects like outlines.
+     */
     depth: GPUTexture,
+    /**
+     * Normal pass of a render.
+     */
     normal: GPUTexture,
+    /**
+     * Uv pass of a render. Not really sure if this i actually needed like this.
+     */
     uv: GPUTexture
 }
 
+/**
+ * A List of {@link String} describing keyboards codes [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/code)
+ */
 declare type KeyCombination = string[]
 
+
+
+
+/**
+ * Describes a point or vector in 3d space using spherical notation.
+ */
 declare type SphericalCoordinate = {
+    /**
+     * Radius of the vector.
+     */
     r:number,
-    phi: number, // elevation
+    /**
+     * Elevation (vertical component) of the vector.
+     */
+    phi: number,
+    /**
+     * Azimuth (horizontal component) of the vector.
+     */
     theta: number // azimuth
 }
+

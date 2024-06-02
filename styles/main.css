@@ -44,3 +44,16 @@
     background-color: rgb(119, 150, 149);
     z-index: 100;
 }
+
+.debug {
+    background-color: rgba(127, 255, 212, 0.411);
+}
+
+
+.invisible {
+    visibility: hidden;
+}
+
+.hidden {
+    display: none;;
+}
