@@ -7,7 +7,8 @@ import { TriangleMesh } from "./TriangleMesh";
 import { Camera } from "../entity/Camera";
 import { Resizable } from "../gui/Resizable";
 import { Util } from "../util/Util";
-import { ViewportNavigator } from './ViewportNavigator';
+import { Navigator } from "./Navigator";
+import { DebugOverlay } from "../gui/DebugOverlay";
 
 export enum ViewportRenderTypes {
     WIRE,
@@ -75,12 +76,10 @@ export class Viewport implements Resizable {
     private pipeLineLayout!: GPUPipelineLayout;
 
 
-
-
     width: number;
     height: number;
 
-    navigator:ViewportNavigator | undefined;
+    navigator:Navigator | undefined;
 
 
 
@@ -109,11 +108,20 @@ export class Viewport implements Resizable {
         //this.createBindgroup();
     }
 
-    setNavigator(viewportNavigator:ViewportNavigator):void {
+
+    
+
+    setNavigator(navigator:Navigator):void {
         this.navigator?.stop();
-        this.navigator = viewportNavigator;
+        this.navigator = navigator;
         this.navigator.use();
     }
+
+    
+
+
+
+
 
 
 

@@ -7,6 +7,7 @@ import { MeshInstance } from "../src/entity/MeshInstance";
 import { quat, vec3 } from "gl-matrix";
 import { BlenderNavigator } from '../src/engine/BlenderNavigator';
 import { KeyListener } from '../src/engine/KeyListener';
+import { Navigator } from "../src/engine/Navigator";
 
 
 export class App {
