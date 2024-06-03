@@ -79,7 +79,7 @@ export class Viewport implements Resizable {
     width: number;
     height: number;
 
-    navigator:Navigator | undefined;
+    private navigator?:Navigator;
 
 
 
@@ -349,14 +349,13 @@ export class Viewport implements Resizable {
             entries: [
                 {
                     binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
                     buffer: { type: "uniform" }
                 }, {
                     binding: 1,
                     visibility: GPUShaderStage.VERTEX,
                     buffer: {
-                        type: "read-only-storage",
-                        minBindingSize:0
+                        type: "read-only-storage"
                     }
                 }
             ]
@@ -492,8 +491,8 @@ export class Viewport implements Resizable {
                 ],
             },
             primitive: {
-                topology: "line-strip",
-                stripIndexFormat:"uint32"
+                topology: "triangle-list",
+                stripIndexFormat: undefined
             },
             layout: this.pipeLineLayout,
             depthStencil: this.depthStencilState
@@ -515,7 +514,7 @@ export class Viewport implements Resizable {
 
 
 
-        console.log(this.drawParameters);
+        //console.log(this.drawParameters);
 
         for (let k = 0; k < this.drawParameters.length; k += 5) {
 

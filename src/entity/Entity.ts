@@ -17,7 +17,6 @@ export abstract class Entity {
         this.position = position || vec3.create();
         this.rotation = rotation || quat.create();
         this.scale = scale || vec3.fromValues(1, 1, 1);
-        //this.facing = vec3.fromValues(0,0,-1);
         this.name = window.crypto.randomUUID(); /** @todo this probably shouldn't stay like this */
     }
 
@@ -85,7 +84,7 @@ export abstract class Entity {
 
     /**
      * Calculates the right facing vector. 
-     * @returns The {@link  vec3} facing right of {@link facing}
+     * @returns The {@link  vec3} facing right.
      */
     public getRight(): vec3 {
         const vec: vec3 = [0, 0, 0];
@@ -93,12 +92,20 @@ export abstract class Entity {
         return vec;
     }
 
+    /**
+     * Calculates the up facing vector. 
+     * @returns The {@link  vec3} facing up.
+     */
     public getUp(): vec3 {
         const vec: vec3 = [0, 0, 0];
         vec3.transformQuat(vec, this.up, this.rotation);
         return vec;
     }
 
+    /**
+     * Calculates the forward facing vector. 
+     * @returns The {@link  vec3} facing forward.
+     */
     public getForward(): vec3 {
         const vec: vec3 = [0, 0, 0];
         vec3.transformQuat(vec, this.forward, this.rotation);

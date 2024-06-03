@@ -10,23 +10,20 @@ export class Camera extends Entity {
         super();
         this.projectionMatrix = mat4.create();
         this.viewMatrix = mat4.create();
+        this.projection = "perspective";
         this.setPerspectiveProjection(1.5708, 16 / 9, 0.1, 100);
     }
     /**
      * Represents the camera projection needed for rendering.
      */
-    public projectionMatrix: mat4;
+    private projectionMatrix: mat4;
 
     /**
      * Represents the view projection needed for rendering.
      */
-    public viewMatrix: mat4;
+    private viewMatrix: mat4;
 
-    /**
-     * Default UP direction for a camera.
-     * @todo PLEASE DON'T DO THIS!
-     */
-    //public cameraUp: vec3;
+    private projection: Projection;
 
 
     /**
@@ -37,6 +34,7 @@ export class Camera extends Entity {
      * @param {number} far far clipping plane
      */
     public setOrthographicProjection(cx: number, cy: number, near: number, far: number): void {
+        this.projection = "orthographic";
         mat4.identity(this.projectionMatrix);
         mat4.ortho(this.projectionMatrix, -cx / 2, cx / 2, -cy / 2, cy / 2, near, far);
     }
@@ -51,6 +49,7 @@ export class Camera extends Entity {
      * @param {number} far far clipping plane
      */
     public setPerspectiveProjection(fovy: number, aspect: number, near: number, far: number): void {
+        this.projection = "perspective";
         mat4.identity(this.projectionMatrix);
         mat4.perspective(this.projectionMatrix, fovy, aspect, near, far);
     }
@@ -81,7 +80,9 @@ export class Camera extends Entity {
     }
 
 
-
+    public getProjectionType():Projection {
+        return this.projection;
+    }
 
 
 

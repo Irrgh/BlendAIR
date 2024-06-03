@@ -63,7 +63,7 @@ export class BlenderNavigator implements Navigator {
             
 
 
-            this.viewport.canvas.addEventListener("pointerup", this.mouseUp);
+            window.addEventListener("pointerup", this.mouseUp);
 
 
         }

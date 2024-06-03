@@ -70,3 +70,17 @@ declare type SphericalCoordinate = {
     theta: number // azimuth
 }
 
+declare type RenderTypes
+    = "wire"
+    | "basic"
+    | "preview"
+    | "final"
+
+
+declare type Projection
+    = "perspective"
+    | "orthographic"
+
+declare type ChildLayout
+    = "horizontal"
+    | "vertical"
