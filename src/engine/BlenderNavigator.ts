@@ -135,8 +135,8 @@ export class BlenderNavigator implements Navigator {
         
         const oldRotation = this.viewport.camera.rotation;
 
-        quat.mul(oldRotation,horizontalRot,oldRotation);
         quat.mul(oldRotation,verticalRot,oldRotation);
+        quat.mul(oldRotation,horizontalRot,oldRotation); 
         quat.normalize(oldRotation,oldRotation);
 
 
