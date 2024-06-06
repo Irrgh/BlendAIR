@@ -8,6 +8,7 @@ import { quat, vec3 } from "gl-matrix";
 import { BlenderNavigator } from '../src/engine/BlenderNavigator';
 import { KeyListener } from '../src/engine/KeyListener';
 import { Navigator } from "../src/engine/Navigator";
+import { ResizableWindow } from '../src/gui/ResizableWindow';
 
 
 export class App {
@@ -28,7 +29,10 @@ export class App {
 
     initialize = async () => {
 
-        
+        const root = ResizableWindow.initializeRootWindow("horizontal");
+        root.addChild(0);
+        root.addChild(0,100);
+
 
 
         const webgpu = await WebGPU.initializeInstance()
