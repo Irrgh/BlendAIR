@@ -10,15 +10,6 @@ import { Util } from "../util/Util";
 import { Navigator } from "./Navigator";
 import { DebugOverlay } from "../gui/DebugOverlay";
 
-export enum ViewportRenderTypes {
-    WIRE,
-    SOLID,
-    PREVIEW,
-    FINAL
-}
-
-
-
 
 export class Viewport implements Resizable {
 
@@ -87,6 +78,7 @@ export class Viewport implements Resizable {
         this.webgpu = webgpu;
         this.canvas = canvas;
         this.scene = scene;
+        this.scene.viewports.add(this);
         this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
         this.context = <GPUCanvasContext>canvas.getContext("webgpu");
         this.context.configure({
@@ -119,26 +111,23 @@ export class Viewport implements Resizable {
 
     
 
-
-
-
-
-
-
     resize(width: number, height: number): void {
-        throw new Error("Method not implemented.");
+        
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.width = width;
+        this.height = height;
 
+        const aspect = width / height;
 
-
-
-
+        this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1,100);
+        this.createRenderResults();
+        requestAnimationFrame(this.render);
 
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
     }
 
-    allowResize(): boolean {
-        throw new Error("Method not implemented.");
-    }
+    
 
 
 
@@ -312,6 +301,9 @@ export class Viewport implements Resizable {
 
         this.updateCameraUniform();
 
+        //console.log("vertex:", vertexArray);
+        //console.log("index:", indexArray);
+        //console.log("transform: ", transformAccumulator);
 
 
 
@@ -338,6 +330,12 @@ export class Viewport implements Resizable {
         const cameraDataBufferMap: Float32Array = new Float32Array(this.cameradataUniform.getMappedRange()); // cameraData
         cameraDataBufferMap.set(this.camera.getViewMatrix());
         cameraDataBufferMap.set(this.camera.getProjectionMatrix(), 16); // offset of one mat4x4
+
+        //console.log("view: ", this.camera.getViewMatrix());
+        //console.log("proj: ", this.camera.getProjectionMatrix());
+
+
+
         this.cameradataUniform.unmap();
     }
 
@@ -399,7 +397,14 @@ export class Viewport implements Resizable {
     /**
      * Redraws the scene
      */
-    public async render() {
+    public render = () => {
+
+        if (this.scene.entities.size == 0) {
+            return;
+        }
+
+
+
 
         const time = performance.now();
         this.createMeshBuffers();
@@ -443,17 +448,6 @@ export class Viewport implements Resizable {
 
         // creating buffers
 
-
-        
-
-        const cameraDataBuffer: GPUBuffer = this.webgpu.createBuffer({
-            size: 64 * 2,         // mat4x4 proj and view
-            usage: GPUBufferUsage.UNIFORM,
-            mappedAtCreation: true,
-            label: "cameraData-buffer"
-        }, "cameraData-buffer");
-
-        
 
 
         // setting up pipeline
@@ -512,7 +506,7 @@ export class Viewport implements Resizable {
         renderPass.setIndexBuffer(this.indexBuffer, "uint32");
         renderPass.setBindGroup(0, this.bindgroup);
 
-
+    
 
         //console.log(this.drawParameters);
 
@@ -520,7 +514,6 @@ export class Viewport implements Resizable {
 
 
             //this.webgpu.getDevice().queue.writeBuffer(transformIndexUniform,0,new Uint32Array([transformOffset]));
-
             renderPass.drawIndexed(this.drawParameters[k], this.drawParameters[k + 1], this.drawParameters[k + 2], 0, this.drawParameters[k + 4]);
 
 
@@ -532,7 +525,6 @@ export class Viewport implements Resizable {
 
         this.webgpu.getDevice().queue.submit([commandEncoder.finish()])
 
-        cameraDataBuffer.destroy();
         
         //depthStencilTexture.destroy();
 

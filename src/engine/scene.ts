@@ -14,7 +14,7 @@ export class Scene {
     /**
      * @todo All scene changing updates will be routed through here to prompt redrawing in all associated Viewports.
      */
-    viewports:Viewport[];
+    viewports:Set<Viewport>;
 
 
     /**
@@ -26,7 +26,7 @@ export class Scene {
 
     constructor() {
         this.entities = new Map<String,MeshInstance>();
-        this.viewports = [];
+        this.viewports = new Set<Viewport>();
 
     }
 

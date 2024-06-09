@@ -97,7 +97,6 @@ export class TriangleMesh {
 
                 if (currentLine.includes("/")) {
 
-                    //console.log("currentline: ",currentLine);
 
                     if (currentLine.match(all)) {
 
@@ -165,12 +164,6 @@ export class TriangleMesh {
                         }
                     });
                 }
-
-                if (i == 34) {
-                    console.log(`parsed on line ${i}:`,parsedVertices);
-                    console.log({...tempPos});
-                }
-                
 
 
                 const vertexIndicies: number[] = parsedVertices.map((vert) => {

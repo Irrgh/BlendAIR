@@ -87,7 +87,7 @@ export class BlenderNavigator implements Navigator {
         const offset = vec3.scale([0, 0, 0], camera.getForward(), -this.cameraPosition.r);
 
         vec3.add(camera.position, this.orbitCenter, offset);
-
+        requestAnimationFrame(this.viewport.render);
     }
 
     private pointerMove = (event: PointerEvent) => {
@@ -110,6 +110,7 @@ export class BlenderNavigator implements Navigator {
 
         vec3.add(this.viewport.camera.position, u, this.viewport.camera.position);
         vec3.add(this.orbitCenter, u, this.orbitCenter);
+        requestAnimationFrame(this.viewport.render);
     }
 
     private pointerRotate = (event: PointerEvent) => {
@@ -142,7 +143,7 @@ export class BlenderNavigator implements Navigator {
 
 
         //this.viewport.camera.cameraUp = this.viewport.camera.getUp();
-
+        requestAnimationFrame(this.viewport.render);
     }
 
 

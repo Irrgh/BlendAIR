@@ -103,14 +103,17 @@ export class ResizableWindow {
 
         if (this.children instanceof ContentWindow || this.children.length <= 1) {
             this.children = content;
+            content.setParent(this);
         } else {
             throw new Error("Cant set content since there are more than 1 children");
         }
     }
 
+    public getDiv() {
+        return this.div;
+    }
 
-
-    public addChild(index: number, size?: number) {
+    public addChild(index: number, size?: number):ResizableWindow {
 
 
         if (this.children instanceof ContentWindow) {
@@ -237,23 +240,10 @@ export class ResizableWindow {
             this.resizers.push(resizer);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
         }
 
 
-
+        return child;
     }
 
 
@@ -262,10 +252,6 @@ export class ResizableWindow {
 
 
 
-
-
-
-    
 
     private getResizerIndex(resizer: HTMLDivElement): number {
         for (let i = 0; i < this.resizers.length; i++) {
@@ -442,11 +428,10 @@ export class ResizableWindow {
 
     private setTopTo(top: number): void {
         if (top < 0) { throw new Error(`top is smaller than 0: ${top}`) }
-        const originalLayout = this.div.getBoundingClientRect();
-        const heightDifference = top - originalLayout.top;
-        this.height -= heightDifference;
-        this.div.style.top = `${top}px`;
-        this.div.style.height = `${this.height}px`;
+        const originalLayout = this.getBounds();
+        this.setHeight(this.height - top + originalLayout.top);
+        this.setTop(top);
+
 
         if (!(this.children instanceof ContentWindow) && this.children.length > 0) {
             switch (this.layout) {
@@ -462,10 +447,15 @@ export class ResizableWindow {
 
     private setBottomTo(bottom: number): void {
         if (bottom > window.innerHeight) { throw new Error(`bottom is greater than window.innerHeight: ${bottom}`) }
-        const originalLayout = this.div.getBoundingClientRect();
+        const originalLayout = this.getBounds();
         if (bottom <= originalLayout.top) { throw new Error(`no negative height allowed`) }
-        this.height = bottom - originalLayout.top;
-        this.div.style.height = `${this.height}px`;
+        
+        this.setHeight(bottom - originalLayout.top);
+
+        if (this.children instanceof ContentWindow) {
+            this.children.resize(this.width,this.height);
+        }
+
 
         if (!(this.children instanceof ContentWindow) && this.children.length > 0) {
             switch (this.layout) {
@@ -482,12 +472,19 @@ export class ResizableWindow {
 
     private setLeftTo(left: number): void {
         if (left < 0) { throw new Error(`left is smaller than 0: ${left}`) }
-        const originalLayout = this.div.getBoundingClientRect();
+        const originalLayout = this.getBounds();
         if (left >= originalLayout.right) { throw new Error(`no negative width allowed`) }
-        const widthDifference = originalLayout.left - left;
-        this.width += widthDifference;
-        this.div.style.left = `${left}px`;
-        this.div.style.width = `${this.width}px`;
+        
+        this.setWidth(this.width + originalLayout.left - left);
+        this.setLeft(left);
+
+        if (this.children instanceof ContentWindow) {
+            this.children.resize(this.width,this.height);
+        }
+
+
+
+
 
         if (!(this.children instanceof ContentWindow) && this.children.length > 0) {
             switch (this.layout) {
@@ -504,10 +501,13 @@ export class ResizableWindow {
 
     private setRightTo(right: number): void {
         if (right > window.innerWidth) { throw new Error(`right is greater than window.innerWidth: ${right}`) }
-        const originalLayout = this.div.getBoundingClientRect();
+        const originalLayout = this.getBounds();
         if (right <= originalLayout.left) { throw new Error(`no negative width allowed`) }
-        this.width = right - originalLayout.left;
-        this.div.style.width = `${this.width}px`;
+        this.setWidth(right - originalLayout.left);
+
+        if (this.children instanceof ContentWindow) {
+            this.children.resize(this.width,this.height);
+        }
 
         if (!(this.children instanceof ContentWindow) && this.children.length > 0) {
             switch (this.layout) {
