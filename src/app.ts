@@ -1,21 +1,26 @@
-import { WebGPU } from "../src/engine/WebGPU";
-import { Scene } from "../src/engine/Scene";
-import { Viewport } from '../src/engine/Viewport';
-import { TriangleMesh } from "../src/engine/TriangleMesh";
-import { Util } from "../src/util/Util";
-import { MeshInstance } from "../src/entity/MeshInstance";
+import { WebGPU } from "./engine/WebGPU";
+import { Scene } from "./engine/Scene";
+import { Viewport } from './engine/Viewport';
+import { TriangleMesh } from "./engine/TriangleMesh";
+import { Util } from "./util/Util";
+import { MeshInstance } from "./entity/MeshInstance";
 import { quat, vec3 } from "gl-matrix";
-import { BlenderNavigator } from '../src/engine/BlenderNavigator';
-import { KeyListener } from '../src/engine/KeyListener';
-import { Navigator } from "../src/engine/Navigator";
-import { ResizableWindow } from '../src/gui/ResizableWindow';
+import { BlenderNavigator } from './engine/BlenderNavigator';
+import { KeyListener } from './engine/KeyListener';
+import { Navigator } from "./engine/Navigator";
+import { ResizableWindow } from './gui/ResizableWindow';
+import { ViewportWindow } from "./gui/ViewportWindow";
 
 
 export class App {
     private static instance: App;
     
     
-    private constructor () {}
+    private constructor () {
+
+        this.loadedScenes = new Array();
+        this.currentScene = new Scene();
+    }
 
     
     public static getInstance():App {
@@ -26,18 +31,33 @@ export class App {
         return App.instance;
     }
 
+    private loadedScenes : Scene[];
+    public currentScene : Scene;
+    public webgpu! : WebGPU;
+
+
+
 
     initialize = async () => {
 
+        this.webgpu = await WebGPU.initializeInstance();
+        this.currentScene = new Scene();
+
+        if (true) {
         const root = ResizableWindow.initializeRootWindow("horizontal");
         root.addChild(0);
         root.addChild(0,100);
+        const child2 = root.addChild(1,200);
+
+        child2.setContent(new ViewportWindow());
+
+        }
 
 
 
-        const webgpu = await WebGPU.initializeInstance()
+        
     
-        const scene = new Scene();
+        
     
         const canvas = document.createElement("canvas");
         canvas.height = 600;
@@ -52,8 +72,8 @@ export class App {
         document.body.append(button);
     
     
-        const viewport = new Viewport(webgpu, canvas, scene);
-        viewport.setNavigator(new BlenderNavigator(viewport));
+        //const viewport = new Viewport(this.webgpu, canvas, this.currentScene);
+        //viewport.setNavigator(new BlenderNavigator(viewport));
     
         const model: string = await (await fetch("../assets/models/suzanne_smooth.obj")).text();
         const model1: string = await (await fetch("../assets/models/cube.obj")).text();
@@ -77,16 +97,22 @@ export class App {
             
             entity.setFacing(vec3.random([0,0,0]));
 
-            scene.addEntity(entity);
+            this.currentScene.addEntity(entity);
     
     
     
         }
     
-    
+        this.currentScene.entities.forEach( (entity : MeshInstance, uuid : String) => {
+
+
+            const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);
+            quat.multiply(entity.rotation,increment,entity.rotation);
+            quat.normalize(entity.rotation,entity.rotation);
+        })
         
     
-        quat.setAxisAngle(viewport.camera.rotation,[-1,-1,-1],0);
+        //quat.setAxisAngle(viewport.camera.rotation,[-1,-1,-1],0);
     
         //viewport.camera.setOrthographicProjection(400,300,1,1000);
     
@@ -96,7 +122,7 @@ export class App {
     
             t += 0.01;
             
-            scene.entities.forEach( (entity : MeshInstance, uuid : String) => {
+            this.currentScene.entities.forEach( (entity : MeshInstance, uuid : String) => {
 
 
                 const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);
@@ -106,7 +132,7 @@ export class App {
     
             
             const startTime = performance.now();
-            viewport.render();
+            //viewport.render();
     
             console.log(`render time in ms: ${performance.now() - startTime}`);
     
