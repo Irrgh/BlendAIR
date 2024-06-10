@@ -5,7 +5,7 @@ import { ContentWindow } from './ContentWindow';
 export class ResizableWindow {
 
     //** In pixel */
-    public static MINIMUM_DIMENSIONS: number = 50;
+    public static MINIMUM_DIMENSIONS: number = 25;
     public static RESIZER_THICKNESS: number = 3;
     private activeResizerIndex?: number;
 
@@ -113,7 +113,7 @@ export class ResizableWindow {
         return this.div;
     }
 
-    public addChild(index: number, size?: number):ResizableWindow {
+    public addChild(index: number, layout:ChildLayout, size?: number):ResizableWindow {
 
 
         if (this.children instanceof ContentWindow) {
@@ -126,7 +126,7 @@ export class ResizableWindow {
         let child: ResizableWindow;
 
         if (this.children.length === 0) {
-            child = new ResizableWindow(this.width, this.height, this);
+            child = new ResizableWindow(this.width, this.height, this, layout);
             this.div.append(child.div);
             this.children.push(child);
         } else {
@@ -135,7 +135,7 @@ export class ResizableWindow {
             const childrenAfter = this.children.slice(index);
             const childBefore = this.children[index];
 
-            child = new ResizableWindow(0, 0, this);
+            child = new ResizableWindow(0, 0, this, layout);
 
             this.children = childrenBefore.concat([child],childrenAfter);
 

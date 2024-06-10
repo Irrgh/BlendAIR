@@ -41,9 +41,11 @@ export class App {
 
         
         const root = ResizableWindow.initializeRootWindow("horizontal");
-        root.addChild(0);
-        root.addChild(0,100);
-        const child2 = root.addChild(1,800);
+        const right = root.addChild(0,"horizontal");
+        const left = root.addChild(0,"vertical",800);
+        left.addChild(0,"horizontal");
+        const child2 = left.addChild(0,"horizontal",600);
+        ;
 
         child2.setContent(new ViewportWindow());
 

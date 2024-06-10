@@ -37,7 +37,7 @@ export class ViewportWindow extends ContentWindow {
     
     resize(width: number, height: number): void {
         
-        this.viewport.resize(width,height-50);
+        this.viewport.resize(width,height-ResizableWindow.MINIMUM_DIMENSIONS);
 
 
     }
