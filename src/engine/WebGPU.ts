@@ -61,8 +61,6 @@ export class WebGPU {
 
         this.sharedBuffers = new Map<String, GPUBuffer>();
         this.sharedTextures = new Map<String, GPUTexture>();
-
-
     }
 
     /**

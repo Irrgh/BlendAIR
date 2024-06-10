@@ -52,7 +52,7 @@ export class Viewport implements Resizable {
     private depthStencilState: GPUDepthStencilState = {
         format: this.depthStencilFormat,
         depthWriteEnabled: true, // Enable writing to the depth buffer
-        depthCompare: "less" // Enable depth testing with "less" comparison
+        depthCompare: "less", // Enable depth testing with "less" comparison
     };
 
 
@@ -61,7 +61,7 @@ export class Viewport implements Resizable {
     private transformBuffer!: GPUBuffer;
     private cameradataUniform!: GPUBuffer;
 
-    private bindgroup!:GPUBindGroup;
+    private bindgroup!: GPUBindGroup;
 
     private drawParameters!: Uint32Array;
     private pipeLineLayout!: GPUPipelineLayout;
@@ -70,7 +70,7 @@ export class Viewport implements Resizable {
     width: number;
     height: number;
 
-    private navigator?:Navigator;
+    private navigator?: Navigator;
 
 
 
@@ -92,7 +92,7 @@ export class Viewport implements Resizable {
 
         this.camera = new Camera();
         this.camera.setPerspectiveProjection(Util.degreeToRadians(90), aspect, 0.1, 100);
-        this.camera.setPosition(1,1,1); /** @todo please change this  */
+        this.camera.setPosition(1, 1, 1); /** @todo please change this  */
 
         this.createRenderResults();
         this.createMeshBuffers();
@@ -101,33 +101,34 @@ export class Viewport implements Resizable {
     }
 
 
-    
 
-    setNavigator(navigator:Navigator):void {
+
+    setNavigator(navigator: Navigator): void {
         this.navigator?.stop();
         this.navigator = navigator;
         this.navigator.use();
     }
 
-    
+
 
     resize(width: number, height: number): void {
-        
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.width = width;
-        this.height = height;
 
-        const aspect = width / height;
+        if (width != this.width || height != this.height) {
+            this.canvas.width = width;
+            this.canvas.height = height;
+            this.width = width;
+            this.height = height;
 
-        this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1,100);
-        this.createRenderResults();
-        requestAnimationFrame(this.render);
+            const aspect = width / height;
 
+            this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1, 100);
+            this.createRenderResults();
+            requestAnimationFrame(this.render);
+        }
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
     }
 
-    
+
 
 
 
@@ -153,6 +154,7 @@ export class Viewport implements Resizable {
                 depthOrArrayLayers: 1
             },
             format: this.canvasFormat,
+            sampleCount:4,
             usage: usage,
             label: "albedo"
         });
@@ -164,6 +166,7 @@ export class Viewport implements Resizable {
                 depthOrArrayLayers: 1
             },
             format: this.depthStencilFormat,
+            sampleCount:4,
             usage: usage,
             label: "depth"
         });
@@ -237,8 +240,8 @@ export class Viewport implements Resizable {
 
                 const instances: MeshInstance[] = Array.from(mesh.instancedBy);
 
-                
-                instances.forEach((entity:MeshInstance) => {
+
+                instances.forEach((entity: MeshInstance) => {
                     transformAccumulator.push(...entity.getWorldTransform());
                 })
 
@@ -259,7 +262,7 @@ export class Viewport implements Resizable {
         this.vertexBuffer = device.createBuffer({
             size: vertexSize * 4 * 8,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
-            label:"vertex"
+            label: "vertex"
         });
 
 
@@ -268,7 +271,7 @@ export class Viewport implements Resizable {
         this.indexBuffer = device.createBuffer({
             size: indexSize * 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
-            label:"index"
+            label: "index"
         });
 
 
@@ -277,7 +280,7 @@ export class Viewport implements Resizable {
         this.transformBuffer = device.createBuffer({
             size: transformAccumulator.length * 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
-            label:"transform"
+            label: "transform"
         });
 
         const vertexArray = new Float32Array(vertexSize * 8);     // eight floats per vertex
@@ -321,10 +324,10 @@ export class Viewport implements Resizable {
         this.cameradataUniform?.destroy();
 
         this.cameradataUniform = this.webgpu.getDevice().createBuffer({
-            size: 64*2,
+            size: 64 * 2,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-            mappedAtCreation:true,
-            label:"camera"
+            mappedAtCreation: true,
+            label: "camera"
         })
 
         const cameraDataBufferMap: Float32Array = new Float32Array(this.cameradataUniform.getMappedRange()); // cameraData
@@ -340,7 +343,7 @@ export class Viewport implements Resizable {
     }
 
     public createBindgroup(): void {
-        
+
         const device = this.webgpu.getDevice();
 
         const bindGroupLayout: GPUBindGroupLayout = device.createBindGroupLayout({
@@ -384,7 +387,7 @@ export class Viewport implements Resizable {
 
 
 
-        
+
 
 
     }
@@ -409,16 +412,18 @@ export class Viewport implements Resizable {
         const time = performance.now();
         this.createMeshBuffers();
         console.log(`creating buffers took: ${performance.now() - time} ms`);
-        
+
         this.createBindgroup();
 
 
-        const depthStencilView = this.renderResults.depth.createView();
+        const depthStencilView = this.renderResults.depth.createView({
+
+        });
 
 
 
         const commandEncoder = this.webgpu.getDevice().createCommandEncoder({
-
+            label:"encoder"
         }); // definitely needs to be recreated every render pass
 
         const renderPassDescriptor: GPURenderPassDescriptor = {     // description of the renderpass
@@ -427,7 +432,8 @@ export class Viewport implements Resizable {
                     clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
-                    view: this.context.getCurrentTexture().createView({ label: "canvasTexture" }),
+                    view: this.renderResults.albedo.createView(),
+                    resolveTarget: this.context.getCurrentTexture().createView({label:"canvasTexture"}),
                 },
             ],
             depthStencilAttachment: {
@@ -458,9 +464,6 @@ export class Viewport implements Resizable {
             stepMode: "vertex"
         }
 
-
-        
-
         const shaderModule: GPUShaderModule = this.webgpu.getDevice().createShaderModule({
             code: shaderMain
         });
@@ -473,7 +476,7 @@ export class Viewport implements Resizable {
             vertex: {
                 module: shaderModule,
                 entryPoint: "vertex_main",
-                buffers: [vertexBufferLayout]
+                buffers: [vertexBufferLayout] 
             },
             fragment: {
                 module: shaderModule,
@@ -488,16 +491,15 @@ export class Viewport implements Resizable {
                 topology: "triangle-list",
                 stripIndexFormat: undefined
             },
-            layout: this.pipeLineLayout,
-            depthStencil: this.depthStencilState
+            layout: this.pipeLineLayout,            
+            depthStencil: this.depthStencilState,
+            multisample: {
+                count:4
+            }
         };
 
 
-
-        
-
         const pipeline = this.webgpu.getDevice().createRenderPipeline(pipelineDescriptor);
-
 
         const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
 
@@ -506,7 +508,7 @@ export class Viewport implements Resizable {
         renderPass.setIndexBuffer(this.indexBuffer, "uint32");
         renderPass.setBindGroup(0, this.bindgroup);
 
-    
+
 
         //console.log(this.drawParameters);
 
@@ -525,7 +527,7 @@ export class Viewport implements Resizable {
 
         this.webgpu.getDevice().queue.submit([commandEncoder.finish()])
 
-        
+
         //depthStencilTexture.destroy();
 
     }

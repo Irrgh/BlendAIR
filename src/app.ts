@@ -2,12 +2,8 @@ import { WebGPU } from "./engine/WebGPU";
 import { Scene } from "./engine/Scene";
 import { Viewport } from './engine/Viewport';
 import { TriangleMesh } from "./engine/TriangleMesh";
-import { Util } from "./util/Util";
 import { MeshInstance } from "./entity/MeshInstance";
 import { quat, vec3 } from "gl-matrix";
-import { BlenderNavigator } from './engine/BlenderNavigator';
-import { KeyListener } from './engine/KeyListener';
-import { Navigator } from "./engine/Navigator";
 import { ResizableWindow } from './gui/ResizableWindow';
 import { ViewportWindow } from "./gui/ViewportWindow";
 
@@ -43,34 +39,16 @@ export class App {
         this.webgpu = await WebGPU.initializeInstance();
         this.currentScene = new Scene();
 
-        if (true) {
+        
         const root = ResizableWindow.initializeRootWindow("horizontal");
         root.addChild(0);
         root.addChild(0,100);
-        const child2 = root.addChild(1,200);
+        const child2 = root.addChild(1,800);
 
         child2.setContent(new ViewportWindow());
 
-        }
-
-
-
         
-    
-        
-    
-        const canvas = document.createElement("canvas");
-        canvas.height = 600;
-        canvas.width = 800;
-        document.body.append(canvas);
-    
-        const button = document.createElement("button");
-        button.style.width = "50px";
-        button.style.height = "50px";
-        button.innerText = "Click to render";
-    
-        document.body.append(button);
-    
+
     
         //const viewport = new Viewport(this.webgpu, canvas, this.currentScene);
         //viewport.setNavigator(new BlenderNavigator(viewport));
@@ -80,6 +58,12 @@ export class App {
     
         const mesh: TriangleMesh = TriangleMesh.parseFromObj(model);
         const mesh2: TriangleMesh = TriangleMesh.parseFromObj(model1);
+
+        
+
+
+
+
     
     
         console.log("mesh1: ", mesh);
@@ -111,6 +95,10 @@ export class App {
             quat.normalize(entity.rotation,entity.rotation);
         })
         
+        this.currentScene.viewports.forEach((viewport:Viewport) => {
+            requestAnimationFrame(viewport.render);
+        })
+
     
         //quat.setAxisAngle(viewport.camera.rotation,[-1,-1,-1],0);
     
@@ -138,16 +126,6 @@ export class App {
     
             console.clear();
             requestAnimationFrame(renderLoop)
-        }
-    
-    
-    
-    
-    
-        button.onclick = () => {
-    
-            console.log("button clicked");
-            renderLoop();
         }
     
     }
