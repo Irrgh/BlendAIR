@@ -84,3 +84,13 @@ declare type Projection
 declare type ChildLayout
     = "horizontal"
     | "vertical"
+
+
+declare type PassResource = {
+    label : String,
+    resource : "buffer", "texture"
+}
+
+interface Window {
+    showOpenFilePicker(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>;
+}

@@ -154,7 +154,6 @@ export class Viewport implements Resizable {
                 depthOrArrayLayers: 1
             },
             format: this.canvasFormat,
-            sampleCount:4,
             usage: usage,
             label: "albedo"
         });
@@ -166,7 +165,6 @@ export class Viewport implements Resizable {
                 depthOrArrayLayers: 1
             },
             format: this.depthStencilFormat,
-            sampleCount:4,
             usage: usage,
             label: "depth"
         });
@@ -426,6 +424,18 @@ export class Viewport implements Resizable {
             label:"encoder"
         }); // definitely needs to be recreated every render pass
 
+        
+        const objectIndexTexture = this.webgpu.getDevice().createTexture({
+            size: {width:this.width, height:this.height},
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+            label:"objectIndex"
+        })
+
+
+
+
+
         const renderPassDescriptor: GPURenderPassDescriptor = {     // description of the renderpass
             colorAttachments: [
                 {
@@ -433,8 +443,12 @@ export class Viewport implements Resizable {
                     loadOp: "clear",
                     storeOp: "store",
                     view: this.renderResults.albedo.createView(),
-                    resolveTarget: this.context.getCurrentTexture().createView({label:"canvasTexture"}),
-                },
+                }, {
+                    clearValue: {r:0,g:0,b:1,a:1},
+                    loadOp: "clear",
+                    storeOp: "store",
+                    view:this.context.getCurrentTexture().createView({label:"canvasTexture"}),
+                }
             ],
             depthStencilAttachment: {
                 view: depthStencilView,
@@ -484,7 +498,9 @@ export class Viewport implements Resizable {
                 targets: [
                     {
                         format: this.canvasFormat,
-                    },
+                    }, {
+                        format: this.canvasFormat,
+                    }
                 ],
             },
             primitive: {
@@ -493,9 +509,6 @@ export class Viewport implements Resizable {
             },
             layout: this.pipeLineLayout,            
             depthStencil: this.depthStencilState,
-            multisample: {
-                count:4
-            }
         };
 
 
