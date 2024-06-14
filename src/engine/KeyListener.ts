@@ -5,6 +5,7 @@ export class KeyListener {
         this.keyboardButtonsPressed = new Set<String>();
         document.addEventListener("keydown",this.keyPressed);
         document.addEventListener("keyup",this.keyReleased);
+        document.addEventListener("visibilitychange", this.visibility);
 
 
     }
@@ -31,6 +32,14 @@ export class KeyListener {
     private keyReleased = (event:KeyboardEvent) => {
         this.keyboardButtonsPressed.delete(event.code);
     }
+
+    private visibility = (event : Event) => {
+        this.keyboardButtonsPressed.clear()
+    }
+
+
+
+
 
     /**
      * Returns true if all supplied {@link keys} are pressed.
