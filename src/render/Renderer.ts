@@ -1,18 +1,17 @@
 import { Viewport } from "../engine/Viewport";
 import { WebGPU } from "../engine/WebGPU";
-import { RenderPass } from "./RenderPass";
+import { RenderPass } from "./pass/RenderPass";
 import { RenderGraph } from './RenderGraph';
+import { App } from "../app";
 
 export abstract class Renderer {
-    private viewport: Viewport;
     public webgpu: WebGPU;
 
-    constructor(name:String,viewport:Viewport, webgpu:WebGPU) {
-        this.viewport = viewport;
+    constructor(name:String) {
         this.sharedBuffers = new Map<String, GPUBuffer>();
         this.sharedTextures = new Map<String, GPUTexture>();
-        this.webgpu = webgpu;
-        this.passGraph = new RenderGraph();
+        this.webgpu = App.getInstance().webgpu;
+        this.passes = [];
         this.name = name;
     }
 
@@ -29,8 +28,7 @@ export abstract class Renderer {
 
     private name : String;
 
-    private passGraph:RenderGraph;
-
+    protected passes : RenderPass[];
 
 
     /**
@@ -156,7 +154,7 @@ export abstract class Renderer {
 
 
 
-    public abstract render():void
+    public abstract render(viewport:Viewport):void
 
 
 

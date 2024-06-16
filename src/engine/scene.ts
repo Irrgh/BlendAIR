@@ -1,5 +1,5 @@
 import { Camera } from "../entity/Camera";
-import { Entity } from "../entity/Entity";
+import { Entity } from '../entity/Entity';
 import { MeshInstance } from "../entity/MeshInstance";
 import { TriangleMesh } from "./TriangleMesh";
 import { Viewport } from "./Viewport";
@@ -9,12 +9,16 @@ export class Scene {
     /**
      * All entities except viewport Camera are included in here;
      */
-    entities : Map<String,MeshInstance>
+    entities : Map<String,Entity>
 
     /**
      * @todo All scene changing updates will be routed through here to prompt redrawing in all associated Viewports.
      */
     viewports:Set<Viewport>;
+
+    public primarySelection?: Entity;
+    public selections: Set<Entity>;
+
 
 
     /**
@@ -27,7 +31,7 @@ export class Scene {
     constructor() {
         this.entities = new Map<String,MeshInstance>();
         this.viewports = new Set<Viewport>();
-
+        this.selections = new Set<Entity>;
     }
 
     /**
@@ -42,6 +46,12 @@ export class Scene {
 
         });
 
+    }
+
+
+    public getId(entity:Entity):number {
+        throw new Error("This method is not implemented yet.");
+        // I probably need to change the entity Map or something
     }
 
 

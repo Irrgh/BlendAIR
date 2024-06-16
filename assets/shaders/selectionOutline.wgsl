@@ -15,13 +15,15 @@ struct Selections {
 @binding(0) @group(1) var colorTexture : texture_storage_2d<rgba8unorm,read_write>;
 @binding(1) @group(1) var depthTexture : texture_storage_2d<r32float,read>;
 @binding(2) @group(1) var objectTexture : texture_storage_2d<r32uint,read>;
-@binding(3) @group(1) var<storage,read> selections : Selections;
-@binding(4) @group(1) var<uniform> resolution : vec2<u32>;
+@binding(3) @group(1) var combinedTexture : texture_storage_2d<rgba8unorm,write>;
+@binding(4) @group(1) var selectionTexture : texture_storage_2d<rgba8unorm,write>;  
+@binding(5) @group(1) var<storage,read> selections : Selections;
+@binding(6) @group(1) var<uniform> resolution : vec2<u32>;
 
 
 
 
-@compute @workgroup_size(64, 64)
+@compute @workgroup_size(1, 1)    // todo replace workgroup size dynamically
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
@@ -46,7 +48,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             let gradient = sqrt(gx * gx + gy * gy);
 
-            textureStore(colorTexture, vec2<u32>(x, y), vec4<f32>(gradient, gradient, gradient, 1.0));
+            let color : vec4<f32> = vec4<f32>(gradient,gradient,gradient,1.0);
+
+
+            textureStore(selectionTexture, vec2<u32>(x, y), color);
+            textureStore(colorTexture, vec2<u32>(x,y), color);
         //}
 
         //return;

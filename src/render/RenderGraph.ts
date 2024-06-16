@@ -1,3 +1,5 @@
+import { RenderPass } from "./pass/RenderPass";
+
 /**
  * 
  * When rendering multiple different {@link RenderPass} in a {@link Renderer} there are always some dependencies between the used resources
@@ -5,4 +7,17 @@
  */
 export class RenderGraph {
 
+    static topSort(passes:RenderPass[]):RenderPass[] {
+        throw new Error("This method is not implemented yet");
+
+
+
+        return [];
+    }
+
+
+
+
 }
+
+

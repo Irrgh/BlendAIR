@@ -6,6 +6,7 @@ import { MeshInstance } from "./entity/MeshInstance";
 import { quat, vec3 } from "gl-matrix";
 import { ResizableWindow } from './gui/ResizableWindow';
 import { ViewportWindow } from "./gui/ViewportWindow";
+import { Entity } from "./entity/Entity";
 
 export class App {
     private static instance: App;
@@ -67,18 +68,19 @@ export class App {
         console.log("mesh2: ", mesh2);
     
     
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 1000; i++) {
     
             let entity : MeshInstance;
     
             Math.random() < 0.5 ? entity = new MeshInstance(mesh) : entity = new MeshInstance(mesh2);
             entity.setPosition(Math.random()*10-2.5,Math.random()*10-2.5,Math.random()*10-2.5);
+            entity.scale = [0.1,0.1,0.1];
             entity.setFacing(vec3.random([0,0,0]));
             this.currentScene.addEntity(entity);
     
         }
     
-        this.currentScene.entities.forEach( (entity : MeshInstance, uuid : String) => {
+        this.currentScene.entities.forEach( (entity : Entity, uuid : String) => {
             const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);
             quat.multiply(entity.rotation,increment,entity.rotation);
             quat.normalize(entity.rotation,entity.rotation);
@@ -104,7 +106,7 @@ export class App {
     
             t += 0.01;
             
-            this.currentScene.entities.forEach( (entity : MeshInstance, uuid : String) => {
+            this.currentScene.entities.forEach((entity : Entity, uuid : String) => {
 
 
                 const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);

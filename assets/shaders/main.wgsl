@@ -39,7 +39,8 @@ fn vertex_main(@location(0) position: vec3<f32>,
 
 struct FragmentOut {
     @location(0) color : vec4<f32>,
-    @location(1) objects: vec4<f32>
+    @location(1) objects: vec4<f32>,
+    @location(2) depth: f32 
 }
 
 
@@ -60,6 +61,7 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
     var output : FragmentOut;
     output.color = vec4<f32>(color,1.0);
     output.objects = vec4<f32> (modf(f32(fragData.objectId) / 255).fract,0.0,0.0,1.0);
+    output.depth = pos.z;
 
 
     return output;

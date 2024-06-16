@@ -9,6 +9,7 @@ import { Resizable } from "../gui/Resizable";
 import { Util } from "../util/Util";
 import { Navigator } from "./Navigator";
 import { DebugOverlay } from "../gui/DebugOverlay";
+import { Entity } from "../entity/Entity";
 
 
 export class Viewport implements Resizable {
@@ -217,7 +218,12 @@ export class Viewport implements Resizable {
 
         let visited = new Set<TriangleMesh>;
 
-        this.scene.entities.forEach((object: MeshInstance, name: String) => {
+        this.scene.entities.forEach((object: Entity, name: String) => {
+
+            if (!(object instanceof MeshInstance)) {
+                return;
+            }
+
 
             const mesh: TriangleMesh = object.mesh;
 
@@ -421,18 +427,23 @@ export class Viewport implements Resizable {
 
 
         const commandEncoder = this.webgpu.getDevice().createCommandEncoder({
-            label:"encoder"
+            label: "encoder"
         }); // definitely needs to be recreated every render pass
 
-        
+
         const objectIndexTexture = this.webgpu.getDevice().createTexture({
-            size: {width:this.width, height:this.height},
+            size: { width: this.width, height: this.height },
             format: "rgba8unorm",
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
-            label:"objectIndex"
+            label: "objectIndex"
         })
 
-
+        const readableDepthTexture = this.webgpu.getDevice().createTexture({
+            size: { width: this.width, height: this.height },
+            format: "r32float",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+            label: "readable-depth"
+        });
 
 
 
@@ -444,10 +455,14 @@ export class Viewport implements Resizable {
                     storeOp: "store",
                     view: this.renderResults.albedo.createView(),
                 }, {
-                    clearValue: {r:0,g:0,b:1,a:1},
+                    clearValue: { r: 0, g: 0, b: 1, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
-                    view:this.context.getCurrentTexture().createView({label:"canvasTexture"}),
+                    view: this.context.getCurrentTexture().createView({ label: "canvasTexture" }),
+                }, {
+                    loadOp: "clear",
+                    storeOp: "store",
+                    view: readableDepthTexture.createView()
                 }
             ],
             depthStencilAttachment: {
@@ -490,7 +505,7 @@ export class Viewport implements Resizable {
             vertex: {
                 module: shaderModule,
                 entryPoint: "vertex_main",
-                buffers: [vertexBufferLayout] 
+                buffers: [vertexBufferLayout]
             },
             fragment: {
                 module: shaderModule,
@@ -500,6 +515,8 @@ export class Viewport implements Resizable {
                         format: this.canvasFormat,
                     }, {
                         format: this.canvasFormat,
+                    }, {
+                        format: "r32float"
                     }
                 ],
             },
@@ -507,7 +524,7 @@ export class Viewport implements Resizable {
                 topology: "triangle-list",
                 stripIndexFormat: undefined
             },
-            layout: this.pipeLineLayout,            
+            layout: this.pipeLineLayout,
             depthStencil: this.depthStencilState,
         };
 
@@ -535,7 +552,12 @@ export class Viewport implements Resizable {
 
         }
 
+
+
+
         renderPass.end();
+
+        
 
 
         this.webgpu.getDevice().queue.submit([commandEncoder.finish()])

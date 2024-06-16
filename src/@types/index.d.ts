@@ -59,7 +59,7 @@ declare type SphericalCoordinate = {
     /**
      * Radius of the vector.
      */
-    r:number,
+    r: number,
     /**
      * Elevation (vertical component) of the vector.
      */
@@ -86,10 +86,17 @@ declare type ChildLayout
     | "vertical"
 
 
+/**
+ * A GPU Resource imported / exported from a Renderer into a RenderPass
+ */
 declare type PassResource = {
-    label : String,
-    resource : "buffer", "texture"
+    label: String,
+    resource: "buffer" | "texture",
+    description?: String
 }
+
+
+
 
 interface Window {
     showOpenFilePicker(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>;
