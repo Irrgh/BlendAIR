@@ -156,7 +156,8 @@ export class Viewport implements Resizable {
             },
             format: this.canvasFormat,
             usage: usage,
-            label: "albedo"
+            label: "albedo",
+            sampleCount: 4
         });
 
         const depth = device.createTexture({
@@ -167,7 +168,8 @@ export class Viewport implements Resizable {
             },
             format: this.depthStencilFormat,
             usage: usage,
-            label: "depth"
+            label: "depth",
+            sampleCount: 4
         });
 
         const normal = device.createTexture({
@@ -433,16 +435,18 @@ export class Viewport implements Resizable {
 
         const objectIndexTexture = this.webgpu.getDevice().createTexture({
             size: { width: this.width, height: this.height },
-            format: "rgba8unorm",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
-            label: "objectIndex"
+            format: "bgra8unorm",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT  | GPUTextureUsage.TEXTURE_BINDING,
+            label: "objectIndex",
+            sampleCount:4
         })
 
         const readableDepthTexture = this.webgpu.getDevice().createTexture({
             size: { width: this.width, height: this.height },
             format: "r32float",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
-            label: "readable-depth"
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+            label: "readable-depth",
+            sampleCount:4
         });
 
 
@@ -458,7 +462,8 @@ export class Viewport implements Resizable {
                     clearValue: { r: 0, g: 0, b: 1, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
-                    view: this.context.getCurrentTexture().createView({ label: "canvasTexture" }),
+                    view: objectIndexTexture.createView(),
+                    resolveTarget: this.context.getCurrentTexture().createView({ label: "canvasTexture" })
                 }, {
                     loadOp: "clear",
                     storeOp: "store",
@@ -526,6 +531,9 @@ export class Viewport implements Resizable {
             },
             layout: this.pipeLineLayout,
             depthStencil: this.depthStencilState,
+            multisample: {
+                count:4
+            }
         };
 
 
@@ -562,7 +570,8 @@ export class Viewport implements Resizable {
 
         this.webgpu.getDevice().queue.submit([commandEncoder.finish()])
 
-
+        readableDepthTexture.destroy();
+        objectIndexTexture.destroy();
         //depthStencilTexture.destroy();
 
     }
