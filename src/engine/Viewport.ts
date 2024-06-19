@@ -71,13 +71,6 @@ export class Viewport implements Resizable {
 
     private renderer: Renderer;
 
-    /**
-     * Has the camera changed in some way since the last frame rendered.
-     * This includes FOV, resolution, transforms.
-     */
-    public cameraChanged: boolean = true;
-
-
 
     width: number;
     height: number;

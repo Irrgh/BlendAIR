@@ -3,7 +3,6 @@ import { WebGPU } from "../engine/WebGPU";
 import { RenderPass } from "./pass/RenderPass";
 import { RenderGraph } from './RenderGraph';
 import { App } from "../app";
-import { ReactiveBuffer } from "../@types";
 
 export abstract class Renderer {
     public webgpu: WebGPU;
@@ -195,6 +194,8 @@ export abstract class Renderer {
         cameraViews.proj.set(viewport.camera.getProjectionMatrix());
         cameraViews.width.set([viewport.width]);
         cameraViews.height.set([viewport.height]);
+
+        renderer.destroyBuffer("camera");
 
         const cameraBuffer: GPUBuffer = renderer.createBuffer({
             size: cameraValues.byteLength,

@@ -3,11 +3,15 @@ import { RenderPass } from "./RenderPass";
 import { Scene } from "../../engine/Scene";
 import { Viewport } from "../../engine/Viewport";
 import { App } from "../../app";
+import { TriangleMesh } from "../../engine/TriangleMesh";
+import { MeshInstance } from "../../entity/MeshInstance";
+import { Entity } from "../../entity/Entity";
 
 /**
  * The TrianglePass takes all TriangleMeshes of the {@link Scene.entities | Scene's entities} and renders them using
  */
 export class TrianglePass extends RenderPass {
+    private drawParameters: Uint32Array;
     
     constructor() {
 
@@ -50,12 +54,139 @@ export class TrianglePass extends RenderPass {
         ]
 
         super(input, output);
+        this.drawParameters = new Uint32Array(5);
 
     }
 
     
 
+    
+    /**
+     * Updates the mesh
+     * @param viewport 
+     */
+    public updateMeshBuffer(viewport: Viewport): void {
 
+
+
+        let objectCount = 0;
+        let vertexSize = 0;
+        let indexSize = 0;
+
+        const vertexAccumulator: Float32Array[] = [];
+        const indexAccumulator: Uint32Array[] = [];
+        const transformAccumulator: number[] = [];
+        const drawParameters: number[] = [];
+
+        let visited = new Set<TriangleMesh>;
+
+        viewport.scene.entities.forEach((object: Entity, name: String) => {
+
+            if (!(object instanceof MeshInstance)) {
+                return;
+            }
+
+
+            const mesh: TriangleMesh = object.mesh;
+
+            if (!visited.has(mesh)) {
+
+                visited.add(mesh);
+
+                vertexAccumulator.push(mesh.vertexBuffer);
+                indexAccumulator.push(mesh.elementBuffer.map((index) => { return vertexSize + index }));      // every mesh get a new "index space"
+
+                drawParameters.push(
+                    mesh.elementBuffer.length,          // index count
+                    mesh.instancedBy.size,              // instance count
+                    indexSize,                          // first index
+                    0,                                  // base index
+                    objectCount    // first instance
+                );
+
+                const instances: MeshInstance[] = Array.from(mesh.instancedBy);
+
+
+                instances.forEach((entity: MeshInstance) => {
+                    transformAccumulator.push(...entity.getWorldTransform());
+                })
+
+                objectCount += mesh.instancedBy.size;
+                vertexSize += mesh.vertexBuffer.length / 8;
+                indexSize += mesh.elementBuffer.length;
+
+
+            }
+        });
+
+
+        
+        const renderer : Renderer = viewport.getRenderer();
+
+        renderer.destroyBuffer("vertex");
+
+        const vertexBuffer = renderer.createBuffer({
+            size: vertexSize * 4 * 8,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
+            label: "vertex"
+        },"vertex",this.updateMeshBuffer);
+
+
+        renderer.destroyBuffer("index");
+
+        const indexBuffer = renderer.createBuffer({
+            size: indexSize * 4,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
+            label: "index"
+        },"index",this.updateMeshBuffer);
+
+
+        renderer.destroyBuffer("transform");
+
+        const transformBuffer = renderer.createBuffer({
+            size: transformAccumulator.length * 4,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
+            label: "transform"
+        },"transform",this.updateMeshBuffer);
+
+        const vertexArray = new Float32Array(vertexSize * 8);     // eight floats per vertex
+
+        vertexAccumulator.reduce((offset: number, current: Float32Array) => {
+            vertexArray.set(current, offset);
+            return offset + current.length;
+        }, 0);
+
+
+
+        const indexArray = new Uint32Array(indexSize);
+
+        indexAccumulator.reduce((offset: number, current: Uint32Array) => {
+            indexArray.set(current, offset);
+            return offset + current.length;
+        }, 0);
+
+
+        //console.log("vertex:", vertexArray);
+        //console.log("index:", indexArray);
+        //console.log("transform: ", transformAccumulator);
+
+
+
+        const device : GPUDevice = App.getRenderDevice();
+
+        device.queue.writeBuffer(vertexBuffer, 0, vertexArray);
+        device.queue.writeBuffer(indexBuffer, 0, indexArray);
+        device.queue.writeBuffer(transformBuffer, 0, new Float32Array(transformAccumulator));
+        this.drawParameters = new Uint32Array(drawParameters);
+
+
+
+
+
+
+
+
+    }
 
 
 
@@ -85,7 +216,7 @@ export class TrianglePass extends RenderPass {
             label: "normal"
         }, "normal");
 
-        const cameraUniformBuffer = renderer.getBuffer("camera");
+        const cameraUniformBuffer : GPUBuffer = renderer.getBuffer("camera").buffer;
 
 
 

@@ -101,7 +101,7 @@ export class SelectionOutlinePass extends RenderPass {
 
         /**  defining resolution Buffer  @todo probably move this into camera data buffer as a common buffer */
 
-        const cameraUniformBuffer : GPUBuffer = renderer.getBuffer("camera");
+        const cameraUniformBuffer : GPUBuffer = renderer.getBuffer("camera").buffer;
 
         device.queue.writeBuffer(selectionBuffer,0,selectionsValues);
 

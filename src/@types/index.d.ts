@@ -1,5 +1,3 @@
-import { Viewport } from "../engine/Viewport";
-import { Renderer } from "../render/Renderer";
 
 declare module '*.wgsl' {
     const value: string;
@@ -26,7 +24,7 @@ declare type TriangleFace = {
 
 
 /**
- * Describes the result of a render op on a {@link Viewport} 
+ * Describes the result of a render op on a Viewport.
  */
 declare type RenderLayers = {
     /**

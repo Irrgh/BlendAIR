@@ -3,45 +3,28 @@ import { Viewport } from '../engine/Viewport';
 import { TrianglePass } from "./pass/TrianglePass";
 import { RenderPass } from "./pass/RenderPass";
 import { RenderGraph } from "./RenderGraph";
+import { MeshInstance } from "../entity/MeshInstance";
+import { Entity } from "../entity/Entity";
+import { TriangleMesh } from "../engine/TriangleMesh";
+import { App } from "../app";
 
 export class BasicRenderer extends Renderer {
-    
-    constructor () {
+
+    constructor() {
         super("basic");
         this.passes = [new TrianglePass()]
     }
 
 
-    /**
-     * Updates the mesh
-     * @param viewport 
-     */
-    public updateMeshBuffer (viewport):void {
 
-
-
-
-
-    } 
-
-
-
-
-
-
-
-
-    public render(viewport:Viewport): void {
-        
-        this.updateCameraData(viewport);
-
+    public render(viewport: Viewport): void {
 
         const sorted = RenderGraph.topSort(this.passes);
 
 
-        this.passes.forEach((pass:RenderPass) => {
+        this.passes.forEach((pass: RenderPass) => {
 
-            pass.render(this,viewport);
+            pass.render(this, viewport);
 
         });
 
