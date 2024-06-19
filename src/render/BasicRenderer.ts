@@ -11,8 +11,31 @@ export class BasicRenderer extends Renderer {
         this.passes = [new TrianglePass()]
     }
 
+
+    /**
+     * Updates the mesh
+     * @param viewport 
+     */
+    public updateMeshBuffer (viewport):void {
+
+
+
+
+
+    } 
+
+
+
+
+
+
+
+
     public render(viewport:Viewport): void {
         
+        this.updateCameraData(viewport);
+
+
         const sorted = RenderGraph.topSort(this.passes);
 
 

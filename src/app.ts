@@ -27,6 +27,10 @@ export class App {
         return App.instance;
     }
 
+    /**
+     * Returns the current {@link GPUDevice} of the {@link WebGPU} instance.
+     * @returns 
+     */
     public static getRenderDevice():GPUDevice {
         return App.getInstance().webgpu.getDevice();
     }

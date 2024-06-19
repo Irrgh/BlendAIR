@@ -101,30 +101,9 @@ export class SelectionOutlinePass extends RenderPass {
 
         /**  defining resolution Buffer  @todo probably move this into camera data buffer as a common buffer */
 
-        const resolutionValues = new ArrayBuffer(8);
-        const resolutionViews = {
-            width: new Uint32Array(resolutionValues,0,1),
-            height: new Uint32Array(resolutionValues,4,1)
-        }
-        resolutionViews.width.set([viewport.width]);
-        resolutionViews.height.set([viewport.height]);
-
-
-
-
-        const resolutionBuffer:GPUBuffer = renderer.createBuffer({
-            size: 2*4,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        },"resolution");
+        const cameraUniformBuffer : GPUBuffer = renderer.getBuffer("camera");
 
         device.queue.writeBuffer(selectionBuffer,0,selectionsValues);
-        device.queue.writeBuffer(resolutionBuffer,0,resolutionValues);
-
-
-
-
-
-
 
         const bindGroupLayout: GPUBindGroupLayout = device.createBindGroupLayout({
             entries: [
@@ -194,7 +173,7 @@ export class SelectionOutlinePass extends RenderPass {
                     resource: {buffer: selectionBuffer}
                 }, {
                     binding: 6,
-                    resource: {buffer: resolutionBuffer}
+                    resource: {buffer: cameraUniformBuffer}
                 }
             ]
         });

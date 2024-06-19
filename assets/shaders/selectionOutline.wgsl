@@ -1,5 +1,13 @@
 //#include<common.wgsl>
 
+struct Camera {
+    view:mat4x4<f32>,
+    proj:mat4x4<f32>,
+    width:u32,
+    height:u32,
+}
+
+
 
 struct Selections {
     primaryColor: vec4<f32>,
@@ -12,13 +20,13 @@ struct Selections {
 
 
 
-@binding(0) @group(1) var colorTexture : texture_storage_2d<rgba8unorm,read_write>;
+@binding(0) @group(1) var colorTexture : texture_storage_2d<rgba8unorm,read>;
 @binding(1) @group(1) var depthTexture : texture_storage_2d<r32float,read>;
 @binding(2) @group(1) var objectTexture : texture_storage_2d<r32uint,read>;
 @binding(3) @group(1) var combinedTexture : texture_storage_2d<rgba8unorm,write>;
 @binding(4) @group(1) var selectionTexture : texture_storage_2d<rgba8unorm,write>;  
 @binding(5) @group(1) var<storage,read> selections : Selections;
-@binding(6) @group(1) var<uniform> resolution : vec2<u32>;
+@binding(6) @group(1) var<uniform> camera : Camera;
 
 
 
@@ -28,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
 
-    if x >= resolution.x || y >= resolution.y {
+    if x >= camera.width || y >= camera.height {
         return;
     }
 

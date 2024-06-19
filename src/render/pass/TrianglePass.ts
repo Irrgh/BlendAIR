@@ -8,7 +8,7 @@ import { App } from "../../app";
  * The TrianglePass takes all TriangleMeshes of the {@link Scene.entities | Scene's entities} and renders them using
  */
 export class TrianglePass extends RenderPass {
-
+    
     constructor() {
 
         const input: PassResource[] = [
@@ -53,6 +53,17 @@ export class TrianglePass extends RenderPass {
 
     }
 
+    
+
+
+
+
+
+
+
+
+
+
     public render(renderer: Renderer, viewport: Viewport): void {
 
         const device: GPUDevice = App.getRenderDevice();
@@ -74,26 +85,8 @@ export class TrianglePass extends RenderPass {
             label: "normal"
         }, "normal");
 
+        const cameraUniformBuffer = renderer.getBuffer("camera");
 
-
-        const cameraValues = new ArrayBuffer(144);
-        const cameraViews = {
-            view: new Float32Array(cameraValues, 0, 16),
-            proj: new Float32Array(cameraValues, 64, 16),
-            width: new Uint32Array(cameraValues, 128, 1),
-            height: new Uint32Array(cameraValues, 132, 1),
-        };
-
-        cameraViews.view.set(viewport.camera.getViewMatrix());
-        cameraViews.proj.set(viewport.camera.getProjectionMatrix());
-        cameraViews.width.set([viewport.width]);
-        cameraViews.height.set([viewport.height]);
-
-        const cameraUniformBuffer = renderer.createBuffer({
-            size: cameraValues.byteLength,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-            label: "camera"
-        }, "camera");
 
 
         /** @todo TRANSFORM Buffer please */
@@ -115,7 +108,15 @@ export class TrianglePass extends RenderPass {
             ]
         });
 
-
+        const bindgroup : GPUBindGroup = device.createBindGroup({
+            layout: bindgroupLayout,
+            entries: [
+                {
+                    binding:0,
+                    resource: {buffer: cameraUniformBuffer}
+                }, 
+            ]
+        })
 
 
 

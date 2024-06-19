@@ -10,6 +10,8 @@ import { Util } from "../util/Util";
 import { Navigator } from "./Navigator";
 import { DebugOverlay } from "../gui/DebugOverlay";
 import { Entity } from "../entity/Entity";
+import { Renderer } from '../render/Renderer';
+import { BasicRenderer } from "../render/BasicRenderer";
 
 
 export class Viewport implements Resizable {
@@ -67,6 +69,15 @@ export class Viewport implements Resizable {
     private drawParameters!: Uint32Array;
     private pipeLineLayout!: GPUPipelineLayout;
 
+    private renderer: Renderer;
+
+    /**
+     * Has the camera changed in some way since the last frame rendered.
+     * This includes FOV, resolution, transforms.
+     */
+    public cameraChanged: boolean = true;
+
+
 
     width: number;
     height: number;
@@ -98,8 +109,18 @@ export class Viewport implements Resizable {
         this.createRenderResults();
         this.createMeshBuffers();
 
+        this.renderer = new BasicRenderer();
+        this.renderer.render(this);
+
         //this.createBindgroup();
     }
+
+
+
+    getRenderer():Renderer {
+        return this.renderer;
+    }
+
 
 
 

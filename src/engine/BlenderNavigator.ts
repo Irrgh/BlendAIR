@@ -87,6 +87,10 @@ export class BlenderNavigator implements Navigator {
         const offset = vec3.scale([0, 0, 0], camera.getForward(), -this.cameraPosition.r);
 
         vec3.add(camera.position, this.orbitCenter, offset);
+
+        this.viewport.cameraChanged = true;
+
+
         requestAnimationFrame(this.viewport.render);
     }
 
@@ -110,6 +114,8 @@ export class BlenderNavigator implements Navigator {
 
         vec3.add(this.viewport.camera.position, u, this.viewport.camera.position);
         vec3.add(this.orbitCenter, u, this.orbitCenter);
+
+        this.viewport.cameraChanged = true;
         requestAnimationFrame(this.viewport.render);
     }
 
@@ -140,9 +146,7 @@ export class BlenderNavigator implements Navigator {
         quat.mul(oldRotation,horizontalRot,oldRotation); 
         quat.normalize(oldRotation,oldRotation);
 
-
-
-        //this.viewport.camera.cameraUp = this.viewport.camera.getUp();
+        this.viewport.cameraChanged = true;
         requestAnimationFrame(this.viewport.render);
     }
 

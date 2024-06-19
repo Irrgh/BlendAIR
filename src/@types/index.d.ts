@@ -1,3 +1,6 @@
+import { Viewport } from "../engine/Viewport";
+import { Renderer } from "../render/Renderer";
+
 declare module '*.wgsl' {
     const value: string;
     export default value;
@@ -95,7 +98,15 @@ declare type PassResource = {
     description?: String
 }
 
-
+declare type ReactiveBuffer = {
+    buffer : GPUBuffer,
+    modified : boolean,
+    /**
+     * Updates the buffer before the next rendering operation if it was modified.
+     * @param viewport The corresponding Viewport.
+     */
+    updater? : (viewport:Viewport) => void
+}
 
 
 interface Window {
