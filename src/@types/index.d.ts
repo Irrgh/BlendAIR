@@ -96,15 +96,20 @@ declare type PassResource = {
     description?: String
 }
 
-declare type ReactiveBuffer = {
-    buffer : GPUBuffer,
+
+
+
+type Modifier = {
     modified : boolean,
     /**
      * Updates the buffer before the next rendering operation if it was modified.
-     * @param viewport The corresponding Viewport.
+     * @param viewport Should contain all data needed.
      */
-    updater? : (viewport:Viewport) => void
+    update : (viewport:Viewport) => void
 }
+
+
+
 
 
 interface Window {

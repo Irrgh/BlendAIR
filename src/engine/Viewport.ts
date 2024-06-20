@@ -59,16 +59,6 @@ export class Viewport implements Resizable {
     };
 
 
-    private vertexBuffer!: GPUBuffer;
-    private indexBuffer!: GPUBuffer;
-    private transformBuffer!: GPUBuffer;
-    private cameradataUniform!: GPUBuffer;
-
-    private bindgroup!: GPUBindGroup;
-
-    private drawParameters!: Uint32Array;
-    private pipeLineLayout!: GPUPipelineLayout;
-
     private renderer: Renderer;
 
 
@@ -102,8 +92,8 @@ export class Viewport implements Resizable {
         this.createRenderResults();
         this.createMeshBuffers();
 
-        this.renderer = new BasicRenderer();
-        this.renderer.render(this);
+        this.renderer = new BasicRenderer(this);
+        this.renderer.render();
 
         //this.createBindgroup();
     }
@@ -137,7 +127,7 @@ export class Viewport implements Resizable {
             const aspect = width / height;
 
             this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1, 100);
-            this.createRenderResults();
+            //this.createRenderResults();
             requestAnimationFrame(this.render);
         }
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
@@ -148,219 +138,18 @@ export class Viewport implements Resizable {
 
 
 
-    /**
-     * Creates new textures for the {@link renderResults} according to the {@link width} and {@link height} of ``this`` {@link Viewport}.
-     * Destroys all the old textures before creating new ones.
-     */
-    public createRenderResults(): void {
-
-        const device = this.webgpu.getDevice();
-
-        const usage = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING;
-
-        if (this.renderResults) {
-            Object.values(this.renderResults).forEach((texture) => { texture.destroy() });
-        }
-
-        const albedo = device.createTexture({
-            size: {
-                width: this.width,
-                height: this.height,
-                depthOrArrayLayers: 1
-            },
-            format: this.canvasFormat,
-            usage: usage,
-            label: "albedo",
-            sampleCount: 4
-        });
-
-        const depth = device.createTexture({
-            size: {
-                width: this.width,
-                height: this.height,
-                depthOrArrayLayers: 1
-            },
-            format: this.depthStencilFormat,
-            usage: usage,
-            label: "depth",
-            sampleCount: 4
-        });
-
-        const normal = device.createTexture({
-            size: {
-                width: this.width,
-                height: this.height,
-                depthOrArrayLayers: 1
-            },
-            format: this.canvasFormat,
-            usage: usage,
-            label: "normal"
-        });
-
-        const uv = device.createTexture({
-            size: {
-                width: this.width,
-                height: this.height,
-                depthOrArrayLayers: 1
-            },
-            format: this.canvasFormat,
-            usage: usage,
-            label: "uv"
-        });
-
-
-        this.renderResults = {
-            albedo: albedo,
-            depth: depth,
-            normal: normal,
-            uv: uv
-        };
-    }
-
+    
 
     /**
      * Creates densely packed vertex/index buffers with all `entities` from {@link scene} as well as the corresponding {@link drawParameters}. 
      */
     public createMeshBuffers(): void {
 
-        let objectCount = 0;
-        let vertexSize = 0;
-        let indexSize = 0;
-
-        const vertexAccumulator: Float32Array[] = [];
-        const indexAccumulator: Uint32Array[] = [];
-        const transformAccumulator: number[] = [];
-        const drawParameters: number[] = [];
-
-        let visited = new Set<TriangleMesh>;
-
-        this.scene.entities.forEach((object: Entity, name: String) => {
-
-            if (!(object instanceof MeshInstance)) {
-                return;
-            }
-
-
-            const mesh: TriangleMesh = object.mesh;
-
-            if (!visited.has(mesh)) {
-
-                visited.add(mesh);
-
-                vertexAccumulator.push(mesh.vertexBuffer);
-                indexAccumulator.push(mesh.elementBuffer.map((index) => { return vertexSize + index }));      // every mesh get a new "index space"
-
-                drawParameters.push(
-                    mesh.elementBuffer.length,          // index count
-                    mesh.instancedBy.size,              // instance count
-                    indexSize,                          // first index
-                    0,                                  // base index
-                    objectCount    // first instance
-                );
-
-                const instances: MeshInstance[] = Array.from(mesh.instancedBy);
-
-
-                instances.forEach((entity: MeshInstance) => {
-                    transformAccumulator.push(...entity.getWorldTransform());
-                })
-
-                objectCount += mesh.instancedBy.size;
-                vertexSize += mesh.vertexBuffer.length / 8;
-                indexSize += mesh.elementBuffer.length;
-
-
-            }
-        });
-
-
-        const device = this.webgpu.getDevice();
-
-        this.vertexBuffer?.destroy();
-
-
-        this.vertexBuffer = device.createBuffer({
-            size: vertexSize * 4 * 8,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
-            label: "vertex"
-        });
-
-
-        this.indexBuffer?.destroy();
-
-        this.indexBuffer = device.createBuffer({
-            size: indexSize * 4,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
-            label: "index"
-        });
-
-
-        this.transformBuffer?.destroy();
-
-        this.transformBuffer = device.createBuffer({
-            size: transformAccumulator.length * 4,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
-            label: "transform"
-        });
-
-        const vertexArray = new Float32Array(vertexSize * 8);     // eight floats per vertex
-
-        vertexAccumulator.reduce((offset: number, current: Float32Array) => {
-            vertexArray.set(current, offset);
-            return offset + current.length;
-        }, 0);
-
-
-
-        const indexArray = new Uint32Array(indexSize);
-
-        indexAccumulator.reduce((offset: number, current: Uint32Array) => {
-            indexArray.set(current, offset);
-            return offset + current.length;
-        }, 0);
-
-
-
-
-        this.updateCameraUniform();
-
-        //console.log("vertex:", vertexArray);
-        //console.log("index:", indexArray);
-        //console.log("transform: ", transformAccumulator);
-
-
-
-
-
-        device.queue.writeBuffer(this.vertexBuffer, 0, vertexArray);
-        device.queue.writeBuffer(this.indexBuffer, 0, indexArray);
-        device.queue.writeBuffer(this.transformBuffer, 0, new Float32Array(transformAccumulator));
-        this.drawParameters = new Uint32Array(drawParameters);
+        
     }
 
 
-    private updateCameraUniform() {
-
-        this.cameradataUniform?.destroy();
-
-        this.cameradataUniform = this.webgpu.getDevice().createBuffer({
-            size: 64 * 2,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-            mappedAtCreation: true,
-            label: "camera"
-        })
-
-        const cameraDataBufferMap: Float32Array = new Float32Array(this.cameradataUniform.getMappedRange()); // cameraData
-        cameraDataBufferMap.set(this.camera.getViewMatrix());
-        cameraDataBufferMap.set(this.camera.getProjectionMatrix(), 16); // offset of one mat4x4
-
-        //console.log("view: ", this.camera.getViewMatrix());
-        //console.log("proj: ", this.camera.getProjectionMatrix());
-
-
-
-        this.cameradataUniform.unmap();
-    }
+   
 
     public createBindgroup(): void {
 

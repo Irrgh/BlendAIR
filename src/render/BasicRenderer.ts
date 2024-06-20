@@ -9,22 +9,31 @@ import { TriangleMesh } from "../engine/TriangleMesh";
 import { App } from "../app";
 
 export class BasicRenderer extends Renderer {
-
-    constructor() {
-        super("basic");
+    
+    constructor (viewport:Viewport) {
+        super("basic",viewport);
         this.passes = [new TrianglePass()]
+        
     }
 
 
+    
 
-    public render(viewport: Viewport): void {
 
+
+
+
+
+
+
+    public render(): void {
+        
         const sorted = RenderGraph.topSort(this.passes);
 
 
         this.passes.forEach((pass: RenderPass) => {
 
-            pass.render(this, viewport);
+            pass.render(this,this.viewport);
 
         });
 

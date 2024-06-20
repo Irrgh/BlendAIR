@@ -11,7 +11,7 @@ import { Entity } from "../../entity/Entity";
  * The TrianglePass takes all TriangleMeshes of the {@link Scene.entities | Scene's entities} and renders them using
  */
 export class TrianglePass extends RenderPass {
-    private drawParameters: Uint32Array;
+    private drawParameters: number[] = [];
     
     constructor() {
 
@@ -54,19 +54,17 @@ export class TrianglePass extends RenderPass {
         ]
 
         super(input, output);
-        this.drawParameters = new Uint32Array(5);
 
     }
-
-    
 
     
     /**
      * Updates the mesh
      * @param viewport 
      */
-    public updateMeshBuffer(viewport: Viewport): void {
+    private createMeshBuffer (renderer:Renderer):void {
 
+        const scene = renderer.viewport.scene;
 
 
         let objectCount = 0;
@@ -80,7 +78,7 @@ export class TrianglePass extends RenderPass {
 
         let visited = new Set<TriangleMesh>;
 
-        viewport.scene.entities.forEach((object: Entity, name: String) => {
+        scene.entities.forEach((object: Entity, name: String) => {
 
             if (!(object instanceof MeshInstance)) {
                 return;
@@ -94,7 +92,7 @@ export class TrianglePass extends RenderPass {
                 visited.add(mesh);
 
                 vertexAccumulator.push(mesh.vertexBuffer);
-                indexAccumulator.push(mesh.elementBuffer.map((index) => { return vertexSize + index }));      // every mesh get a new "index space"
+                indexAccumulator.push(mesh.elementBuffer.map((index : number) => { return vertexSize + index }));      // every mesh get a new "index space"
 
                 drawParameters.push(
                     mesh.elementBuffer.length,          // index count
@@ -120,16 +118,15 @@ export class TrianglePass extends RenderPass {
         });
 
 
-        
-        const renderer : Renderer = viewport.getRenderer();
+        const device = App.getRenderDevice();
 
-        renderer.destroyBuffer("vertex");
+       renderer.destroyBuffer("vertex");
 
         const vertexBuffer = renderer.createBuffer({
             size: vertexSize * 4 * 8,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
             label: "vertex"
-        },"vertex",this.updateMeshBuffer);
+        },"vertex");
 
 
         renderer.destroyBuffer("index");
@@ -138,7 +135,7 @@ export class TrianglePass extends RenderPass {
             size: indexSize * 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
             label: "index"
-        },"index",this.updateMeshBuffer);
+        },"index");
 
 
         renderer.destroyBuffer("transform");
@@ -147,7 +144,7 @@ export class TrianglePass extends RenderPass {
             size: transformAccumulator.length * 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
             label: "transform"
-        },"transform",this.updateMeshBuffer);
+        },"transform");
 
         const vertexArray = new Float32Array(vertexSize * 8);     // eight floats per vertex
 
@@ -166,27 +163,23 @@ export class TrianglePass extends RenderPass {
         }, 0);
 
 
+
+
+        //this.updateCameraUniform();
+
         //console.log("vertex:", vertexArray);
         //console.log("index:", indexArray);
         //console.log("transform: ", transformAccumulator);
 
-
-
-        const device : GPUDevice = App.getRenderDevice();
-
         device.queue.writeBuffer(vertexBuffer, 0, vertexArray);
         device.queue.writeBuffer(indexBuffer, 0, indexArray);
         device.queue.writeBuffer(transformBuffer, 0, new Float32Array(transformAccumulator));
-        this.drawParameters = new Uint32Array(drawParameters);
+        this.drawParameters = drawParameters;
 
 
 
+    } 
 
-
-
-
-
-    }
 
 
 
@@ -216,7 +209,10 @@ export class TrianglePass extends RenderPass {
             label: "normal"
         }, "normal");
 
-        const cameraUniformBuffer : GPUBuffer = renderer.getBuffer("camera").buffer;
+        const cameraUniformBuffer = renderer.getBuffer("camera");
+        const vertexBuffer = renderer.getBuffer("vertex");
+        const indexBuffer = renderer.getBuffer("buffer");
+        const transformBuffer = renderer.getBuffer("transform");
 
 
 

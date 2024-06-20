@@ -1,50 +1,47 @@
-import { Viewport } from "../engine/Viewport";
+import { Viewport } from '../engine/Viewport';
 import { WebGPU } from "../engine/WebGPU";
 import { RenderPass } from "./pass/RenderPass";
 import { RenderGraph } from './RenderGraph';
 import { App } from "../app";
 
 export abstract class Renderer {
-    public webgpu: WebGPU;
+    public webgpu: WebGPU = App.getInstance().webgpu;
+    public viewport: Viewport;
 
-    constructor(name: String) {
-        this.sharedBuffers = new Map<string, ReactiveBuffer>();
-        this.sharedTextures = new Map<string, GPUTexture>();
-        this.webgpu = App.getInstance().webgpu;
-        this.passes = [];
+    constructor(name: string, viewport: Viewport) {
         this.name = name;
+        this.viewport = viewport;
     }
 
     /**
      * Map of buffers with Buffer label serving as key.
      */
-    private sharedBuffers: Map<String, ReactiveBuffer>
+    private buffers: Map<string, GPUBuffer> = new Map();
+    private bufferModifiers: Map<string, Modifier> = new Map();
 
 
     /**
      * Map of textures with Texture label serving as key.
      */
-    private sharedTextures: Map<String, GPUTexture>;
+    private textures: Map<string, GPUTexture> = new Map();
+    private textureModifiers: Map<string, Modifier> = new Map();
 
-    private name: String;
+    private name: string;
 
-    protected passes: RenderPass[];
+    protected passes: RenderPass[] = [];
 
     /**
      * Creates a new {@link GPUBuffer} according to the {@link GPUBufferDescriptor}.
      * @param descriptor Description of the {@link GPUBuffer} to create.
-     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link sharedBuffers}.
+     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link buffers}.
      * @returns The {@link @GPUBuffer}
      */
-    public createBuffer(descriptor: GPUBufferDescriptor, label: string, updater?: (viewport: Viewport) => void): GPUBuffer {
+    public createBuffer(descriptor: GPUBufferDescriptor, label: string, modifier?: Modifier): GPUBuffer {
         descriptor.label = label;
         const buffer = this.webgpu.getDevice().createBuffer(descriptor);
-        this.sharedBuffers.get(label)?.buffer.destroy();     // kills old buffer if needed
-        this.sharedBuffers.set(label, {
-            buffer: buffer,
-            modified: false,
-            updater: updater
-        });
+        this.buffers.get(label)?.destroy();     // kills old buffer if needed
+        this.buffers.set(label, buffer);
+        if (modifier) { this.bufferModifiers.set(label, modifier); }
         return buffer;
     }
 
@@ -53,8 +50,9 @@ export abstract class Renderer {
      * @param label Label of the buffer to destroy.
      */
     public destroyBuffer(label: string): void {
-        this.sharedBuffers.get(label)?.buffer.destroy;
-        this.sharedBuffers.delete(label);
+        this.buffers.get(label)?.destroy();
+        this.buffers.delete(label);
+        this.bufferModifiers.delete(label);
     }
 
     /**
@@ -62,34 +60,18 @@ export abstract class Renderer {
      * @param label Label of the buffer to retrieve.
      * @returns The {@link GPUBuffer}. If no buffer with {@link label} exists an Error is thrown.
      */
-    public getBuffer(label: string): ReactiveBuffer {
-        const buffer = this.sharedBuffers.get(label);
-
+    public getBuffer(label: string): GPUBuffer {
+        const buffer = this.buffers.get(label);
         if (buffer) {
+            const modifier = this.bufferModifiers.get(label);
+            if (modifier && modifier.modified) {
+                modifier.update(this.viewport);
+                modifier.modified = false;
+            }
             return buffer;
         }
         throw new Error(`There is no buffer with the label: ${label}`);
     }
-
-    /**
-     * Returns the automatically updated {@link GPUBuffer} specified by the {@link label}.
-     * @param label Label of the buffer to retrieve.
-     * @param viewport 
-     * @returns 
-     */
-    public getUpdatedBuffer(label: string, viewport: Viewport): ReactiveBuffer {
-        const buffer = this.sharedBuffers.get(label);
-
-        if (buffer) {
-            if (buffer.modified && buffer.updater) { buffer.updater(viewport) }
-            buffer.modified = false;
-            return buffer;
-        }
-        throw new Error(`There is no buffer with the label: ${label}`);
-    }
-
-
-
 
 
     /**
@@ -97,22 +79,23 @@ export abstract class Renderer {
      * Needed incase you need direct access to the Map. Like looping over all buffers.
      * @returns the internal Map of {@link GPUBuffer}s
      */
-    public getBuffers(): Map<String, ReactiveBuffer> {
-        return this.sharedBuffers;
+    public getBuffers(): Map<String, GPUBuffer> {
+        return this.buffers;
     }
 
 
     /**
      * Creates a new {@link GPUTexture} according to the {@link GPUTextureDescriptor}.
      * @param descriptor Description of the {@link GPUTexture} to create.
-     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link sharedTextures}.
+     * @param label Overrides the label attribute of {@link descriptor} and serves as the key for {@link textures}.
      * @returns The {@link @GPUTexture}.
      */
-    public createTexture(descriptor: GPUTextureDescriptor, label: string): GPUTexture {
+    public createTexture(descriptor: GPUTextureDescriptor, label: string, modifier?: Modifier): GPUTexture {
         descriptor.label = label;
         const texture = this.webgpu.getDevice().createTexture(descriptor);
-        this.sharedTextures.get(label)?.destroy();
-        this.sharedTextures.set(label, texture);
+        this.textures.get(label)?.destroy();
+        this.textures.set(label, texture);
+        if (modifier) { this.textureModifiers.set(label, modifier) }
         return texture;
     }
 
@@ -121,8 +104,9 @@ export abstract class Renderer {
      * @param label Label of the texture to destroy.
      */
     public destroyTexture(label: string): void {
-        this.sharedTextures.get(label)?.destroy();
-        this.sharedTextures.delete(label);
+        this.textures.get(label)?.destroy();
+        this.textures.delete(label);
+        this.textureModifiers.delete(label);
     }
 
     /**
@@ -131,8 +115,15 @@ export abstract class Renderer {
      * @returns The {@link GPUTexture}. If no texture with {@link label} exists an Error is thrown.
      */
     public getTexture(label: string): GPUTexture {
-        const texture = this.sharedTextures.get(label);
-        if (texture) { return texture }
+        const texture = this.textures.get(label);
+        if (texture) {
+            const modifier = this.textureModifiers.get(label);
+            if (modifier && modifier.modified) {
+                modifier.update(this.viewport);
+                modifier.modified = false;
+            }
+            return texture
+        }
         throw new Error(`There is no texture with the label: ${label}`);
     }
 
@@ -142,11 +133,11 @@ export abstract class Renderer {
      * @returns the internal Map of {@link GPUTexture}s
      */
     public getTextures(): Map<String, GPUTexture> {
-        return this.sharedTextures;
+        return this.textures;
     }
 
     /**
-     * Loads a image file as {@link GPUTexture} into {@link sharedTextures} with filename as key.
+     * Loads a image file as {@link GPUTexture} into {@link textures} with filename as key.
      * Throws an error if {@link file} type does not match `image/*`
      * @param file {@link File} to load as a texture.
      */
@@ -180,8 +171,8 @@ export abstract class Renderer {
 
     private updateCameraData = (viewport: Viewport) => {
 
-        const renderer : Renderer = viewport.getRenderer();
-        
+        const renderer: Renderer = viewport.getRenderer();
+
         const cameraValues = new ArrayBuffer(144);
         const cameraViews = {
             view: new Float32Array(cameraValues, 0, 16),
@@ -206,7 +197,7 @@ export abstract class Renderer {
         App.getRenderDevice().queue.writeBuffer(cameraBuffer, 0, cameraValues);
     }
 
-    public abstract render(viewport: Viewport): void
+    public abstract render(): void
 
 
 
