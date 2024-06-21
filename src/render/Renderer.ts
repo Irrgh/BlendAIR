@@ -3,6 +3,7 @@ import { WebGPU } from "../engine/WebGPU";
 import { RenderPass } from "./pass/RenderPass";
 import { RenderGraph } from './RenderGraph';
 import { App } from "../app";
+import { mat4 } from 'gl-matrix';
 
 export abstract class Renderer {
     public webgpu: WebGPU = App.getInstance().webgpu;
@@ -63,15 +64,27 @@ export abstract class Renderer {
     public getBuffer(label: string): GPUBuffer {
         const buffer = this.buffers.get(label);
         if (buffer) {
-            const modifier = this.bufferModifiers.get(label);
-            if (modifier && modifier.modified) {
-                modifier.update(this.viewport);
-                modifier.modified = false;
-            }
             return buffer;
         }
         throw new Error(`There is no buffer with the label: ${label}`);
     }
+
+    public getBufferUpdated(label: string): GPUBuffer {
+        const buffer = this.getBuffer(label);
+        const modifier = this.bufferModifiers.get(label);
+        if (modifier && modifier.modified) {
+            modifier.update(this.viewport);
+            modifier.modified = false;
+        }
+
+        return buffer;
+    }
+
+
+    
+
+
+
 
 
     /**

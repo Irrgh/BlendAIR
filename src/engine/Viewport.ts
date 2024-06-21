@@ -89,7 +89,7 @@ export class Viewport implements Resizable {
         this.camera.setPerspectiveProjection(Util.degreeToRadians(90), aspect, 0.1, 100);
         this.camera.setPosition(1, 1, 1); /** @todo please change this  */
 
-        this.createRenderResults();
+
         this.createMeshBuffers();
 
         this.renderer = new BasicRenderer(this);
@@ -151,60 +151,7 @@ export class Viewport implements Resizable {
 
    
 
-    public createBindgroup(): void {
-
-        const device = this.webgpu.getDevice();
-
-        const bindGroupLayout: GPUBindGroupLayout = device.createBindGroupLayout({
-            entries: [
-                {
-                    binding: 0,
-                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                    buffer: { type: "uniform" }
-                }, {
-                    binding: 1,
-                    visibility: GPUShaderStage.VERTEX,
-                    buffer: {
-                        type: "read-only-storage"
-                    }
-                }
-            ]
-        });
-
-        this.bindgroup = device.createBindGroup({
-            layout: bindGroupLayout,
-            entries: [
-                {
-                    binding: 0,
-                    resource: {
-                        buffer: this.cameradataUniform
-                    }
-                }, {
-                    binding: 1,
-                    resource: {
-                        buffer: this.transformBuffer,
-
-                    }
-                }
-            ]
-        });
-
-
-        this.pipeLineLayout = this.webgpu.getDevice().createPipelineLayout({
-            bindGroupLayouts: [bindGroupLayout]
-        });
-
-
-
-
-
-
-    }
-
-
-
-
-
+    
 
     /**
      * Redraws the scene
@@ -222,7 +169,6 @@ export class Viewport implements Resizable {
         this.createMeshBuffers();
         console.log(`creating buffers took: ${performance.now() - time} ms`);
 
-        this.createBindgroup();
 
 
         const depthStencilView = this.renderResults.depth.createView({
@@ -332,7 +278,7 @@ export class Viewport implements Resizable {
                 topology: "triangle-list",
                 stripIndexFormat: undefined
             },
-            layout: this.pipeLineLayout,
+            layout: "auto",
             depthStencil: this.depthStencilState,
             multisample: {
                 count:4
@@ -345,23 +291,23 @@ export class Viewport implements Resizable {
         const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
 
         renderPass.setPipeline(pipeline);
-        renderPass.setVertexBuffer(0, this.vertexBuffer);
-        renderPass.setIndexBuffer(this.indexBuffer, "uint32");
-        renderPass.setBindGroup(0, this.bindgroup);
+        //renderPass.setVertexBuffer(0, this.vertexBuffer);
+        //renderPass.setIndexBuffer(this.indexBuffer, "uint32");
+        //renderPass.setBindGroup(0, this.bindgroup);
 
 
 
         //console.log(this.drawParameters);
 
-        for (let k = 0; k < this.drawParameters.length; k += 5) {
+        //for (let k = 0; k < this.drawParameters.length; k += 5) {
 
 
             //this.webgpu.getDevice().queue.writeBuffer(transformIndexUniform,0,new Uint32Array([transformOffset]));
-            renderPass.drawIndexed(this.drawParameters[k], this.drawParameters[k + 1], this.drawParameters[k + 2], 0, this.drawParameters[k + 4]);
+            //renderPass.drawIndexed(this.drawParameters[k], this.drawParameters[k + 1], this.drawParameters[k + 2], 0, this.drawParameters[k + 4]);
 
 
 
-        }
+        //}
 
 
 

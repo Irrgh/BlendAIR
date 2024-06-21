@@ -12,6 +12,7 @@ export class WebGPU {
 
     private device!: GPUDevice;
 
+    static minBuffersize : number = 32
     
     /**
      * Initializes a new WebGPU instance and returns it.

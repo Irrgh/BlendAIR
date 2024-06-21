@@ -12,7 +12,7 @@ import { Scene } from '../../engine/Scene';
 
 export class SelectionOutlinePass extends RenderPass {
 
-    constructor(primaryColor: GPUColor, secondaryColor: GPUColor) {
+    constructor(renderer:Renderer,primaryColor: GPUColor, secondaryColor: GPUColor) {
 
         const input: PassResource[] = [
             {
@@ -38,7 +38,7 @@ export class SelectionOutlinePass extends RenderPass {
 
         ]
 
-        super(input, output);
+        super(renderer,input, output);
         this.primaryColor = primaryColor;
         this.secondaryColor = secondaryColor;
 
@@ -50,23 +50,23 @@ export class SelectionOutlinePass extends RenderPass {
 
    
 
-    public render(renderer: Renderer, viewport: Viewport): void {
+    public render(viewport: Viewport): void {
 
         const device = App.getRenderDevice();
         const scene = viewport.scene;
 
 
-        const colorTexture: GPUTexture = renderer.getTexture("color");
-        const depthTexture: GPUTexture = renderer.getTexture("depth");
-        const objectIndexTexture: GPUTexture = renderer.getTexture("object-index");
-        const combinedTexture: GPUTexture = renderer.createTexture({
+        const colorTexture: GPUTexture = this.renderer.getTexture("color");
+        const depthTexture: GPUTexture = this.renderer.getTexture("depth");
+        const objectIndexTexture: GPUTexture = this.renderer.getTexture("object-index");
+        const combinedTexture: GPUTexture = this.renderer.createTexture({
             size: { width: viewport.width, height: viewport.height },
             format: "rgba8unorm",
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
             label: "combined"
         }, "combined");
 
-        const selectionTexture: GPUTexture = renderer.createTexture({
+        const selectionTexture: GPUTexture = this.renderer.createTexture({
             size: { width: viewport.width, height: viewport.height },
             format: 'rgba8unorm',
             usage: 0
@@ -94,14 +94,14 @@ export class SelectionOutlinePass extends RenderPass {
         selectionsViews.indecies.set(selections.map((entity:Entity) => {return scene.getId(entity)}));
 
 
-        const selectionBuffer: GPUBuffer = renderer.createBuffer({
+        const selectionBuffer: GPUBuffer = this.renderer.createBuffer({
             size: selectionsValues.byteLength,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         }, "selection");
 
         /**  defining resolution Buffer  @todo probably move this into camera data buffer as a common buffer */
 
-        const cameraUniformBuffer : GPUBuffer = renderer.getBuffer("camera").buffer;
+        const cameraUniformBuffer : GPUBuffer = this.renderer.getBuffer("camera");
 
         device.queue.writeBuffer(selectionBuffer,0,selectionsValues);
 

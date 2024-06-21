@@ -99,7 +99,7 @@ declare type PassResource = {
 
 
 
-type Modifier = {
+declare type Modifier = {
     modified : boolean,
     /**
      * Updates the buffer before the next rendering operation if it was modified.

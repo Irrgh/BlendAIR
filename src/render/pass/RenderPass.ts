@@ -1,10 +1,11 @@
 import { Viewport } from "../../engine/Viewport";
-import { Renderer } from "../Renderer";
+import { Renderer } from '../Renderer';
 
 export abstract class RenderPass {
 
 
-    constructor (input:PassResource[], output:PassResource[]) {
+    constructor (renderer:Renderer, input:PassResource[], output:PassResource[]) {
+        this.renderer = renderer;
         this.inputResources = input;
         this.outputResources = output;
     }
@@ -17,12 +18,16 @@ export abstract class RenderPass {
     protected inputResources: PassResource[];
 
 
+    protected renderer : Renderer;
+
+
+
     /**
      * Represents the resources excepted to be written into shared Resources of {@link renderer}.
      */
     protected outputResources: PassResource[];
 
-    public abstract render(renderer:Renderer,viewport:Viewport):void;
+    public abstract render(viewport:Viewport):void;
 
     public getInputResources(): PassResource[] {
         return this.inputResources;
