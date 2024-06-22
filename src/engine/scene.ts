@@ -9,7 +9,8 @@ export class Scene {
     /**
      * All entities except viewport Camera are included in here;
      */
-    entities : Map<String,Entity>
+    entities : Map<String,Entity>;
+    private entityIndecies: Map<Entity,number> = new Map();
 
     /**
      * @todo All scene changing updates will be routed through here to prompt redrawing in all associated Viewports.
@@ -50,13 +51,15 @@ export class Scene {
 
 
     public getId(entity:Entity):number {
-        throw new Error("This method is not implemented yet.");
-        // I probably need to change the entity Map or something
+        const id = this.entityIndecies.get(entity);
+        if (id) {return id;}
+        throw new Error(`Entity ${entity} does not exist.`)
     }
 
 
     public addEntity (entity : MeshInstance) {
         this.entities.set(entity.name,entity);
+        this.entityIndecies.set(entity,this.entityIndecies.size+1);
     }
 
 

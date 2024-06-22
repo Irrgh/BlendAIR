@@ -1,8 +1,20 @@
 
 struct Camera {
     view: mat4x4<f32>,
-    proj: mat4x4<f32>   
+    proj: mat4x4<f32>,
+    width: u32,
+    height: u32   
 }
+
+
+struct VertexIn {
+    @location(0) position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) uv: vec2<f32>,
+    @builtin(instance_index) instanceId: u32
+}
+
+
 
 struct VertexOut {
       @builtin(position) position: vec4<f32>,
@@ -13,9 +25,6 @@ struct VertexOut {
 }
 
 
-
-
-
 @binding(0) @group(0) var<uniform> camera : Camera;
 @binding(1) @group(0) var<storage,read> modelTransforms : array<mat4x4<f32>>;
 @binding(2) @group(0) var<storage,read> objectIndex: array<u32>;  
@@ -23,17 +32,18 @@ struct VertexOut {
 
     
 @vertex
-fn vertex_main(@location(0) position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
-    @location(2) uv: vec2<f32>,
-    @builtin(instance_index) instanceId: u32) -> VertexOut {
-    var modelTransform: mat4x4<f32> = modelTransforms[instanceId];
+fn vertex_main(input : VertexIn) -> VertexOut {
+
+    let objectId = objectIndex[input.instanceId];
+
+
+    var modelTransform: mat4x4<f32> = modelTransforms[objectId];
     var output: VertexOut;
-    output.position = camera.proj * camera.view * modelTransform * vec4<f32>(position, 1.0f);
+    output.position = camera.proj * camera.view * modelTransform * vec4<f32>(input.position, 1.0f);
     output.fragPosition = output.position.xyz;
-    output.normal = (modelTransform * vec4<f32>(normal, 0.0f)).xyz;
-    output.uv = uv;
-    output.objectId = instanceId;
+    output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
+    output.uv = input.uv;
+    output.objectId = objectId;
     return output;
 }
 

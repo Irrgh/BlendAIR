@@ -69,11 +69,11 @@ export class BasicRenderer extends Renderer {
         const shader = this.viewport.createTextureConversionShader(
             /* wgsl */`
                 let color = textureSample(texture,texSampler,input.uv);
-                return vec4<f32>(0,0,1,1);
+                return color;
             `,"f32"
         )
 
-        //this.viewport.drawTexture(this.getTexture("color"),shader);
+        //this.viewport.drawTexture(this.getTexture("color"),shader);         // i swear to god this was commented out and i was debugging everything else 
     }
 
 

@@ -70,7 +70,7 @@ export class Viewport implements Resizable {
         this.canvas = canvas;
         this.scene = scene;
         this.scene.viewports.add(this);
-        this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.canvasFormat = "rgba8unorm";
         this.context = <GPUCanvasContext>canvas.getContext("webgpu");
         this.context.configure({
             device: this.webgpu.getDevice(),
@@ -148,7 +148,7 @@ export class Viewport implements Resizable {
 
 
             @fragment
-            fn fragment_main (input : FullscreenVertexOutput) -> @location(0) vec4<f32> {
+            fn fragment_main (input : VertexOutput) -> @location(0) vec4<f32> {
                 ${fragment}
             }
         `
@@ -219,8 +219,12 @@ export class Viewport implements Resizable {
                 targets: [
                     {format:this.canvasFormat}
                 ]
+            }, 
+            primitive: {
+                topology: "triangle-list",
             },
-            layout: pipelineLayout
+            layout: pipelineLayout,
+            label:"viewport pipeline"
         });
 
         const commandEncoder = device.createCommandEncoder();
@@ -228,15 +232,24 @@ export class Viewport implements Resizable {
             colorAttachments: [
                 {
                     view: this.context.getCurrentTexture().createView(),
+                    clearValue: {r:0,g:0,b:0,a:1},
                     storeOp: "store",
                     loadOp: "clear"
                 }
-            ]
+            ],
+            label:"render texture to viewport"
         })
+
+
+
+
+        renderPassEncoder.pushDebugGroup("render to canvas");
         renderPassEncoder.setPipeline(renderPipeline);
         renderPassEncoder.setBindGroup(0,bindgroup);
-        renderPassEncoder.draw(6);
+        renderPassEncoder.draw(6,1,0,0);
+        renderPassEncoder.popDebugGroup();
         renderPassEncoder.end();
+        
 
         device.queue.submit([commandEncoder.finish()]);
         
@@ -248,7 +261,7 @@ export class Viewport implements Resizable {
      * Redraws the scene
      */
     public render = () => {
-
+        this.renderer.render();
 
     }
 

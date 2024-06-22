@@ -122,17 +122,19 @@ export class TrianglePass extends RenderPass {
             }
 
             const mesh: TriangleMesh = object.mesh;
-            const count = instances.get(mesh);
+            const instance = instances.get(mesh);
 
             transformArray.set(object.getWorldTransform(), scene.getId(object))
 
-            if (!count) {
+            if (!instance) {
                 vertexSize += mesh.vertexBuffer.length;
                 indexSize += mesh.elementBuffer.length;
                 instances.set(mesh, { count: 1, ids: [scene.getId(object)] });
                 return;
             }
-            count.count++;
+            instance.count++;
+            instance.ids.push(scene.getId(object));
+
 
         });
 
@@ -145,23 +147,27 @@ export class TrianglePass extends RenderPass {
         let vertexOffset = 0;
         let indexOffset = 0;
         let objectOffset = 0;
-
+        let index = 0;
 
         instances.forEach((value: { count: number, ids: number[] }, mesh: TriangleMesh) => {
 
+            console.log("value: ", value);
+            console.log("mesh: ",mesh);
+
             vertexArray.set(mesh.vertexBuffer, vertexOffset);
-            indexArray.set(mesh.elementBuffer, indexOffset);
+            indexArray.set(mesh.elementBuffer.map((index) => {return index+vertexOffset/8}), indexOffset);
             idArray.set(value.ids, objectOffset);
             drawParameters.set([
-                mesh.vertexBuffer.length,   // index count
+                mesh.elementBuffer.length,   // index count
                 value.count,                // instance count
                 indexOffset,                // first index
                 0,                          // base vertex
                 objectOffset                // first instance
-            ]);
+            ],index*5);
             vertexOffset += mesh.vertexBuffer.length;
             indexOffset += mesh.elementBuffer.length;
             objectOffset += value.count;
+            index++;
 
         });
 
@@ -296,7 +302,7 @@ export class TrianglePass extends RenderPass {
                     loadOp: "clear",
                     storeOp: "store",
                     view: multisampledColorTexture.createView(),
-                    resolveTarget: colorTexture.createView()
+                    resolveTarget: viewport.context.getCurrentTexture().createView()
                 }, {
                     clearValue: { r: 0, g: 0, b: 0, a: 1 },
                     loadOp: "clear",
@@ -313,7 +319,8 @@ export class TrianglePass extends RenderPass {
                 stencilStoreOp: "store",
                 depthClearValue: 1.0,
                 stencilClearValue: 1.0
-            }
+            },
+            label:"triangle pass"
         }
 
 
@@ -322,7 +329,9 @@ export class TrianglePass extends RenderPass {
         })
 
 
-
+        const pipelineLayout = device.createPipelineLayout({
+            bindGroupLayouts: [bindgroupLayout]
+        });
 
 
         const renderPipeline: GPURenderPipeline = device.createRenderPipeline({
@@ -346,11 +355,12 @@ export class TrianglePass extends RenderPass {
                 topology: "triangle-list",
                 stripIndexFormat: undefined
             },
-            layout: "auto",
+            layout: pipelineLayout,
             depthStencil: this.depthStencilState,
             multisample: {
                 count: 4
-            }
+            },
+            label:"triangle mesh rendering"
         });
 
 
@@ -359,10 +369,18 @@ export class TrianglePass extends RenderPass {
 
         const renderPass: GPURenderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
+
+
+
+        renderPass.pushDebugGroup("rendering triangles");
         renderPass.setPipeline(renderPipeline);
         renderPass.setBindGroup(0,bindgroup);
         renderPass.setVertexBuffer(0,vertexBuffer);
         renderPass.setIndexBuffer(indexBuffer,"uint32");
+
+
+        console.log(this.drawParameters);
+
 
         for (let i = 0; i < this.drawParameters.length; i+=5) {
 
@@ -375,6 +393,7 @@ export class TrianglePass extends RenderPass {
             );
         }
 
+        renderPass.popDebugGroup();
         renderPass.end()
         device.queue.submit([commandEncoder.finish()]);
 
