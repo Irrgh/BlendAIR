@@ -207,7 +207,8 @@ export abstract class Renderer {
             label: "camera"
         }, "camera");
 
-        console.log(cameraViews);
+        console.log("camera Views: ",cameraViews);
+        console.log("camera buffer: ", cameraValues);
 
         App.getRenderDevice().queue.writeBuffer(cameraBuffer, 0, cameraValues);
     }

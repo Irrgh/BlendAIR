@@ -151,11 +151,8 @@ export class TrianglePass extends RenderPass {
 
         instances.forEach((value: { count: number, ids: number[] }, mesh: TriangleMesh) => {
 
-            console.log("value: ", value);
-            console.log("mesh: ",mesh);
-
             vertexArray.set(mesh.vertexBuffer, vertexOffset);
-            indexArray.set(mesh.elementBuffer.map((index) => {return index+vertexOffset/8}), indexOffset);
+            indexArray.set(mesh.elementBuffer.map((index) => { return index + vertexOffset / 8 }), indexOffset);
             idArray.set(value.ids, objectOffset);
             drawParameters.set([
                 mesh.elementBuffer.length,   // index count
@@ -163,7 +160,7 @@ export class TrianglePass extends RenderPass {
                 indexOffset,                // first index
                 0,                          // base vertex
                 objectOffset                // first instance
-            ],index*5);
+            ], index * 5);
             vertexOffset += mesh.vertexBuffer.length;
             indexOffset += mesh.elementBuffer.length;
             objectOffset += value.count;
@@ -204,6 +201,15 @@ export class TrianglePass extends RenderPass {
         device.queue.writeBuffer(transformBuffer, 0, drawParameters);
         device.queue.writeBuffer(objectIndexBuffer, 0, idArray);
         this.drawParameters = drawParameters;
+
+
+        console.log("vertex: ",vertexArray);
+        console.log("index: ", indexArray);
+        console.log("transform: ", transformArray);
+
+
+
+
     }
 
 
@@ -298,7 +304,7 @@ export class TrianglePass extends RenderPass {
         const renderPassDescriptor: GPURenderPassDescriptor = {
             colorAttachments: [
                 {
-                    clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                    clearValue: { r: 0, g: 0, b: 1, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
                     view: multisampledColorTexture.createView(),
@@ -320,7 +326,7 @@ export class TrianglePass extends RenderPass {
                 depthClearValue: 1.0,
                 stencilClearValue: 1.0
             },
-            label:"triangle pass"
+            label: "triangle pass"
         }
 
 
@@ -346,7 +352,7 @@ export class TrianglePass extends RenderPass {
                 targets: [
                     {
                         format: "rgba8unorm",
-                    },{
+                    }, {
                         format: "rgba8unorm"
                     }
                 ],
@@ -360,10 +366,13 @@ export class TrianglePass extends RenderPass {
             multisample: {
                 count: 4
             },
-            label:"triangle mesh rendering"
+            label: "triangle mesh rendering"
         });
 
 
+
+
+        App.getInstance().webgpu.attachTimestamps(renderPassDescriptor);
 
         const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
 
@@ -371,32 +380,39 @@ export class TrianglePass extends RenderPass {
 
 
 
-
         renderPass.pushDebugGroup("rendering triangles");
         renderPass.setPipeline(renderPipeline);
-        renderPass.setBindGroup(0,bindgroup);
-        renderPass.setVertexBuffer(0,vertexBuffer);
-        renderPass.setIndexBuffer(indexBuffer,"uint32");
+        renderPass.setBindGroup(0, bindgroup);
+        renderPass.setVertexBuffer(0, vertexBuffer);
+        renderPass.setIndexBuffer(indexBuffer, "uint32");
 
 
-        console.log(this.drawParameters);
+        console.log("drawParameters: ", this.drawParameters);
 
 
-        for (let i = 0; i < this.drawParameters.length; i+=5) {
+        for (let i = 0; i < this.drawParameters.length; i += 5) {
 
             renderPass.drawIndexed(
                 this.drawParameters[i],
-                this.drawParameters[i+1],
-                this.drawParameters[i+2],
-                this.drawParameters[i+3],
-                this.drawParameters[i+4]
+                this.drawParameters[i + 1],
+                this.drawParameters[i + 2],
+                this.drawParameters[i + 3],
+                this.drawParameters[i + 4]
             );
         }
 
         renderPass.popDebugGroup();
         renderPass.end()
+
+        App.getInstance().webgpu.prepareTimestampsResolution(commandEncoder);
+
         device.queue.submit([commandEncoder.finish()]);
 
+        App.getInstance().webgpu.resolveTimestamps().then(result => {
+            console.log(`Rendering took ${result/1000} µs`);
+        }).catch(error => {
+            console.error('Failed to resolve timestamps:', error);
+        });
 
         multisampledColorTexture.destroy();
         multisampledDepthTexture.destroy();
