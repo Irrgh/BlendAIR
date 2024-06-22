@@ -182,7 +182,7 @@ export abstract class Renderer {
     }
 
 
-    private updateCameraData = (viewport: Viewport) => {
+    public updateCameraData = (viewport: Viewport) => {
 
         const renderer: Renderer = viewport.getRenderer();
 

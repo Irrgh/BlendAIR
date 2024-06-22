@@ -38,14 +38,14 @@ export class BasicRenderer extends Renderer {
 
         this.createTexture({
             size: {width:this.viewport.width, height:this.viewport.height},
-            format: "r8uint",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+            format: "depth24plus-stencil8",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
         },"depth");
 
 
         this.createTexture({
             size: { width: this.viewport.width, height: this.viewport.height },
-            format: "r8uint",
+            format: "r32uint",
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
         }, "object-index");
 
@@ -56,15 +56,24 @@ export class BasicRenderer extends Renderer {
         }, "normal");
         
         
-        const sorted = RenderGraph.topSort(this.passes);
-
-
+        //const sorted = RenderGraph.topSort(this.passes);
+        this.updateCameraData(this.viewport);
+        
         this.passes.forEach((pass: RenderPass) => {
 
             pass.render(this.viewport);
 
         });
 
+
+        const shader = this.viewport.createTextureConversionShader(
+            /* wgsl */`
+                let color = textureSample(texture,texSampler,input.uv);
+                return vec4<f32>(0,0,1,1);
+            `,"f32"
+        )
+
+        //this.viewport.drawTexture(this.getTexture("color"),shader);
     }
 
 

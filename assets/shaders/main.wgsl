@@ -17,8 +17,8 @@ struct VertexOut {
 
 
 @binding(0) @group(0) var<uniform> camera : Camera;
-
 @binding(1) @group(0) var<storage,read> modelTransforms : array<mat4x4<f32>>;
+@binding(2) @group(0) var<storage,read> objectIndex: array<u32>;  
 
 
     
@@ -39,8 +39,8 @@ fn vertex_main(@location(0) position: vec3<f32>,
 
 struct FragmentOut {
     @location(0) color : vec4<f32>,
-    @location(1) objects: vec4<f32>,
-    @location(2) depth: f32 
+    //@location(1) objects: u32,
+    @location(1) normal: vec4<f32> 
 }
 
 
@@ -60,8 +60,8 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
 
     var output : FragmentOut;
     output.color = vec4<f32>(color,1.0);
-    output.objects = vec4<f32> (modf(f32(fragData.objectId) / 255).fract,0.0,0.0,1.0);
-    output.depth = pos.z;
+    //output.objects = fragData.objectId;
+    output.normal = vec4<f32>(normal,1.0);
 
 
     return output;

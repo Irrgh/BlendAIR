@@ -12,6 +12,8 @@ import { DebugOverlay } from "../gui/DebugOverlay";
 import { Entity } from "../entity/Entity";
 import { Renderer } from '../render/Renderer';
 import { BasicRenderer } from "../render/BasicRenderer";
+import { App } from "../app";
+import fullQuadShader from "../../assets/shaders/fullQuadShader.wgsl";
 
 
 export class Viewport implements Resizable {
@@ -50,13 +52,7 @@ export class Viewport implements Resizable {
      */
     renderResults!: RenderLayers
 
-    private depthStencilFormat: GPUTextureFormat = "depth24plus-stencil8";
 
-    private depthStencilState: GPUDepthStencilState = {
-        format: this.depthStencilFormat,
-        depthWriteEnabled: true, // Enable writing to the depth buffer
-        depthCompare: "less", // Enable depth testing with "less" comparison
-    };
 
 
     private renderer: Renderer;
@@ -90,17 +86,13 @@ export class Viewport implements Resizable {
         this.camera.setPosition(1, 1, 1); /** @todo please change this  */
 
 
-        this.createMeshBuffers();
-
         this.renderer = new BasicRenderer(this);
         this.renderer.render();
-
-        //this.createBindgroup();
     }
 
 
 
-    getRenderer():Renderer {
+    getRenderer(): Renderer {
         return this.renderer;
     }
 
@@ -128,7 +120,7 @@ export class Viewport implements Resizable {
 
             this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1, 100);
             //this.createRenderResults();
-            requestAnimationFrame(this.render);
+            this.renderer.render();
         }
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
     }
@@ -138,197 +130,126 @@ export class Viewport implements Resizable {
 
 
 
+
+
     
 
-    /**
-     * Creates densely packed vertex/index buffers with all `entities` from {@link scene} as well as the corresponding {@link drawParameters}. 
-     */
-    public createMeshBuffers(): void {
 
+
+
+    public createTextureConversionShader(fragment: string,texelFormat:string): GPUShaderModule {
+
+        const frag = /*wgsl*/ `
+
+            ${fullQuadShader}
+
+            @binding(0) @group(0) var texSampler : sampler;
+            @binding(1) @group(0) var texture : texture_2d<${texelFormat}>;
+
+
+            @fragment
+            fn fragment_main (input : FullscreenVertexOutput) -> @location(0) vec4<f32> {
+                ${fragment}
+            }
+        `
+        return App.getRenderDevice().createShaderModule({ code: frag });
+    }
+
+
+
+
+    public drawTexture(texture: GPUTexture, shader: GPUShaderModule) {
+
+        const device = App.getRenderDevice();
+
+
+
+
+
+        const sampler = device.createSampler({
+            addressModeU: "clamp-to-edge",
+            addressModeV: "clamp-to-edge",
+            magFilter: "nearest",
+            minFilter: "nearest"
+        });
+
+        console.log(texture);
+        console.log(sampler);
+
+        const bindgroupLayout = device.createBindGroupLayout({
+            entries: [
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {}
+                }, {
+                    binding: 1,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: {}
+                }
+            ]
+        })
+
+
+        const bindgroup = device.createBindGroup({
+            layout: bindgroupLayout,
+            entries: [
+                {
+                    binding: 0,
+                    resource: sampler
+                }, {
+                    binding: 1,
+                    resource: texture.createView()
+                }
+            ]
+        })
+
+        const pipelineLayout : GPUPipelineLayout = device.createPipelineLayout({
+            bindGroupLayouts: [bindgroupLayout]
+        });
+
+        const renderPipeline = device.createRenderPipeline({
+            vertex: {
+                module: shader,
+                entryPoint: "fullscreen_vertex_shader"
+            },
+            fragment: {
+                module: shader,
+                entryPoint: "fragment_main",
+                targets: [
+                    {format:this.canvasFormat}
+                ]
+            },
+            layout: pipelineLayout
+        });
+
+        const commandEncoder = device.createCommandEncoder();
+        const renderPassEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [
+                {
+                    view: this.context.getCurrentTexture().createView(),
+                    storeOp: "store",
+                    loadOp: "clear"
+                }
+            ]
+        })
+        renderPassEncoder.setPipeline(renderPipeline);
+        renderPassEncoder.setBindGroup(0,bindgroup);
+        renderPassEncoder.draw(6);
+        renderPassEncoder.end();
+
+        device.queue.submit([commandEncoder.finish()]);
         
     }
 
 
-   
-
-    
 
     /**
      * Redraws the scene
      */
     public render = () => {
 
-        if (this.scene.entities.size == 0) {
-            return;
-        }
-
-
-
-
-        const time = performance.now();
-        this.createMeshBuffers();
-        console.log(`creating buffers took: ${performance.now() - time} ms`);
-
-
-
-        const depthStencilView = this.renderResults.depth.createView({
-
-        });
-
-
-
-        const commandEncoder = this.webgpu.getDevice().createCommandEncoder({
-            label: "encoder"
-        }); // definitely needs to be recreated every render pass
-
-
-        const objectIndexTexture = this.webgpu.getDevice().createTexture({
-            size: { width: this.width, height: this.height },
-            format: "bgra8unorm",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT  | GPUTextureUsage.TEXTURE_BINDING,
-            label: "objectIndex",
-            sampleCount:4
-        })
-
-        const readableDepthTexture = this.webgpu.getDevice().createTexture({
-            size: { width: this.width, height: this.height },
-            format: "r32float",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-            label: "readable-depth",
-            sampleCount:4
-        });
-
-
-
-        const renderPassDescriptor: GPURenderPassDescriptor = {     // description of the renderpass
-            colorAttachments: [
-                {
-                    clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
-                    loadOp: "clear",
-                    storeOp: "store",
-                    view: this.renderResults.albedo.createView(),
-                }, {
-                    clearValue: { r: 0, g: 0, b: 1, a: 1 },
-                    loadOp: "clear",
-                    storeOp: "store",
-                    view: objectIndexTexture.createView(),
-                    resolveTarget: this.context.getCurrentTexture().createView({ label: "canvasTexture" })
-                }, {
-                    loadOp: "clear",
-                    storeOp: "store",
-                    view: readableDepthTexture.createView()
-                }
-            ],
-            depthStencilAttachment: {
-                view: depthStencilView,
-                depthLoadOp: "clear",
-                depthStoreOp: "store",
-                stencilLoadOp: "clear",
-                stencilStoreOp: "store",
-                depthClearValue: 1.0,
-                stencilClearValue: 1.0
-            }
-        };
-
-
-        // Retrieve Vertex data from Scene
-
-
-
-        // creating buffers
-
-
-
-        // setting up pipeline
-
-        const vertexBufferLayout: GPUVertexBufferLayout = {
-            arrayStride: 32,
-            attributes: TriangleMesh.attributes,
-            stepMode: "vertex"
-        }
-
-        const shaderModule: GPUShaderModule = this.webgpu.getDevice().createShaderModule({
-            code: shaderMain
-        });
-
-
-
-
-
-        const pipelineDescriptor: GPURenderPipelineDescriptor = {
-            vertex: {
-                module: shaderModule,
-                entryPoint: "vertex_main",
-                buffers: [vertexBufferLayout]
-            },
-            fragment: {
-                module: shaderModule,
-                entryPoint: "fragment_main",
-                targets: [
-                    {
-                        format: this.canvasFormat,
-                    }, {
-                        format: this.canvasFormat,
-                    }, {
-                        format: "r32float"
-                    }
-                ],
-            },
-            primitive: {
-                topology: "triangle-list",
-                stripIndexFormat: undefined
-            },
-            layout: "auto",
-            depthStencil: this.depthStencilState,
-            multisample: {
-                count:4
-            }
-        };
-
-
-        const pipeline = this.webgpu.getDevice().createRenderPipeline(pipelineDescriptor);
-
-        const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
-
-        renderPass.setPipeline(pipeline);
-        //renderPass.setVertexBuffer(0, this.vertexBuffer);
-        //renderPass.setIndexBuffer(this.indexBuffer, "uint32");
-        //renderPass.setBindGroup(0, this.bindgroup);
-
-
-
-        //console.log(this.drawParameters);
-
-        //for (let k = 0; k < this.drawParameters.length; k += 5) {
-
-
-            //this.webgpu.getDevice().queue.writeBuffer(transformIndexUniform,0,new Uint32Array([transformOffset]));
-            //renderPass.drawIndexed(this.drawParameters[k], this.drawParameters[k + 1], this.drawParameters[k + 2], 0, this.drawParameters[k + 4]);
-
-
-
-        //}
-
-
-
-
-        renderPass.end();
-
-        
-
-
-        this.webgpu.getDevice().queue.submit([commandEncoder.finish()])
-
-        readableDepthTexture.destroy();
-        objectIndexTexture.destroy();
-        //depthStencilTexture.destroy();
 
     }
-
-
-
-
-
-
 
 }
