@@ -370,9 +370,7 @@ export class TrianglePass extends RenderPass {
             label: "triangle mesh rendering"
         });
 
-
-
-
+        
         App.getWebGPU().attachTimestamps(renderPassDescriptor);
 
         const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
@@ -405,6 +403,81 @@ export class TrianglePass extends RenderPass {
         renderPass.popDebugGroup();
         renderPass.end()
 
+
+        const objectIndexPassDescriptor : GPURenderPassDescriptor = {
+            colorAttachments: [
+                {
+                    storeOp:"store",
+                    loadOp:"clear",
+                    view: objectIndexTexture.createView()
+                }
+            ], 
+            depthStencilAttachment: {
+                view: depthTexture.createView(),
+                depthLoadOp: "clear",
+                depthStoreOp: "store",
+                stencilLoadOp: "clear",
+                stencilStoreOp: "store",
+                depthClearValue: 1.0,
+                stencilClearValue: 1.0
+            },
+            label:"pain"
+        }
+
+
+        const objectIndexPipeline = device.createRenderPipeline({
+            vertex: {
+                module: shaderModule,
+                entryPoint: "vertex_main",
+                buffers: [this.vertexBufferLayout]
+            },
+            fragment: {
+                module: shaderModule,
+                entryPoint: "fragment_object",
+                targets: [
+                    {
+                        format: "r32uint",
+                    }
+                ],
+            },
+            primitive: {
+                topology: "triangle-list",
+                stripIndexFormat: undefined
+            },
+            layout: pipelineLayout,
+            depthStencil: this.depthStencilState,
+            label: "triangle index rendering"
+        })
+
+        App.getWebGPU().attachTimestamps(objectIndexPassDescriptor);
+
+        const objectIndexRenderPass = commandEncoder.beginRenderPass(objectIndexPassDescriptor);
+
+
+        objectIndexRenderPass.setPipeline(objectIndexPipeline);
+        objectIndexRenderPass.setBindGroup(0, bindgroup);
+        objectIndexRenderPass.setVertexBuffer(0, vertexBuffer);
+        objectIndexRenderPass.setIndexBuffer(indexBuffer, "uint32");
+
+        for (let i = 0; i < this.drawParameters.length; i += 5) {
+
+            objectIndexRenderPass.drawIndexed(
+                this.drawParameters[i],
+                this.drawParameters[i + 1],
+                this.drawParameters[i + 2],
+                this.drawParameters[i + 3],
+                this.drawParameters[i + 4]
+            );
+        }
+
+        
+        objectIndexRenderPass.end()
+
+
+
+
+        App.getWebGPU().prepareTimestampsResolution(objectIndexPassDescriptor,commandEncoder);
+
         App.getWebGPU().prepareTimestampsResolution(renderPassDescriptor,commandEncoder);
 
         device.queue.submit([commandEncoder.finish()]);
@@ -414,6 +487,15 @@ export class TrianglePass extends RenderPass {
         }).catch(error => {
             console.error('Failed to resolve timestamps:', error);
         });
+
+        App.getWebGPU().resolveTimestamp(objectIndexPassDescriptor).then(result => {
+            console.log(`index drawing took ${result/1000} µs`);
+        }).catch(error => {
+            console.error('Failed to resolve timestamps:', error);
+        });
+
+
+
 
         multisampledColorTexture.destroy();
         multisampledDepthTexture.destroy();

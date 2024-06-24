@@ -27,8 +27,7 @@ struct VertexOut {
 
 @binding(0) @group(0) var<uniform> camera : Camera;
 @binding(1) @group(0) var<storage,read> modelTransforms : array<mat4x4<f32>>;
-@binding(2) @group(0) var<storage,read> objectIndex: array<u32>;  
-
+@binding(2) @group(0) var<storage,read> objectIndex: array<u32>;
 
     
 @vertex
@@ -49,30 +48,43 @@ fn vertex_main(input : VertexIn) -> VertexOut {
 
 struct FragmentOut {
     @location(0) color : vec4<f32>,
-    //@location(1) objects: u32,
     @location(1) normal: vec4<f32> 
 }
+
+
+
+
+@fragment
+fn fragment_object(fragData: VertexOut) -> @location(0) u32 {
+
+
+    return fragData.objectId;
+}
+
 
 
 
     
 @fragment
 fn fragment_main(fragData: VertexOut) -> FragmentOut {
-    var normal = normalize(fragData.normal);
-    var pos = fragData.fragPosition;
-    let viewMatrix = camera.view;
+    let normal = normalize(fragData.normal);
 
-    let forward: vec3<f32> = vec3<f32>(-viewMatrix[0][2], -viewMatrix[1][2], -viewMatrix[2][2]);
-
-
-    var color = normal * dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0)));
+    let color = normal * dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0)));
     //var color = vec3<f32>(1.0,1.0,1.0) / pos.z;
+
+    
+
+    let test = fragData.fragPosition;
+
 
     var output : FragmentOut;
     output.color = vec4<f32>(color,1.0);
-    //output.objects = fragData.objectId;
     output.normal = vec4<f32>(normal,1.0);
+    let x : u32 = u32(test.x * f32(camera.width));
+    let y : u32 = u32(test.y * f32(camera.height));
 
+
+    //textureStore(objectIndexTexture,vec2<u32>(x, y),vec4<u32>(fragData.objectId,0,0,0));
 
     return output;
 }

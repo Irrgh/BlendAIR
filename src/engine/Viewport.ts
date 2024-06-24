@@ -133,19 +133,34 @@ export class Viewport implements Resizable {
 
 
 
-    
 
 
 
 
-    public createTextureConversionShader(fragment: string,texelFormat:string): GPUShaderModule {
+
+    public createTextureConversionShader(fragment: string, texelFormat: string): GPUShaderModule {
 
         const frag = /*wgsl*/ `
 
             ${fullQuadShader}
 
-            @binding(0) @group(0) var texSampler : sampler;
-            @binding(1) @group(0) var texture : texture_2d<${texelFormat}>;
+
+
+            fn rand(seed: u32) -> f32 {
+                let a: u32 = 1664525u;
+                let c: u32 = 1013904223u;
+                    let m: u32 = 0xFFFFFFFFu; // 2^32
+
+                var state: u32 = seed;
+                state = (a * state + c) & m;
+
+                // Convert to float between 0 and 1
+                return f32(state) / f32(m);
+            }
+
+
+            @binding(0) @group(0) var<uniform> res : vec2<u32>;
+            @binding(1) @group(0) var texture : texture_storage_2d<${texelFormat},read>;
 
 
             @fragment
@@ -159,38 +174,48 @@ export class Viewport implements Resizable {
 
 
 
-    public drawTexture(texture: GPUTexture, shader: GPUShaderModule) {
+    public drawTexture(texture: GPUTexture, sampleType: GPUTextureFormat, shader: GPUShaderModule) {
 
         const device = App.getRenderDevice();
 
-        const sampler = device.createSampler({
-            addressModeU: "clamp-to-edge",
-            addressModeV: "clamp-to-edge",
-            magFilter: "nearest",
-            minFilter: "nearest"
-        });
+        //const sampler = device.createSampler({
+        //    addressModeU: "clamp-to-edge",
+        //    addressModeV: "clamp-to-edge",
+        //    magFilter: "nearest",
+        //    minFilter: "nearest"
+        //});
 
         const bindgroupLayout = device.createBindGroupLayout({
             entries: [
                 {
                     binding: 0,
                     visibility: GPUShaderStage.FRAGMENT,
-                    sampler: {}
+                    buffer: { type: "uniform" }
                 }, {
                     binding: 1,
                     visibility: GPUShaderStage.FRAGMENT,
-                    texture: {}
+                    storageTexture: {
+                        access: "read-only",
+                        format: sampleType
+                    }
                 }
             ]
         })
 
+        const resolutionBuffer = device.createBuffer({
+            size: 8,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC
+        })
+
+        device.queue.writeBuffer(resolutionBuffer, 0, new Uint32Array([this.width, this.height]));
+        App.getWebGPU().printBufferContent(resolutionBuffer);
 
         const bindgroup = device.createBindGroup({
             layout: bindgroupLayout,
             entries: [
                 {
                     binding: 0,
-                    resource: sampler
+                    resource: { buffer: resolutionBuffer }
                 }, {
                     binding: 1,
                     resource: texture.createView()
@@ -198,7 +223,7 @@ export class Viewport implements Resizable {
             ]
         })
 
-        const pipelineLayout : GPUPipelineLayout = device.createPipelineLayout({
+        const pipelineLayout: GPUPipelineLayout = device.createPipelineLayout({
             bindGroupLayouts: [bindgroupLayout]
         });
 
@@ -211,17 +236,17 @@ export class Viewport implements Resizable {
                 module: shader,
                 entryPoint: "fragment_main",
                 targets: [
-                    {format:this.canvasFormat}
+                    { format: this.canvasFormat }
                 ]
-            }, 
+            },
             primitive: {
                 topology: "triangle-list",
             },
             layout: pipelineLayout,
-            label:"viewport pipeline"
+            label: "viewport pipeline"
         });
 
-        const passDescriptor : GPURenderPassDescriptor = {
+        const passDescriptor: GPURenderPassDescriptor = {
             colorAttachments: [
                 {
                     view: this.context.getCurrentTexture().createView(),
@@ -229,7 +254,7 @@ export class Viewport implements Resizable {
                     loadOp: "clear"
                 }
             ],
-            label:"render texture to viewport"
+            label: "render texture to viewport"
         }
 
         App.getInstance().webgpu.attachTimestamps(passDescriptor)
@@ -242,19 +267,19 @@ export class Viewport implements Resizable {
 
         renderPassEncoder.pushDebugGroup("render to canvas");
         renderPassEncoder.setPipeline(renderPipeline);
-        renderPassEncoder.setBindGroup(0,bindgroup);
-        renderPassEncoder.draw(6,1,0,0);
+        renderPassEncoder.setBindGroup(0, bindgroup);
+        renderPassEncoder.draw(6, 1, 0, 0);
         renderPassEncoder.popDebugGroup();
         renderPassEncoder.end();
-        
-        App.getWebGPU().prepareTimestampsResolution(passDescriptor,commandEncoder);
+
+        App.getWebGPU().prepareTimestampsResolution(passDescriptor, commandEncoder);
 
         device.queue.submit([commandEncoder.finish()]);
-        
+
         App.getWebGPU().resolveTimestamp(passDescriptor).then(result => {
-            console.log(`Canvas Render took: ${result/1000} µs`);
+            console.log(`Canvas Render took: ${result / 1000} µs`);
         })
-        
+
 
     }
 

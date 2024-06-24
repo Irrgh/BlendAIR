@@ -106,7 +106,7 @@ export class WebGPU {
                 resultBuffer: this.device.createBuffer({
                     size: 16,
                     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-                    label: `${passDescriptor}-timestamp-result`
+                    label: `${passDescriptor.label}-timestamp-result`
                 })
             }
 

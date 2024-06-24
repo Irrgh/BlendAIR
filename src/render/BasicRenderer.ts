@@ -68,12 +68,23 @@ export class BasicRenderer extends Renderer {
 
         const shader = this.viewport.createTextureConversionShader(
             /* wgsl */`
-                let color = textureSample(texture,texSampler,input.uv);
-                return color;
-            `,"f32"
+                let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * 800),i32(input.uv.y * 575));
+                let color = textureLoad(texture,coords);
+                if (color.r == 0) {
+                    return vec4<f32>(0.0,0.0,1.0,1.0);
+                }
+
+                let r = fract(f32(color.r) / 127.0);
+                let g = fract(f32(color.r - 9) / 183.0);
+                let b = fract(f32(color.r + 17) / 71.0);
+
+
+                return vec4<f32>(r,g,b,1.0);
+
+            `,"r32uint"
         )
 
-        this.viewport.drawTexture(this.getTexture("color"),shader);         // i swear to god this was commented out and i was debugging everything else 
+        this.viewport.drawTexture(this.getTexture("object-index"), "r32uint",shader);         // i swear to god this was commented out and i was debugging everything else 
     }
 
 
