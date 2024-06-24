@@ -121,6 +121,7 @@ export class WebGPU {
     /**
      * Called after `commandEncoder.finish()`
      * @returns time taken in nanoseconds
+     * @todo add mapping with a renderpass because mapping / unmapping is async meaning one resultBuffer is not enough
      */
     public resolveTimestamps(): Promise<number> {
         return new Promise((resolve, reject) => {
@@ -137,10 +138,11 @@ export class WebGPU {
 
                         resolve(Number(diff));
                     }).catch(err => {
-                        reject(`Failed to map result buffer: '${err}'`); // Default value in case of error
+                        console.error('Failed to map result buffer:', err);
+                        resolve(0); // Default value in case of error
                     });
                 } else {
-                    reject("Buffer is already mapped");
+                    resolve(0); // Default value if buffer is already mapped
                 }
             } else {
                 console.warn(`This webGPU instance does not support 'timestamp-query'. Trying enabling 'WebGPU Developer Features' under chrome://flags.`);
@@ -168,8 +170,8 @@ export class WebGPU {
 
 
         console.log(`${buffer.label} buffer data:`,copiedBuffer);  // Verify the data
-        //stagingBuffer.unmap();
-        //stagingBuffer.destroy();
+        stagingBuffer.unmap();
+        stagingBuffer.destroy();
     }
 
 
