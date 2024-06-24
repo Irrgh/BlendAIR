@@ -123,17 +123,18 @@ export class TrianglePass extends RenderPass {
 
             const mesh: TriangleMesh = object.mesh;
             const instance = instances.get(mesh);
+            const id = scene.getId(object);
 
-            transformArray.set(object.getWorldTransform(), scene.getId(object))
+            transformArray.set(object.getWorldTransform(), (id*16));
 
             if (!instance) {
                 vertexSize += mesh.vertexBuffer.length;
                 indexSize += mesh.elementBuffer.length;
-                instances.set(mesh, { count: 1, ids: [scene.getId(object)] });
+                instances.set(mesh, { count: 1, ids: [id+1] });
                 return;
             }
             instance.count++;
-            instance.ids.push(scene.getId(object));
+            instance.ids.push(id);
 
 
         });
@@ -198,14 +199,14 @@ export class TrianglePass extends RenderPass {
 
         device.queue.writeBuffer(vertexBuffer, 0, vertexArray);
         device.queue.writeBuffer(indexBuffer, 0, indexArray);
-        device.queue.writeBuffer(transformBuffer, 0, drawParameters);
+        device.queue.writeBuffer(transformBuffer, 0, transformArray);
         device.queue.writeBuffer(objectIndexBuffer, 0, idArray);
         this.drawParameters = drawParameters;
 
 
-        console.log("vertex: ",vertexArray);
-        console.log("index: ", indexArray);
-        console.log("transform: ", transformArray);
+        //console.log("vertex: ",vertexArray);
+        //console.log("index: ", indexArray);
+        //console.log("transform: ", transformArray);
 
 
 
@@ -255,11 +256,6 @@ export class TrianglePass extends RenderPass {
             label: "multisample-normal"
         });
 
-
-
-        /** @todo TRANSFORM Buffer please */
-
-
         const bindgroupLayout: GPUBindGroupLayout = device.createBindGroupLayout({
             entries: [
                 {
@@ -304,11 +300,11 @@ export class TrianglePass extends RenderPass {
         const renderPassDescriptor: GPURenderPassDescriptor = {
             colorAttachments: [
                 {
-                    clearValue: { r: 0, g: 0, b: 1, a: 1 },
+                    clearValue: { r: 0, g: 0, b: 0, a: 1 },
                     loadOp: "clear",
                     storeOp: "store",
                     view: multisampledColorTexture.createView(),
-                    resolveTarget: viewport.context.getCurrentTexture().createView()
+                    resolveTarget: colorTexture.createView()
                 }, {
                     clearValue: { r: 0, g: 0, b: 0, a: 1 },
                     loadOp: "clear",

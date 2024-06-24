@@ -199,17 +199,13 @@ export abstract class Renderer {
         cameraViews.width.set([viewport.width]);
         cameraViews.height.set([viewport.height]);
 
-        renderer.destroyBuffer("camera");
-
         const cameraBuffer: GPUBuffer = renderer.createBuffer({
             size: cameraValues.byteLength,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
             label: "camera"
         }, "camera");
 
-        console.log("camera Views: ",cameraViews);
-        console.log("camera buffer: ", cameraValues);
-
+        
         App.getRenderDevice().queue.writeBuffer(cameraBuffer, 0, cameraValues);
     }
 

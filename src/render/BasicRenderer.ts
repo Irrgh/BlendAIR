@@ -73,7 +73,7 @@ export class BasicRenderer extends Renderer {
             `,"f32"
         )
 
-        //this.viewport.drawTexture(this.getTexture("color"),shader);         // i swear to god this was commented out and i was debugging everything else 
+        this.viewport.drawTexture(this.getTexture("color"),shader);         // i swear to god this was commented out and i was debugging everything else 
     }
 
 

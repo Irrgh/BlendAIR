@@ -52,14 +52,14 @@ export class Scene {
 
     public getId(entity:Entity):number {
         const id = this.entityIndecies.get(entity);
-        if (id) {return id;}
+        if (id != undefined) {return id;}
         throw new Error(`Entity ${entity} does not exist.`)
     }
 
 
     public addEntity (entity : MeshInstance) {
         this.entities.set(entity.name,entity);
-        this.entityIndecies.set(entity,this.entityIndecies.size+1);
+        this.entityIndecies.set(entity,this.entityIndecies.size);
     }
 
 

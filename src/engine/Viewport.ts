@@ -74,7 +74,8 @@ export class Viewport implements Resizable {
         this.context = <GPUCanvasContext>canvas.getContext("webgpu");
         this.context.configure({
             device: this.webgpu.getDevice(),
-            format: this.canvasFormat
+            format: this.canvasFormat,
+            alphaMode: "premultiplied",
         });
 
         this.width = canvas.width;
@@ -162,19 +163,12 @@ export class Viewport implements Resizable {
 
         const device = App.getRenderDevice();
 
-
-
-
-
         const sampler = device.createSampler({
             addressModeU: "clamp-to-edge",
             addressModeV: "clamp-to-edge",
             magFilter: "nearest",
             minFilter: "nearest"
         });
-
-        console.log(texture);
-        console.log(sampler);
 
         const bindgroupLayout = device.createBindGroupLayout({
             entries: [
@@ -227,18 +221,21 @@ export class Viewport implements Resizable {
             label:"viewport pipeline"
         });
 
-        const commandEncoder = device.createCommandEncoder();
-        const renderPassEncoder = commandEncoder.beginRenderPass({
+        const passDescriptor : GPURenderPassDescriptor = {
             colorAttachments: [
                 {
                     view: this.context.getCurrentTexture().createView(),
-                    clearValue: {r:0,g:0,b:0,a:1},
                     storeOp: "store",
                     loadOp: "clear"
                 }
             ],
             label:"render texture to viewport"
-        })
+        }
+
+        App.getInstance().webgpu.attachTimestamps(passDescriptor)
+
+        const commandEncoder = device.createCommandEncoder();
+        const renderPassEncoder = commandEncoder.beginRenderPass(passDescriptor)
 
 
 
@@ -250,9 +247,15 @@ export class Viewport implements Resizable {
         renderPassEncoder.popDebugGroup();
         renderPassEncoder.end();
         
+        App.getInstance().webgpu.prepareTimestampsResolution(commandEncoder);
 
         device.queue.submit([commandEncoder.finish()]);
         
+        App.getInstance().webgpu.resolveTimestamps().then(result => {
+            console.log(`Canvas Render took: ${result/1000} µs`);
+        })
+        
+
     }
 
 
