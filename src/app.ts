@@ -35,7 +35,9 @@ export class App {
         return App.getInstance().webgpu.getDevice();
     }
 
-
+    public static getWebGPU():WebGPU {
+        return App.getInstance().webgpu;
+    }
 
 
 

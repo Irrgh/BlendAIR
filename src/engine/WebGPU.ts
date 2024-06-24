@@ -129,19 +129,18 @@ export class WebGPU {
                     const resultBuffer = this.resultBuffer;
                     this.resultBuffer.mapAsync(GPUMapMode.READ).then(() => {
 
-                        const mappedRange = resultBuffer.getMappedRange(0,resultBuffer.size);
+                        const mappedRange = resultBuffer.getMappedRange(0, resultBuffer.size);
                         const times = new BigInt64Array(mappedRange);
-                        
-                        const diff : bigint = times[1] - times[0];
+
+                        const diff: bigint = times[1] - times[0];
                         resultBuffer.unmap();
 
                         resolve(Number(diff));
                     }).catch(err => {
-                        console.error('Failed to map result buffer:', err);
-                        resolve(0); // Default value in case of error
+                        reject(`Failed to map result buffer: '${err}'`); // Default value in case of error
                     });
                 } else {
-                    resolve(0); // Default value if buffer is already mapped
+                    reject("Buffer is already mapped");
                 }
             } else {
                 console.warn(`This webGPU instance does not support 'timestamp-query'. Trying enabling 'WebGPU Developer Features' under chrome://flags.`);
@@ -149,7 +148,31 @@ export class WebGPU {
             }
         });
     }
-    
+
+    public async printBufferContent(buffer: GPUBuffer) {
+
+        const stagingBuffer = this.device.createBuffer({
+            size: buffer.size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            label: `reading-${buffer.label}`
+        })
+
+        const commandEncoder = this.device.createCommandEncoder();
+        commandEncoder.copyBufferToBuffer(buffer, 0, stagingBuffer, 0, buffer.size);
+        const commands = commandEncoder.finish();
+        this.device.queue.submit([commands]);
+
+        await stagingBuffer.mapAsync(GPUMapMode.READ);
+        const originalBuffer = stagingBuffer.getMappedRange(0,buffer.size);
+        const copiedBuffer = originalBuffer.slice(0);
+
+
+        console.log(`${buffer.label} buffer data:`,copiedBuffer);  // Verify the data
+        //stagingBuffer.unmap();
+        //stagingBuffer.destroy();
+    }
+
+
 
 
 }
