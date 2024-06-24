@@ -2,10 +2,12 @@
  * Represents a handle for easy access to the core parts of WebGPU
  */
 export class WebGPU {
-    public canTimestamp: boolean = false;
     private querySet?: GPUQuerySet;
     private resolveBuffer?: GPUBuffer;
     private resultBuffer?: GPUBuffer;
+    private timeStamps?: Map<GPURenderPassDescriptor | GPUComputePassDescriptor, TimestampData>
+
+
 
     private constructor() { }
 
@@ -40,32 +42,21 @@ export class WebGPU {
                 throw new Error("No appropriate GPUAdapter found.");
             }
 
-            this.canTimestamp = this.adapter.features.has('timestamp-query');
+            const canTimestamp = this.adapter.features.has('timestamp-query');
             this.device = <GPUDevice>await this.adapter.requestDevice({
                 requiredFeatures:
-                    (this.canTimestamp ? ['timestamp-query'] : []),
+                    (canTimestamp ? ['timestamp-query'] : []),
             });
             if (!this.device) {
                 throw new Error("No appropriate GPUDevice found.");
             }
 
-
-            if (this.canTimestamp) {
-                this.querySet = this.device.createQuerySet({
-                    type: 'timestamp',
-                    count: 2,
-                });
-                this.resolveBuffer = this.device.createBuffer({
-                    size: this.querySet.count * 8,
-                    usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
-                    label: "resolve"
-                });
-                this.resultBuffer = this.device.createBuffer({
-                    size: this.resolveBuffer.size,
-                    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-                    label: "result"
-                });
+            if (canTimestamp) {
+                this.timeStamps = new Map();
             }
+
+
+
         } catch (error) {
             console.error("Error initializing WebGPU:", error);
             // Handle error gracefully, e.g., display a message to the user
@@ -90,11 +81,39 @@ export class WebGPU {
         return this.device
     }
 
+    public canTimestamp(): boolean {
+        return this.timeStamps ? true : false;
+    }
+
+
+
+
     public attachTimestamps(passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor) {
 
-        if (this.canTimestamp && this.querySet) {
+        if (this.canTimestamp()) {
+
+            const data: TimestampData = {
+                querySet: this.device.createQuerySet({
+                    type: "timestamp",
+                    count: 2,
+                    label: `${passDescriptor.label}-timestamp-queryset`
+                }),
+                resolveBuffer: this.device.createBuffer({
+                    size: 16,
+                    usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+                    label: `${passDescriptor}-timestamp-resolve`
+                }),
+                resultBuffer: this.device.createBuffer({
+                    size: 16,
+                    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+                    label: `${passDescriptor}-timestamp-result`
+                })
+            }
+
+            this.timeStamps?.set(passDescriptor, data);
+
             const timestampWrites: GPURenderPassTimestampWrites = {
-                querySet: this.querySet,
+                querySet: data.querySet,
                 beginningOfPassWriteIndex: 0,
                 endOfPassWriteIndex: 1,
             }
@@ -106,14 +125,22 @@ export class WebGPU {
 
 
     /**
-     * Needs to be called before `encoder.finish()` is called.
-     * @param encoder 
+     * Prepares the reading of timestamps. Needs to be called after `pass.end()` and before `encoder.finish()`.
+     * @param passDescriptor Descriptor of the pass, where timestamps are attached to.
+     * @param encoder {@link GPUCommandEncoder} needed for resolving the {@link GPUQuerySet}.
      */
-    public prepareTimestampsResolution(encoder: GPUCommandEncoder) {
-        if (this.canTimestamp && this.resultBuffer && this.resolveBuffer && this.querySet) {
-            encoder.resolveQuerySet(this.querySet, 0, 2, this.resolveBuffer, 0);
-            if (this.resultBuffer.mapState === 'unmapped') {
-                encoder.copyBufferToBuffer(this.resolveBuffer, 0, this.resultBuffer, 0, this.resultBuffer.size);
+    public prepareTimestampsResolution(passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor, encoder: GPUCommandEncoder) {
+
+        if (this.canTimestamp()) {
+
+            const data = this.timeStamps?.get(passDescriptor);
+            if (data == undefined) {
+                throw new Error(`There are no timestamps attached for the pass: ${passDescriptor}`,);
+            }
+
+            encoder.resolveQuerySet(data.querySet, 0, 2, data.resolveBuffer, 0);
+            if (data.resultBuffer.mapState === 'unmapped') {
+                encoder.copyBufferToBuffer(data.resolveBuffer, 0, data.resultBuffer, 0, data.resultBuffer.size);
             }
         }
     }
@@ -123,18 +150,27 @@ export class WebGPU {
      * @returns time taken in nanoseconds
      * @todo add mapping with a renderpass because mapping / unmapping is async meaning one resultBuffer is not enough
      */
-    public resolveTimestamps(): Promise<number> {
+    public resolveTimestamp(passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor): Promise<number> {
+        
+          
         return new Promise((resolve, reject) => {
-            if (this.canTimestamp && this.resultBuffer && this.resolveBuffer && this.querySet) {
-                if (this.resultBuffer.mapState === 'unmapped') {
-                    const resultBuffer = this.resultBuffer;
-                    this.resultBuffer.mapAsync(GPUMapMode.READ).then(() => {
+            if (this.canTimestamp()) {
 
-                        const mappedRange = resultBuffer.getMappedRange(0, resultBuffer.size);
+                const data = this.timeStamps?.get(passDescriptor);
+                if (data == undefined) {
+                    reject(`There are no timestamps attached for the pass: ${passDescriptor}`,);
+                    return;
+                }
+
+                if (data.resultBuffer.mapState === 'unmapped') {
+                    const resultBuffer = this.resultBuffer;
+                    data.resultBuffer.mapAsync(GPUMapMode.READ).then(() => {
+
+                        const mappedRange = data.resultBuffer.getMappedRange(0, data.resultBuffer.size);
                         const times = new BigInt64Array(mappedRange);
 
                         const diff: bigint = times[1] - times[0];
-                        resultBuffer.unmap();
+                        data.resultBuffer.unmap();
 
                         resolve(Number(diff));
                     }).catch(err => {
@@ -165,11 +201,11 @@ export class WebGPU {
         this.device.queue.submit([commands]);
 
         await stagingBuffer.mapAsync(GPUMapMode.READ);
-        const originalBuffer = stagingBuffer.getMappedRange(0,buffer.size);
+        const originalBuffer = stagingBuffer.getMappedRange(0, buffer.size);
         const copiedBuffer = originalBuffer.slice(0);
 
 
-        console.log(`${buffer.label} buffer data:`,copiedBuffer);  // Verify the data
+        console.log(`${buffer.label} buffer data:`, copiedBuffer);  // Verify the data
         stagingBuffer.unmap();
         stagingBuffer.destroy();
     }

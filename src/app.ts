@@ -74,7 +74,7 @@ export class App {
         console.log("mesh2: ", mesh2);
     
     
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 10000; i++) {
     
             let entity : MeshInstance;
     
@@ -97,52 +97,7 @@ export class App {
         })
 
     
-        //quat.setAxisAngle(viewport.camera.rotation,[-1,-1,-1],0);
-    
-        //viewport.camera.setOrthographicProjection(400,300,1,1000);
-
-
-        
-
-
-    
-        let t = 0;
-    
-        const renderLoop = () => {
-    
-            t += 0.01;
-            
-            this.currentScene.entities.forEach((entity : Entity, uuid : String) => {
-
-
-                const increment = quat.setAxisAngle(quat.create(),entity.getForward(),0.01);
-                quat.multiply(entity.rotation,increment,entity.rotation);
-                quat.normalize(entity.rotation,entity.rotation);
-            })
-    
-            
-            const startTime = performance.now();
-            //viewport.render();
-    
-            console.log(`render time in ms: ${performance.now() - startTime}`);
-    
-            console.clear();
-            requestAnimationFrame(renderLoop)
-        }
-    
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
 

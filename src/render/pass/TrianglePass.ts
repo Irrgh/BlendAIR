@@ -218,7 +218,12 @@ export class TrianglePass extends RenderPass {
 
     public render(viewport: Viewport): void {
 
+        console.time("mesh creation")
+
         this.createMeshBuffer(viewport);
+        
+        console.timeEnd("mesh creation")
+
         const device: GPUDevice = App.getRenderDevice();
 
         const colorTexture = this.renderer.getTexture("color");
@@ -368,7 +373,7 @@ export class TrianglePass extends RenderPass {
 
 
 
-        App.getInstance().webgpu.attachTimestamps(renderPassDescriptor);
+        App.getWebGPU().attachTimestamps(renderPassDescriptor);
 
         const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
 
@@ -400,11 +405,11 @@ export class TrianglePass extends RenderPass {
         renderPass.popDebugGroup();
         renderPass.end()
 
-        App.getInstance().webgpu.prepareTimestampsResolution(commandEncoder);
+        App.getWebGPU().prepareTimestampsResolution(renderPassDescriptor,commandEncoder);
 
         device.queue.submit([commandEncoder.finish()]);
 
-        App.getInstance().webgpu.resolveTimestamps().then(result => {
+        App.getWebGPU().resolveTimestamp(renderPassDescriptor).then(result => {
             console.log(`Rendering took ${result/1000} µs`);
         }).catch(error => {
             console.error('Failed to resolve timestamps:', error);

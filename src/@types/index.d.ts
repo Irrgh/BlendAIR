@@ -109,7 +109,11 @@ declare type Modifier = {
 }
 
 
-
+declare type TimestampData = {
+    querySet: GPUQuerySet,
+    resolveBuffer: GPUBuffer,
+    resultBuffer: GPUBuffer;
+}
 
 
 interface Window {
