@@ -90,10 +90,8 @@ export class SelectionOutlinePass extends RenderPass {
 
             let depth = textureSample(texture,textureSampler,coords);
 
-            let r : f32 = max(min(radius * (1.0 - depth),radius),0.1);
-
-            let x : f32 = r / (f32(camera.width));
-            let y : f32 = r / (f32(camera.height));
+            let x : f32 = radius / (f32(camera.width));
+            let y : f32 = radius / (f32(camera.height));
 
 
             var samples = array<f32,4>(
@@ -126,11 +124,11 @@ export class SelectionOutlinePass extends RenderPass {
 
             var out : FragmentOut;
             //out.color = vec4<f32>(input.uv,0.0,1.0);
-            let gradient = robertsCross(1.25,depthTexture,input.uv);
-            let fresnel = fresnel(normal.xyz,view,3.0);
+            let gradient = robertsCross(1.0,depthTexture,input.uv);
+            let fresnel = fresnel(normal.xyz,view,1.0);
             var outline = gradient * fresnel;
 
-            if (outline < 0.5) { 
+            if (outline < 0.85) { 
                 out.color = color;
             } else {
                 out.color = vec4<f32>(outline,outline,outline,1.0);
