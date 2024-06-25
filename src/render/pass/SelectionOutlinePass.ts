@@ -79,7 +79,7 @@ export class SelectionOutlinePass extends RenderPass {
             return (2.0 * near * far) / (far + near - depth * (far - near));
         }
 
-        fn robertsCross(r : f32, texture : texture_depth_2d, coords : vec2<f32>) -> f32 {
+        fn robertsCross(radius : f32, texture : texture_depth_2d, coords : vec2<f32>) -> f32 {
 
 
             let m10 = camera.proj[2][2];
@@ -88,14 +88,16 @@ export class SelectionOutlinePass extends RenderPass {
             let near = m14 / (m10 - 1);
             let far = m14 / (m10 + 1);
 
-            let depth = linearizeDepth(textureSample(texture,textureSampler,coords),near,far);
+            let depth = textureSample(texture,textureSampler,coords);
 
-            let x : f32 = r / (f32(camera.width) * depth);
-            let y : f32 = r / (f32(camera.height) * depth);
+            let r : f32 = max(min(radius * (1.0 - depth),radius),0.1);
+
+            let x : f32 = r / (f32(camera.width));
+            let y : f32 = r / (f32(camera.height));
 
 
             var samples = array<f32,4>(
-                depth,
+                linearizeDepth(depth,near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(0,y)),near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,0)),near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,y)),near,far),
@@ -124,11 +126,11 @@ export class SelectionOutlinePass extends RenderPass {
 
             var out : FragmentOut;
             //out.color = vec4<f32>(input.uv,0.0,1.0);
-            let gradient = robertsCross(5.0,depthTexture,input.uv);
-            let fresnel = fresnel(normal.xyz,view,1.0);
+            let gradient = robertsCross(1.25,depthTexture,input.uv);
+            let fresnel = fresnel(normal.xyz,view,3.0);
             var outline = gradient * fresnel;
 
-            if (outline < 0.8) { 
+            if (outline < 0.5) { 
                 out.color = color;
             } else {
                 out.color = vec4<f32>(outline,outline,outline,1.0);
