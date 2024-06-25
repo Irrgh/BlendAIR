@@ -48,7 +48,8 @@ fn vertex_main(input : VertexIn) -> VertexOut {
 
 struct FragmentOut {
     @location(0) color : vec4<f32>,
-    @location(1) normal: vec4<f32> 
+    @location(1) normal: vec4<f32>,
+    @location(2) object: u32,
 }
 
 
@@ -72,16 +73,10 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
     let color = normal * dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0)));
     //var color = vec3<f32>(1.0,1.0,1.0) / pos.z;
 
-    
-
-    let test = fragData.fragPosition;
-
-
     var output : FragmentOut;
     output.color = vec4<f32>(color,1.0);
     output.normal = vec4<f32>(normal,1.0);
-    let x : u32 = u32(test.x * f32(camera.width));
-    let y : u32 = u32(test.y * f32(camera.height));
+    output.object = fragData.objectId;
 
 
     //textureStore(objectIndexTexture,vec2<u32>(x, y),vec4<u32>(fragData.objectId,0,0,0));

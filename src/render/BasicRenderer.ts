@@ -68,10 +68,10 @@ export class BasicRenderer extends Renderer {
 
         const shader = this.viewport.createTextureConversionShader(
             /* wgsl */`
-                let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * 800),i32(input.uv.y * 575));
+                let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * f32(res.x)),i32(input.uv.y * f32(res.y)));
                 let color = textureLoad(texture,coords);
                 if (color.r == 0) {
-                    return vec4<f32>(0.0,0.0,1.0,1.0);
+                    return vec4<f32>(0.0,0.0,0.0,0.0);
                 }
 
                 let r = fract(f32(color.r) / 127.0);
