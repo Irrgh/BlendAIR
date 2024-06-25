@@ -138,26 +138,11 @@ export class Viewport implements Resizable {
 
 
 
-    public createTextureConversionShader(fragment: string, texelFormat: string): GPUShaderModule {
+    private createTextureConversionShader(fragment: string, texelFormat: string): GPUShaderModule {
 
         const frag = /*wgsl*/ `
 
             ${fullQuadShader}
-
-
-
-            fn rand(seed: u32) -> f32 {
-                let a: u32 = 1664525u;
-                let c: u32 = 1013904223u;
-                    let m: u32 = 0xFFFFFFFFu; // 2^32
-
-                var state: u32 = seed;
-                state = (a * state + c) & m;
-
-                // Convert to float between 0 and 1
-                return f32(state) / f32(m);
-            }
-
 
             @binding(0) @group(0) var<uniform> res : vec2<u32>;
             @binding(1) @group(0) var texture : texture_storage_2d<${texelFormat},read>;
@@ -174,16 +159,12 @@ export class Viewport implements Resizable {
 
 
 
-    public drawTexture(texture: GPUTexture, sampleType: GPUTextureFormat, shader: GPUShaderModule) {
+    public drawTexture(texture: GPUTexture, sampleType: GPUTextureFormat, fragment: string) {
 
         const device = App.getRenderDevice();
 
-        //const sampler = device.createSampler({
-        //    addressModeU: "clamp-to-edge",
-        //    addressModeV: "clamp-to-edge",
-        //    magFilter: "nearest",
-        //    minFilter: "nearest"
-        //});
+        const shaderModule = this.createTextureConversionShader(fragment, sampleType);
+
 
         const bindgroupLayout = device.createBindGroupLayout({
             entries: [
@@ -208,7 +189,6 @@ export class Viewport implements Resizable {
         })
 
         device.queue.writeBuffer(resolutionBuffer, 0, new Uint32Array([this.width, this.height]));
-        App.getWebGPU().printBufferContent(resolutionBuffer);
 
         const bindgroup = device.createBindGroup({
             layout: bindgroupLayout,
@@ -229,11 +209,11 @@ export class Viewport implements Resizable {
 
         const renderPipeline = device.createRenderPipeline({
             vertex: {
-                module: shader,
+                module: shaderModule,
                 entryPoint: "fullscreen_vertex_shader"
             },
             fragment: {
-                module: shader,
+                module: shaderModule,
                 entryPoint: "fragment_main",
                 targets: [
                     { format: this.canvasFormat }

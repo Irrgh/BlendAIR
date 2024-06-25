@@ -17,7 +17,12 @@ struct Selections {
     indecies: array<u32>         // all selections including primary
 }
 
-
+struct VertexOutput {
+    @builtin(position)
+    position: vec4<f32>,
+    @location(0)
+    uv: vec2<f32>,
+};
 
 
 @binding(0) @group(1) var colorTexture : texture_storage_2d<rgba8unorm,read>;
@@ -29,12 +34,22 @@ struct Selections {
 @binding(6) @group(1) var<uniform> camera : Camera;
 
 
+struct FragmentOut {
+    color: vec4<f32>,
+    selection: vec4<f32>
+}
 
 
-@compute @workgroup_size(1, 1)    // todo replace workgroup size dynamically
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let x: u32 = global_id.x;
-    let y: u32 = global_id.y;
+
+
+@fragment
+fn fragment_main(input : VertexOutput) -> FragmentOut {
+    
+    var out : FragmentOut;
+    out.color = vec4<f32>(input.uv,0.0,1.0);
+    out.selection = vec4<f32>(0.0,0.0,0.0,1.0);
+
+    return out;
 
     if x >= camera.width || y >= camera.height {
         return;
@@ -61,10 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             textureStore(selectionTexture, vec2<u32>(x, y), color);
             textureStore(colorTexture, vec2<u32>(x,y), color);
-        //}
-
-        //return;
-    //}
+        
 }
 
 

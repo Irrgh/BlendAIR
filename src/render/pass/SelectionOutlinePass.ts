@@ -3,16 +3,15 @@ import { Renderer } from '../Renderer';
 import { RenderPass } from "./RenderPass";
 import { WebGPU } from '../../engine/WebGPU';
 import { App } from "../../app";
-
-import selectionOutlineKernel from "../../assets/shaders/selectionOutline.wgsl"
 import { Entity } from '../../entity/Entity';
 import { Scene } from '../../engine/Scene';
+import fullQuadShader from "../../../assets/shaders/fullQuadShader.wgsl";
 
 
 
 export class SelectionOutlinePass extends RenderPass {
 
-    constructor(renderer:Renderer,primaryColor: GPUColor, secondaryColor: GPUColor) {
+    constructor(renderer: Renderer, primaryColor: GPUColor, secondaryColor: GPUColor) {
 
         const input: PassResource[] = [
             {
@@ -38,7 +37,7 @@ export class SelectionOutlinePass extends RenderPass {
 
         ]
 
-        super(renderer,input, output);
+        super(renderer, input, output);
         this.primaryColor = primaryColor;
         this.secondaryColor = secondaryColor;
 
@@ -48,34 +47,105 @@ export class SelectionOutlinePass extends RenderPass {
     private primaryColor: GPUColor;
     private secondaryColor: GPUColor;
 
-   
+    private shader: string = /*wgsl */ `
+        ${fullQuadShader}
 
-    public render(viewport: Viewport): void {
+        struct Camera {
+            view:mat4x4<f32>,
+            proj:mat4x4<f32>,
+            width:u32,
+            height:u32,
+        }
 
-        const device = App.getRenderDevice();
+        struct Selections {
+            primaryColor: vec4<f32>,
+            secondaryColor: vec4<f32>,
+            count: u32,                  // all selections including primary
+            primary: u32,                // index of primary in indecies
+            indecies: array<u32>         // all selections including primary
+        }
+
+        struct FragmentOut {
+            @location(0) color: vec4<f32>,
+            @location(1) selection: vec4<f32>
+        }
+
+        // i feel like inverting it is unintuitive
+        fn fresnel(normal:vec3<f32>, view:vec3<f32>, exponent:f32) -> f32 {
+            return pow(1.0 - dot(normal,view), exponent);
+        }
+
+        fn linearizeDepth(depth: f32, near: f32, far: f32) -> f32 {
+            return (2.0 * near * far) / (far + near - depth * (far - near));
+        }
+
+        fn robertsCross(r : f32, texture : texture_depth_2d, coords : vec2<f32>) -> f32 {
+
+
+            let m10 = camera.proj[2][2];
+            let m14 = camera.proj[2][3];
+
+            let near = m14 / (m10 - 1);
+            let far = m14 / (m10 + 1);
+
+            let depth = linearizeDepth(textureSample(texture,textureSampler,coords),near,far);
+
+            let x : f32 = r / (f32(camera.width) * depth);
+            let y : f32 = r / (f32(camera.height) * depth);
+
+
+            var samples = array<f32,4>(
+                depth,
+                linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(0,y)),near,far),
+                linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,0)),near,far),
+                linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,y)),near,far),
+            );
+
+            return (abs(samples[0] - samples[3]) + abs(samples[2] - samples[1])) ;
+        }
+
+        
+        @binding(0) @group(0) var depthTexture : texture_depth_2d;
+        @binding(1) @group(0) var objectTexture : texture_2d<u32>;
+        @binding(2) @group(0) var normalTexture : texture_2d<f32>;
+        @binding(3) @group(0) var colorTexture : texture_2d<f32>;  
+        @binding(4) @group(0) var<storage,read> selections : Selections;
+        @binding(5) @group(0) var<uniform> camera : Camera;
+        @binding(6) @group(0) var textureSampler : sampler;
+
+        @fragment
+        fn selection_main(input : VertexOutput) -> FragmentOut {
+
+
+            let view = vec3<f32>(-camera.view[0][2],-camera.view[1][2],-camera.view[2][2]);
+            let normal = textureSample(normalTexture,textureSampler,input.uv);
+            let color = textureSample(colorTexture,textureSampler,input.uv);
+
+
+            var out : FragmentOut;
+            //out.color = vec4<f32>(input.uv,0.0,1.0);
+            let gradient = robertsCross(5.0,depthTexture,input.uv);
+            let fresnel = fresnel(normal.xyz,view,1.0);
+            var outline = gradient * fresnel;
+
+            if (outline < 0.8) { 
+                out.color = color;
+            } else {
+                out.color = vec4<f32>(outline,outline,outline,1.0);
+            }
+
+            out.selection = vec4<f32>(outline,outline,outline,1.0);
+        
+            return out;
+         
+        }
+    `;
+
+
+
+    private createSelectionBuffer(viewport: Viewport) {
+
         const scene = viewport.scene;
-
-
-        const colorTexture: GPUTexture = this.renderer.getTexture("color");
-        const depthTexture: GPUTexture = this.renderer.getTexture("depth");
-        const objectIndexTexture: GPUTexture = this.renderer.getTexture("object-index");
-        const combinedTexture: GPUTexture = this.renderer.createTexture({
-            size: { width: viewport.width, height: viewport.height },
-            format: "rgba8unorm",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
-            label: "combined"
-        }, "combined");
-
-        const selectionTexture: GPUTexture = this.renderer.createTexture({
-            size: { width: viewport.width, height: viewport.height },
-            format: 'rgba8unorm',
-            usage: 0
-        }, "selection");
-
-
-
-
-        // defining Selections Buffer
 
         const selections = Array.from(scene.selections);
         const selectionsValues = new ArrayBuffer(48 + selections.length * 4);
@@ -86,63 +156,108 @@ export class SelectionOutlinePass extends RenderPass {
             primary: new Uint32Array(selectionsValues, 36, 1),
             indecies: new Uint32Array(selectionsValues, 40, selections.length + 2),
         };
-        
+
         selectionsViews.primaryColor.set(Object.values(this.primaryColor));
         selectionsViews.secondaryColor.set(Object.values(this.secondaryColor));
         selectionsViews.count.set([selections.length]);
         selectionsViews.primary.set([scene.primarySelection ? scene.getId(scene.primarySelection) : 0]);   // Object index 0 in ENVIRONMENT 
-        selectionsViews.indecies.set(selections.map((entity:Entity) => {return scene.getId(entity)}));
-
+        selectionsViews.indecies.set(selections.map((entity: Entity) => { return scene.getId(entity) }));
 
         const selectionBuffer: GPUBuffer = this.renderer.createBuffer({
             size: selectionsValues.byteLength,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         }, "selection");
 
+
+        App.getRenderDevice().queue.writeBuffer(selectionBuffer, 0, selectionsValues);
+    }
+
+
+
+
+    public render(viewport: Viewport): void {
+
+        this.createSelectionBuffer(viewport);
+
+
+
+
+        const device = App.getRenderDevice();
+        const scene = viewport.scene;
+
+
+        const colorTexture: GPUTexture = this.renderer.getTexture("color");
+
+        const colorInputTexture: GPUTexture = device.createTexture({
+            size: {width:viewport.width,height:viewport.height},
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING
+        });
+
+
+        const depthTexture: GPUTexture = this.renderer.getTexture("depth");
+        const normalTexture: GPUTexture = this.renderer.getTexture("normal");
+        const objectIndexTexture: GPUTexture = this.renderer.getTexture("object-index");
+
+        const selectionTexture: GPUTexture = this.renderer.createTexture({
+            size: { width: viewport.width, height: viewport.height },
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
+        }, "selection");
+
+        const selectionBuffer = this.renderer.getBuffer("selection");
+
+
+
         /**  defining resolution Buffer  @todo probably move this into camera data buffer as a common buffer */
 
-        const cameraUniformBuffer : GPUBuffer = this.renderer.getBuffer("camera");
+        const cameraUniformBuffer: GPUBuffer = this.renderer.getBuffer("camera");
 
-        device.queue.writeBuffer(selectionBuffer,0,selectionsValues);
+        const sampler = device.createSampler({
+            addressModeU: "clamp-to-edge",
+            addressModeV: "clamp-to-edge",
+            magFilter: "linear",
+            minFilter: "linear"
+        });
+
+
+
 
         const bindGroupLayout: GPUBindGroupLayout = device.createBindGroupLayout({
             entries: [
                 {
                     binding: 0,
-                    visibility: GPUShaderStage.COMPUTE,
-                    texture: {}
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: { sampleType: "depth" }
                 },
                 {
                     binding: 1,
-                    visibility: GPUShaderStage.COMPUTE,
-                    texture: {}
-                },
-                {
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: { sampleType: "uint" }
+                }, {
                     binding: 2,
-                    visibility: GPUShaderStage.COMPUTE,
+                    visibility: GPUShaderStage.FRAGMENT,
                     texture: {}
                 }, {
                     binding: 3,
-                    visibility: GPUShaderStage.COMPUTE,
+                    visibility: GPUShaderStage.FRAGMENT,
                     texture: {}
-                },
-                {
+                }, {
                     binding: 4,
-                    visibility: GPUShaderStage.COMPUTE,
-                    texture: {}
-                },
-                {
-                    binding: 5,
-                    visibility: GPUShaderStage.COMPUTE,
+                    visibility: GPUShaderStage.FRAGMENT,
                     buffer: {
                         type: "read-only-storage"
                     }
                 }, {
-                    binding: 6,
-                    visibility: GPUShaderStage.COMPUTE,
+                    binding: 5,
+                    visibility: GPUShaderStage.FRAGMENT,
                     buffer: {
                         type: "uniform"
                     }
+                }, {
+                    binding: 6,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {}
                 }
 
             ]
@@ -155,25 +270,25 @@ export class SelectionOutlinePass extends RenderPass {
             entries: [
                 {
                     binding: 0,
-                    resource: colorTexture.createView()
+                    resource: depthTexture.createView({ aspect: "depth-only" })
                 }, {
                     binding: 1,
-                    resource: depthTexture.createView()
-                }, {
-                    binding: 2,
                     resource: objectIndexTexture.createView()
                 }, {
+                    binding: 2,
+                    resource: normalTexture.createView()
+                }, {
                     binding: 3,
-                    resource: combinedTexture.createView()
+                    resource: colorInputTexture.createView()
                 }, {
                     binding: 4,
-                    resource:  selectionTexture.createView()
+                    resource: { buffer: selectionBuffer }
                 }, {
                     binding: 5,
-                    resource: {buffer: selectionBuffer}
+                    resource: { buffer: cameraUniformBuffer }
                 }, {
                     binding: 6,
-                    resource: {buffer: cameraUniformBuffer}
+                    resource: sampler
                 }
             ]
         });
@@ -182,11 +297,38 @@ export class SelectionOutlinePass extends RenderPass {
             bindGroupLayouts: [bindGroupLayout]
         });
 
-        const pipeline = device.createComputePipeline({
-            compute: {
-                module: device.createShaderModule({
-                    code: selectionOutlineKernel
-                })
+        const shaderModule = device.createShaderModule({
+            code: this.shader
+        });
+
+        const renderPassDescriptor: GPURenderPassDescriptor = {
+            colorAttachments: [
+                {
+                    view: colorTexture.createView(),
+                    storeOp: "store",
+                    loadOp: "clear"
+                }, {
+                    view: selectionTexture.createView(),
+                    storeOp: "store",
+                    loadOp: "clear"
+                }
+            ]
+        }
+
+
+
+        const pipeline = device.createRenderPipeline({
+            vertex: {
+                module: shaderModule,
+                entryPoint: "fullscreen_vertex_shader"
+            },
+            fragment: {
+                module: shaderModule,
+                entryPoint: "selection_main",
+                targets: [
+                    { format: "rgba8unorm" },
+                    { format: "rgba8unorm" }
+                ]
             },
             layout: pipelineLayout
         });
@@ -194,13 +336,17 @@ export class SelectionOutlinePass extends RenderPass {
 
         const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
 
-        const computePass: GPUComputePassEncoder = commandEncoder.beginComputePass();
+        commandEncoder.copyTextureToTexture({texture:colorTexture},{texture:colorInputTexture},{width:viewport.width,height:viewport.height});
 
-        computePass.setBindGroup(1, bindGroup);
-        computePass.setPipeline(pipeline);
-        computePass.dispatchWorkgroups(viewport.width, viewport.height);
+        const pass: GPURenderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-        computePass.end();
+        pass.setBindGroup(0, bindGroup);
+        pass.setPipeline(pipeline);
+        pass.draw(6, 1, 0, 0);
+
+
+
+        pass.end();
 
         device.queue.submit([commandEncoder.finish()]);
 

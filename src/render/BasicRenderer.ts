@@ -8,12 +8,13 @@ import { Entity } from "../entity/Entity";
 import { TriangleMesh } from "../engine/TriangleMesh";
 import { App } from "../app";
 import { Util } from '../util/Util';
+import { SelectionOutlinePass } from './pass/SelectionOutlinePass';
 
 export class BasicRenderer extends Renderer {
     
     constructor (viewport:Viewport) {
         super("basic",viewport);
-        this.passes = [new TrianglePass(this)]
+        this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,{r:1,g:1,b:1,a:1},{r:1,g:1,b:1,a:1})]
         
     }
 
@@ -32,7 +33,7 @@ export class BasicRenderer extends Renderer {
         this.createTexture({
             size: {width:this.viewport.width,height:this.viewport.height},
             format: "rgba8unorm",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
         },"color");
 
 
@@ -66,25 +67,34 @@ export class BasicRenderer extends Renderer {
         });
 
 
-        const shader = this.viewport.createTextureConversionShader(
-            /* wgsl */`
-                let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * f32(res.x)),i32(input.uv.y * f32(res.y)));
-                let color = textureLoad(texture,coords);
-                if (color.r == 0) {
-                    return vec4<f32>(0.0,0.0,0.0,0.0);
-                }
+//        const shader = /* wgsl */`
+//        let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * f32(res.x)),i32(input.uv.y * f32(res.y)));
+//        let color = textureLoad(texture,coords);
+//        if (color.r == 0) {
+//            return vec4<f32>(0.0,0.0,0.0,0.0);
+//        }
+//
+//        let r = fract(f32(color.r) / 127.0);
+//        let g = fract(f32(color.r - 9) / 183.0);
+//        let b = fract(f32(color.r + 17) / 71.0);
+//
+//
+//        return vec4<f32>(r,g,b,1.0);
+//        `;
+//
+//        this.viewport.drawTexture(this.getTexture("object-index"), "r32uint",shader);
 
-                let r = fract(f32(color.r) / 127.0);
-                let g = fract(f32(color.r - 9) / 183.0);
-                let b = fract(f32(color.r + 17) / 71.0);
+        const shader = /* wgsl */`
+        let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * f32(res.x)),i32(input.uv.y * f32(res.y)));
+        let color = textureLoad(texture,coords);
+        return color;
+        `;
+
+        this.viewport.drawTexture(this.getTexture("color"),"rgba8unorm",shader);
 
 
-                return vec4<f32>(r,g,b,1.0);
 
-            `,"r32uint"
-        )
 
-        this.viewport.drawTexture(this.getTexture("object-index"), "r32uint",shader);         // i swear to god this was commented out and i was debugging everything else 
     }
 
 
