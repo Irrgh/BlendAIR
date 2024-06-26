@@ -14,7 +14,7 @@ export class BasicRenderer extends Renderer {
     
     constructor (viewport:Viewport) {
         super("basic",viewport);
-        this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,{r:1,g:1,b:1,a:1},{r:1,g:1,b:1,a:1})]
+        this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,{r:0.1,g:0.733,b:0.118,a:1},{r:1,g:0.918,b:0.118,a:1})]
         
     }
 

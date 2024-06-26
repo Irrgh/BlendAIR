@@ -79,8 +79,27 @@ export class SelectionOutlinePass extends RenderPass {
             return (2.0 * near * far) / (far + near - depth * (far - near));
         }
 
-        fn robertsCross(radius : f32, texture : texture_depth_2d, coords : vec2<f32>) -> f32 {
+        fn chooseObjectIndex(r : u32,uv:vec2<f32>, delta: vec2<f32>) -> u32 {
+            let x = u32(uv.x * f32(camera.width));
+            let y = u32(uv.y * f32(camera.height));
 
+            if (abs(delta.x) >= abs(delta.y)) {
+                if (delta.x <= 0) { 
+                    return textureLoad(objectTexture,vec2<u32>(x,y),0).r;
+                } else {
+                    return textureLoad(objectTexture,vec2<u32>(x+r,y+r),0).r;
+                }
+            } else {
+                if (delta.y <= 0) {
+                    return textureLoad(objectTexture,vec2<u32>(x+r,y),0).r;
+                } else {
+                    return textureLoad(objectTexture,vec2<u32>(x,y+r),0).r;
+                }
+            }
+        }
+
+
+        fn robertsCross(radius : f32, texture : texture_depth_2d, coords : vec2<f32>) -> vec2<f32> {
 
             let m10 = camera.proj[2][2];
             let m14 = camera.proj[2][3];
@@ -93,7 +112,6 @@ export class SelectionOutlinePass extends RenderPass {
             let x : f32 = radius / (f32(camera.width));
             let y : f32 = radius / (f32(camera.height));
 
-
             var samples = array<f32,4>(
                 linearizeDepth(depth,near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(0,y)),near,far),
@@ -101,7 +119,20 @@ export class SelectionOutlinePass extends RenderPass {
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,y)),near,far),
             );
 
-            return (abs(samples[0] - samples[3]) + abs(samples[2] - samples[1])) ;
+            return vec2<f32>((samples[0] - samples[3]), (samples[2] - samples[1]));
+        }
+
+        fn sumDerivatives (delta : vec2<f32>) -> f32 {
+            return abs(delta.x) + abs(delta.y);
+        }
+
+        fn isSelected(id:u32) -> bool {
+            for (var i : u32 = 0; i < selections.count; i++) {
+                if (id == selections.indecies[i]) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         
@@ -116,23 +147,34 @@ export class SelectionOutlinePass extends RenderPass {
         @fragment
         fn selection_main(input : VertexOutput) -> FragmentOut {
 
-
             let view = vec3<f32>(-camera.view[0][2],-camera.view[1][2],-camera.view[2][2]);
             let normal = textureSample(normalTexture,textureSampler,input.uv);
             let color = textureSample(colorTexture,textureSampler,input.uv);
 
 
+
+
             var out : FragmentOut;
             //out.color = vec4<f32>(input.uv,0.0,1.0);
-            let gradient = robertsCross(1.0,depthTexture,input.uv);
+            let delta : vec2<f32> = robertsCross(1.5,depthTexture,input.uv);
+            let gradient : f32 = sumDerivatives(delta);
+            let objectId : u32 = chooseObjectIndex(u32(1.5),input.uv,delta);
+            let selected = isSelected(objectId);
+
             let fresnel = fresnel(normal.xyz,view,1.0);
             var outline = gradient * fresnel;
 
-            if (outline < 0.85) { 
+
+            if (outline < 0.85 || !selected) { 
                 out.color = color;
             } else {
-                out.color = vec4<f32>(outline,outline,outline,1.0);
+                if (objectId == selections.primary) {
+                    out.color = selections.primaryColor;
+                } else {
+                    out.color = selections.secondaryColor;
+                }
             }
+
 
             out.selection = vec4<f32>(outline,outline,outline,1.0);
         

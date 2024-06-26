@@ -84,6 +84,9 @@ export class App {
             entity.setFacing(vec3.random([0,0,0]));
             this.currentScene.addEntity(entity);
     
+            if (Math.random() < 0.1) {
+                this.currentScene.selections.add(entity);
+            }
         }
     
         this.currentScene.entities.forEach( (entity : Entity, uuid : String) => {

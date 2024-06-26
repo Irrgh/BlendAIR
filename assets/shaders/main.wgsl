@@ -70,7 +70,7 @@ fn fragment_object(fragData: VertexOut) -> @location(0) u32 {
 fn fragment_main(fragData: VertexOut) -> FragmentOut {
     let normal = normalize(fragData.normal);
 
-    let color = normal * dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0)));
+    let color = vec3<f32>(1.0,1.0,1.0) * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
     //var color = vec3<f32>(1.0,1.0,1.0) / pos.z;
 
     var output : FragmentOut;
