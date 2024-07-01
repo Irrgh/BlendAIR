@@ -201,7 +201,7 @@ export abstract class Renderer {
 
         const cameraBuffer: GPUBuffer = renderer.createBuffer({
             size: cameraValues.byteLength,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
             label: "camera"
         }, "camera");
 

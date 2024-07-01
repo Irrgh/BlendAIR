@@ -169,7 +169,9 @@ export class SelectionOutlinePass extends RenderPass {
                 out.color = color;
             } else {
                 if (objectId == selections.primary) {
-                    out.color = selections.primaryColor;
+                    //if (selections.primary != 0) {
+                        out.color = selections.primaryColor;
+                    //} 
                 } else {
                     out.color = selections.secondaryColor;
                 }

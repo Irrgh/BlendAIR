@@ -74,7 +74,7 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
     //var color = vec3<f32>(1.0,1.0,1.0) / pos.z;
 
     var output : FragmentOut;
-    output.color = vec4<f32>(color,1.0);
+    output.color = vec4<f32>(color,0.5);
     output.normal = vec4<f32>(normal,1.0);
     output.object = fragData.objectId;
 
