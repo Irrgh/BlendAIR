@@ -58,7 +58,6 @@ struct FragmentOut {
 @fragment
 fn fragment_object(fragData: VertexOut) -> @location(0) u32 {
 
-
     return fragData.objectId;
 }
 
@@ -71,15 +70,11 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
     let normal = normalize(fragData.normal);
 
     let color = vec3<f32>(1.0,1.0,1.0) * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
-    //var color = vec3<f32>(1.0,1.0,1.0) / pos.z;
 
     var output : FragmentOut;
-    output.color = vec4<f32>(color,0.5);
+    output.color = vec4<f32>(color,1.0);
     output.normal = vec4<f32>(normal,1.0);
     output.object = fragData.objectId;
-
-
-    //textureStore(objectIndexTexture,vec2<u32>(x, y),vec4<u32>(fragData.objectId,0,0,0));
 
     return output;
 }

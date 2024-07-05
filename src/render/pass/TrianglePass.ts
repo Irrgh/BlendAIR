@@ -128,7 +128,7 @@ export class TrianglePass extends RenderPass {
             if (!instance) {
                 vertexSize += mesh.vertexBuffer.length;
                 indexSize += mesh.elementBuffer.length;
-                instances.set(mesh, { count: 1, ids: [id+1] });
+                instances.set(mesh, { count: 1, ids: [id] });
                 return;
             }
             instance.count++;
@@ -193,7 +193,6 @@ export class TrianglePass extends RenderPass {
 
 
         const device = App.getRenderDevice();
-
 
         device.queue.writeBuffer(vertexBuffer, 0, vertexArray);
         device.queue.writeBuffer(indexBuffer, 0, indexArray);
@@ -335,7 +334,6 @@ export class TrianglePass extends RenderPass {
             },
             primitive: {
                 topology: "triangle-list",
-                stripIndexFormat: undefined
             },
             layout: pipelineLayout,
             depthStencil: this.depthStencilState,

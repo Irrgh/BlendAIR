@@ -2,12 +2,6 @@ import { Renderer } from "./Renderer";
 import { Viewport } from '../engine/Viewport';
 import { TrianglePass } from "./pass/TrianglePass";
 import { RenderPass } from "./pass/RenderPass";
-import { RenderGraph } from "./RenderGraph";
-import { MeshInstance } from "../entity/MeshInstance";
-import { Entity } from "../entity/Entity";
-import { TriangleMesh } from "../engine/TriangleMesh";
-import { App } from "../app";
-import { Util } from '../util/Util';
 import { SelectionOutlinePass } from './pass/SelectionOutlinePass';
 import { CoordinatePlanePass } from './pass/CoordinatePlanePass';
 
@@ -15,7 +9,7 @@ export class BasicRenderer extends Renderer {
     
     constructor (viewport:Viewport) {
         super("basic",viewport);
-        this.passes = [new TrianglePass(this),  new CoordinatePlanePass(this),  new SelectionOutlinePass(this,{r:0.1,g:0.733,b:0.118,a:1},{r:1,g:0.918,b:0.118,a:1}),]
+        this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,[1,0,0,1],[0,0,1,1]), new CoordinatePlanePass(this)]
         
     }
 

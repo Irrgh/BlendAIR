@@ -67,15 +67,15 @@ export class CoordinatePlanePass extends RenderPass {
 
 
         var scale : mat4x4<f32>;
-        scale[0][0] = distance * 10.0;
-        scale[1][1] = distance * 10.0;
-        scale[2][2] = distance * 10.0;
+        scale[0][0] = distance; 
+        scale[1][1] = distance; 
+        scale[2][2] = distance;
         scale[3][3] = 1.0;
 
 
         var output: VertexOutput;
         output.position = camera.proj * camera.view * scale * vec4<f32>(positions[vertex_index],0.0,1.0);
-        output.uv = vec2<f32>(uvs[vertex_index] * distance* 10);
+        output.uv = vec2<f32>(uvs[vertex_index]);
     
         return output;
     }
@@ -98,20 +98,13 @@ export class CoordinatePlanePass extends RenderPass {
         @fragment
         fn plane_main (input : VertexOutput) -> @location(0) vec4<f32> {
             
+            let coords : vec2<f32> = (input.uv * distance) - distance / 2.0;
             
 
-            if (modBy(input.uv.x,1.0) < 0.05 || modBy(input.uv.y,1.0) < 0.05) {
+            if (modBy(coords.x,1.0) < 0.05 || modBy(coords.y,1.0) < 0.05) {
                 
-                if (abs(input.uv.x) < 0.05) {
-                    return vec4<f32>(0.0,1.0,1.0,1.0);
-                } 
-                
-                if (abs(input.uv.y) < 0.05) {
-                    return vec4<f32>(1.0,0.0,1.0,1.0);
-                }
-                
-                
-                return vec4<f32>(0.5,0.5,0.5,1.0);
+                 
+                return vec4<f32>(1.5,1.5,1.5,1.0) * vec4<f32>(input.uv,0.0,1.0);
             }
             
 
@@ -141,7 +134,7 @@ export class CoordinatePlanePass extends RenderPass {
 
         App.getWebGPU().printBufferContent(cameraBuffer);
 
-        device.queue.writeBuffer(orbitBuffer, 0, new Float32Array([100]));    /** @todo actually get the correct data  */
+        device.queue.writeBuffer(orbitBuffer, 0, new Float32Array([10]));    /** @todo actually get the correct data  */
 
 
 

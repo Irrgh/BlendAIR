@@ -109,7 +109,6 @@ export class TriangleMesh {
                         });
 
 
-                        i == 34 ? console.log(verts): {};
 
                         parsedVertices = verts.map((indices) => {
 
@@ -118,14 +117,14 @@ export class TriangleMesh {
                             // indices [2] ^= norm
 
                             return {
-                                xPos: tempPos[(indices[0]-1) * 3],
-                                yPos: tempPos[(indices[0]-1) * 3 + 1],
-                                zPos: tempPos[(indices[0]-1) * 3 + 2],
-                                xNorm: tempNorm[(indices[2]-1) * 3],
-                                yNorm: tempNorm[(indices[2]-1) * 3 + 1],
-                                zNorm: tempNorm[(indices[2]-1) * 3 + 2],
-                                u: tempUv[(indices[1]-1) * 2],
-                                v: tempUv[(indices[1]-1) * 2 + 1]
+                                xPos: tempPos[(indices[0] - 1) * 3],
+                                yPos: tempPos[(indices[0] - 1) * 3 + 1],
+                                zPos: tempPos[(indices[0] - 1) * 3 + 2],
+                                xNorm: tempNorm[(indices[2] - 1) * 3],
+                                yNorm: tempNorm[(indices[2] - 1) * 3 + 1],
+                                zNorm: tempNorm[(indices[2] - 1) * 3 + 2],
+                                u: tempUv[(indices[1] - 1) * 2],
+                                v: tempUv[(indices[1] - 1) * 2 + 1]
                             }
 
 
@@ -134,66 +133,66 @@ export class TriangleMesh {
 
                         })
 
-                    //} else if (currentLine.match(posAndUv)) {
+                        //} else if (currentLine.match(posAndUv)) {
 
-                    //} else if (currentLine.match(posAndNorm)) {
+                        //} else if (currentLine.match(posAndNorm)) {
 
-                    //}
+                        //}
 
-                } else {
+                    } else {
 
-                    const segments = currentLine.split(" ");
+                        const segments = currentLine.split(" ");
 
-                    const vert1 = parseInt(segments[1]);
-                    const vert2 = parseInt(segments[2]);
-                    const vert3 = parseInt(segments[3]);
+                        const vert1 = parseInt(segments[1]);
+                        const vert2 = parseInt(segments[2]);
+                        const vert3 = parseInt(segments[3]);
 
-                    parsedVertices = [vert1, vert2, vert3].map((pointIndex) => {
+                        parsedVertices = [vert1, vert2, vert3].map((pointIndex) => {
 
-                        pointIndex--;   // indexing starts with 1 in .obj ;)))))))
+                            pointIndex--;   // indexing starts with 1 in .obj ;)))))))
 
-                        return {
-                            xPos: tempPos[pointIndex * 3],
-                            yPos: tempPos[pointIndex * 3 + 1],
-                            zPos: tempPos[pointIndex * 3 + 2],
-                            xNorm: 0,
-                            yNorm: 0,
-                            zNorm: 0,
-                            u: 0,
-                            v: 0
+                            return {
+                                xPos: tempPos[pointIndex * 3],
+                                yPos: tempPos[pointIndex * 3 + 1],
+                                zPos: tempPos[pointIndex * 3 + 2],
+                                xNorm: 0,
+                                yNorm: 0,
+                                zNorm: 0,
+                                u: 0,
+                                v: 0
+                            }
+                        });
+                    }
+
+
+                    const vertexIndicies: number[] = parsedVertices.map((vert) => {
+                        let k;
+                        for (k = 0; k < vertices.length; k++) {
+                            if (Util.deepEqual(vert, vertices[k])) {
+                                return k;
+                            }
                         }
+                        vertices.push(vert);
+                        return k++;
                     });
+
+                    //console.log("tempNorm: ",tempNorm);
+
+
+
+                    faces.push({ v1: vertexIndicies[0], v2: vertexIndicies[1], v3: vertexIndicies[2] });
+
+
                 }
 
 
-                const vertexIndicies: number[] = parsedVertices.map((vert) => {
-                    let k;
-                    for (k = 0; k < vertices.length; k++) {
-                        if (Util.deepEqual(vert, vertices[k])) {
-                            return k;
-                        }
-                    }
-                    vertices.push(vert);
-                    return k++;
-                });
 
-                //console.log("tempNorm: ",tempNorm);
-
-
-
-                faces.push({ v1: vertexIndicies[0], v2: vertexIndicies[1], v3: vertexIndicies[2] });
 
 
             }
 
-
-
-
-
         }
 
-    }
-    
 
         return new TriangleMesh(TriangleMesh.createVbo(vertices), TriangleMesh.creatEbo(faces));
     }
@@ -202,34 +201,34 @@ export class TriangleMesh {
      * Creates a {@link Float32Array} to store vertex data
      * @param vertices 
      */
-    private static createVbo(vertices: Vertex[]):Float32Array {
-    const arr: number[] = [];
+    private static createVbo(vertices: Vertex[]): Float32Array {
+        const arr: Float32Array = new Float32Array(vertices.length * 8);
 
-    for (let i = 0; i < vertices.length; i++) {
-        arr.push(...Object.values(vertices[i]));
+        for (let i = 0; i < vertices.length; i++) {
+            arr.set(Object.values(vertices[i]), i * 8);
+        }
+
+        return arr;
     }
 
-    return new Float32Array(arr);
-}
 
+    private static creatEbo(faces: TriangleFace[]): Uint32Array {
+        const arr: Uint32Array = new Uint32Array(faces.length * 3);
 
-    private static creatEbo(faces: TriangleFace[]):Uint32Array {
-    const arr: number[] = [];
+        for (let i = 0; i < faces.length; i++) {
+            arr.set(Object.values(faces[i]), i * 3);
+        }
 
-    for (let i = 0; i < faces.length; i++) {
-
-        arr.push(...Object.values(faces[i]));
+        return arr;
     }
-    return new Uint32Array(arr);
-}
 
-    public addMeshInstance(instance : MeshInstance): void {
-    this.instancedBy.add(instance);
-}
+    public addMeshInstance(instance: MeshInstance): void {
+        this.instancedBy.add(instance);
+    }
 
     public removeMeshInstance(instance: MeshInstance): void {
-    this.instancedBy.delete(instance);
-}
+        this.instancedBy.delete(instance);
+    }
 
 
 

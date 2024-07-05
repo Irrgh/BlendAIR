@@ -62,7 +62,9 @@ export class Scene {
         this.entityIndecies.set(entity,this.entityIndecies.size);
     }
 
-
+    public getIds():Map<Entity,number> {
+        return this.entityIndecies;
+    }
 
 
 
