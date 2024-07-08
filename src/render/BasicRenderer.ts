@@ -9,18 +9,9 @@ export class BasicRenderer extends Renderer {
     
     constructor (viewport:Viewport) {
         super("basic",viewport);
-        this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,[1,0,0,1],[0,0,1,1]), new CoordinatePlanePass(this)]
+        this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,[1,0,0,1],[0,0,1,1]), new CoordinatePlanePass(this), ]
         
     }
-
-
-    
-
-
-
-
-
-
 
 
     public render(): void {

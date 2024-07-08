@@ -42,7 +42,7 @@ fn vertex_main(input : VertexIn) -> VertexOut {
     output.fragPosition = output.position.xyz;
     output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
     output.uv = input.uv;
-    output.objectId = objectId;
+    output.objectId = objectId+1u;
     return output;
 }
 

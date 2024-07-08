@@ -67,15 +67,19 @@ export class App {
         const model: string = await (await fetch("../assets/models/suzanne_smooth.obj")).text();
         const model1: string = await (await fetch("../assets/models/cube.obj")).text();
         const model2: string = await (await fetch("../assets/models/donut.obj")).text();
+        const model3: string = await (await fetch("../assets/models/shard.obj")).text();
 
 
         const mesh: TriangleMesh = TriangleMesh.parseFromObj(model);
         const mesh2: TriangleMesh = TriangleMesh.parseFromObj(model1);
         const plane: TriangleMesh = TriangleMesh.parseFromObj(model2);
+        const shard : TriangleMesh = TriangleMesh.parseFromObj(model3);
 
         console.log("mesh1: ", mesh);
         console.log("mesh2: ", mesh2);
         console.log("plane: ", plane);
+
+        this.currentScene.addEntity(new MeshInstance(shard));
 
         for (let i = 0; i < 5; i++) {
 

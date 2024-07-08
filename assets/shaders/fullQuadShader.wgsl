@@ -37,12 +37,12 @@ fn fullscreen_vertex_shader(@builtin(vertex_index) vertex_index: u32) -> VertexO
 
     // Define the UV coordinates for the quad
     var uvs = array<vec2<f32>, 6>(
+        vec2<f32>(0.0, 1.0), // Top-left
+        vec2<f32>(1.0, 1.0), // Top-right
         vec2<f32>(0.0, 0.0), // Bottom-left
-        vec2<f32>(1.0, 0.0), // Bottom-right
-        vec2<f32>(0.0, 1.0), // Top-left
-        vec2<f32>(0.0, 1.0), // Top-left
-        vec2<f32>(1.0, 0.0), // Bottom-right
-        vec2<f32>(1.0, 1.0)  // Top-right
+        vec2<f32>(0.0, 0.0), // Bottom-left
+        vec2<f32>(1.0, 1.0), // Top-right
+        vec2<f32>(1.0, 0.0)  // Bottom-right
     );
 
 

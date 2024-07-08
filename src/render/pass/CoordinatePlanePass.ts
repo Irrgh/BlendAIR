@@ -41,16 +41,16 @@ export class CoordinatePlanePass extends RenderPass {
     @binding(1) @group(0) var<uniform> distance : f32;
     
     @vertex
-    fn fullscreen_vertex_shader(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
+    fn plane_vertex(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
         // See the explanation above for how this works
     
         var positions = array<vec2<f32>, 6>(
-            vec2<f32>(-1.0, -1.0), // Bottom-left
-            vec2<f32>( 1.0, -1.0), // Bottom-right
-            vec2<f32>(-1.0,  1.0), // Top-left
-            vec2<f32>(-1.0,  1.0), // Top-left
-            vec2<f32>( 1.0, -1.0), // Bottom-right
-            vec2<f32>( 1.0,  1.0)  // Top-right
+            vec2<f32>(-1.0, -1.0), // 
+            vec2<f32>( 1.0, -1.0), // 
+            vec2<f32>(-1.0,  1.0), // 
+            vec2<f32>(-1.0,  1.0), // 
+            vec2<f32>( 1.0, -1.0), // 
+            vec2<f32>( 1.0,  1.0)  // 
         );
     
         // Define the UV coordinates for the quad
@@ -66,11 +66,12 @@ export class CoordinatePlanePass extends RenderPass {
         
 
 
-        var scale : mat4x4<f32>;
-        scale[0][0] = distance; 
-        scale[1][1] = distance; 
-        scale[2][2] = distance;
-        scale[3][3] = 1.0;
+        let scale = mat4x4<f32>(
+            vec4<f32>(distance, 0.0, 0.0, 0.0),
+            vec4<f32>(0.0, distance, 0.0, 0.0),
+            vec4<f32>(0.0, 0.0, distance, 0.0),
+            vec4<f32>(0.0, 0.0, 0.0, 1.0)
+        );
 
 
         var output: VertexOutput;
@@ -96,7 +97,7 @@ export class CoordinatePlanePass extends RenderPass {
         }
 
         @fragment
-        fn plane_main (input : VertexOutput) -> @location(0) vec4<f32> {
+        fn plane_fragment(input : VertexOutput) -> @location(0) vec4<f32> {
             
             let coords : vec2<f32> = (input.uv * distance) - distance / 2.0;
             
@@ -120,6 +121,7 @@ export class CoordinatePlanePass extends RenderPass {
     public render(viewport: Viewport): void {
 
         const device = App.getRenderDevice();
+        this.renderer.updateCameraData(viewport);
 
         const colorTexture: GPUTexture = this.renderer.getTexture("color");
         const cameraBuffer: GPUBuffer = this.renderer.getBuffer("camera");
@@ -134,7 +136,7 @@ export class CoordinatePlanePass extends RenderPass {
 
         App.getWebGPU().printBufferContent(cameraBuffer);
 
-        device.queue.writeBuffer(orbitBuffer, 0, new Float32Array([10]));    /** @todo actually get the correct data  */
+        device.queue.writeBuffer(orbitBuffer, 0, new Float32Array([100]));    /** @todo actually get the correct data  */
 
 
 
@@ -176,11 +178,11 @@ export class CoordinatePlanePass extends RenderPass {
         const pipeline: GPURenderPipeline = device.createRenderPipeline({
             vertex: {
                 module: shaderModule,
-                entryPoint: "fullscreen_vertex_shader"
+                entryPoint: "plane_vertex"
             },
             fragment: {
                 module: shaderModule,
-                entryPoint: "plane_main",
+                entryPoint: "plane_fragment",
                 targets: [
                     {
                         format: "rgba8unorm",
