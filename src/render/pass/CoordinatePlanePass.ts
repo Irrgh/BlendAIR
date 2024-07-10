@@ -38,7 +38,7 @@ export class CoordinatePlanePass extends RenderPass {
     
 
     @binding(0) @group(0) var<uniform> camera : Camera;
-    @binding(1) @group(0) var<uniform> distance : f32;
+    @binding(1) @group(0) var<uniform> dist : f32;
     
     @vertex
     fn plane_vertex(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
@@ -67,9 +67,9 @@ export class CoordinatePlanePass extends RenderPass {
 
 
         let scale = mat4x4<f32>(
-            vec4<f32>(distance, 0.0, 0.0, 0.0),
-            vec4<f32>(0.0, distance, 0.0, 0.0),
-            vec4<f32>(0.0, 0.0, distance, 0.0),
+            vec4<f32>(dist, 0.0, 0.0, 0.0),
+            vec4<f32>(0.0, dist, 0.0, 0.0),
+            vec4<f32>(0.0, 0.0, dist, 0.0),
             vec4<f32>(0.0, 0.0, 0.0, 1.0)
         );
 
@@ -84,35 +84,45 @@ export class CoordinatePlanePass extends RenderPass {
 
 
 
-        struct Camera {
-            view:mat4x4<f32>,
-            proj:mat4x4<f32>,
-            width:u32,
-            height:u32,
-        }
+    struct Camera {
+        view:mat4x4<f32>,
+        proj:mat4x4<f32>,
+        width:u32,
+        height:u32,
+    }
+    
+    fn PristineGrid(uv: vec2f, lineWidth: vec2f) -> f32 {
+        let uvDDXY = vec4f(dpdx(uv), dpdy(uv));
+        let uvDeriv = vec2f(length(uvDDXY.xz), length(uvDDXY.yw));
+        let invertLine: vec2<bool> = lineWidth > vec2f(0.5);
+        let targetWidth: vec2f = select(lineWidth, 1 - lineWidth, invertLine);
+        let drawWidth: vec2f = clamp(targetWidth, uvDeriv, vec2f(0.5));
+        let lineAA: vec2f = uvDeriv * 1.5;
+        var gridUV: vec2f = abs(fract(uv) * 2.0 - 1.0);
+        gridUV = select(1 - gridUV, gridUV, invertLine);
+        var grid2: vec2f = smoothstep(drawWidth + lineAA, drawWidth - lineAA, gridUV);
+        grid2 *= saturate(targetWidth / drawWidth);
+        grid2 = mix(grid2, targetWidth, saturate(uvDeriv * 2.0 - 1.0));
+        grid2 = select(grid2, 1.0 - grid2, invertLine);
+        return mix(grid2.x, 1.0, grid2.y);
+    }
+    
+
+    @fragment
+    fn plane_fragment(input : VertexOutput) -> @location(0) vec4<f32> {
         
+        let coords : vec2<f32> = (input.uv * dist) - dist / 2.0;
         
-        fn modBy(a:f32,b:f32) -> f32 {
-            return fract(a/b);
-        }
+        let grid = PristineGrid(input.uv * 100, vec2f(0.03,0.03));
+        let grid2 = PristineGrid(input.uv * 10, vec2f(0.003,0.003));
 
-        @fragment
-        fn plane_fragment(input : VertexOutput) -> @location(0) vec4<f32> {
-            
-            let coords : vec2<f32> = (input.uv * distance) - distance / 2.0;
-            
+        let dx = saturate(distance(input.uv.x, 0.5)*1000);
+        let dy = saturate(distance(input.uv.y, 0.5)*1000);
 
-            if (modBy(coords.x,1.0) < 0.05 || modBy(coords.y,1.0) < 0.05) {
-                
-                 
-                return vec4<f32>(1.5,1.5,1.5,1.0) * vec4<f32>(input.uv,0.0,1.0);
-            }
-            
+        let linecolor : vec4f = saturate(vec4<f32>(dy,dx,min(dx,dy),1.0));
 
-            return vec4<f32>(1.0,1.0,1.0,0.0);
-
-
-        }
+        return mix(vec4f(0.0,0.0,0.0,0.0),vec4<f32>(1.0,1.0,1.0,1.0),saturate(grid+grid2) * linecolor);
+    }
 
 
     `;

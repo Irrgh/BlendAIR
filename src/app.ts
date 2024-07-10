@@ -110,14 +110,6 @@ export class App {
                 this.currentScene.selections.add(entity);
             }
         }
-
-
-        for (let i = 0; i < 1; i++) {
-            let entity = new MeshInstance(mesh2);
-            entity.scale = [10,10,10];
-            this.currentScene.addEntity(entity);
-
-        }
     
 
 
