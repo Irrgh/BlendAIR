@@ -10,7 +10,7 @@ export class BasicRenderer extends Renderer {
     constructor (viewport:Viewport) {
         super("basic",viewport);
         this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,[1,1,0,1],[0,1,0,1]), new CoordinatePlanePass(this), ]
-        
+        /** @todo please fix this */
     }
 
 
@@ -25,9 +25,9 @@ export class BasicRenderer extends Renderer {
 
         this.createTexture({
             size: {width:this.viewport.width, height:this.viewport.height},
-            format: "depth24plus-stencil8",
+            format: "depth32float",
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        },"depth");
+        },"render-depth");
 
 
         this.createTexture({

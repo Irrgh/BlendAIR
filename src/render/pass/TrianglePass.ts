@@ -23,7 +23,7 @@ export class TrianglePass extends RenderPass {
     }
 
     private depthStencilState: GPUDepthStencilState = {
-        format: "depth24plus-stencil8",
+        format: "depth32float",
         depthWriteEnabled: true, // Enable writing to the depth buffer
         depthCompare: "less", // Enable depth testing with "less" comparison
     };
@@ -53,7 +53,7 @@ export class TrianglePass extends RenderPass {
                 label: "color",
                 resource: "texture"
             }, {
-                label: "depth",
+                label: "render-depth",
                 resource: "texture"
             }, {
                 label: "object-index",
@@ -66,7 +66,7 @@ export class TrianglePass extends RenderPass {
                 label: "color",
                 resource: "texture"
             }, {
-                label: "depth",
+                label: "render-depth",
                 resource: "texture"
             }, {
                 label: "normal",
@@ -221,7 +221,7 @@ export class TrianglePass extends RenderPass {
         const device: GPUDevice = App.getRenderDevice();
 
         const colorTexture = this.renderer.getTexture("color");
-        const depthTexture = this.renderer.getTexture("depth");
+        const depthTexture = this.renderer.getTexture("render-depth");
         const objectIndexTexture = this.renderer.getTexture("object-index");
         const normalTexture = this.renderer.getTexture("normal");
 
@@ -294,8 +294,6 @@ export class TrianglePass extends RenderPass {
                 view: depthTexture.createView(),
                 depthLoadOp: "clear",
                 depthStoreOp: "store",
-                stencilLoadOp: "clear",
-                stencilStoreOp: "store",
                 depthClearValue: 1.0,
                 stencilClearValue: 1.0
             },
@@ -343,7 +341,7 @@ export class TrianglePass extends RenderPass {
         
         App.getWebGPU().attachTimestamps(renderPassDescriptor);
 
-        const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
+        const commandEncoder: GPUCommandEncoder = device.createCommandEncoder({label:"trianglePass"});
 
         const renderPass: GPURenderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 

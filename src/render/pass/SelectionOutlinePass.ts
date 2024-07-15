@@ -18,7 +18,7 @@ export class SelectionOutlinePass extends RenderPass {
                 label: "color",
                 resource: "texture"
             }, {
-                label: "depth",
+                label: "render-depth",
                 resource: "texture"
             }, {
                 label: "object-index",
@@ -239,7 +239,7 @@ export class SelectionOutlinePass extends RenderPass {
         });
 
 
-        const depthTexture: GPUTexture = this.renderer.getTexture("depth");
+        const depthTexture: GPUTexture = this.renderer.getTexture("render-depth");
         const normalTexture: GPUTexture = this.renderer.getTexture("normal");
         const objectIndexTexture: GPUTexture = this.renderer.getTexture("object-index");
 

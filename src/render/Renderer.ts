@@ -9,6 +9,12 @@ export abstract class Renderer {
     public webgpu: WebGPU = App.getInstance().webgpu;
     public viewport: Viewport;
 
+    /**
+     * 
+     * @param name 
+     * @param viewport 
+     * @todo please add passes as an actual parameter
+     */
     constructor(name: string, viewport: Viewport) {
         this.name = name;
         this.viewport = viewport;

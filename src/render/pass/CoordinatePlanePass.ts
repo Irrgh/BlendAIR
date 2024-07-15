@@ -13,6 +13,9 @@ export class CoordinatePlanePass extends RenderPass {
             {
                 label: "camera",
                 resource: "buffer"
+            }, {
+                label: "render-depth",
+                resource: "texture"
             }
         ]
 
@@ -135,7 +138,7 @@ export class CoordinatePlanePass extends RenderPass {
 
         const colorTexture: GPUTexture = this.renderer.getTexture("color");
         const cameraBuffer: GPUBuffer = this.renderer.getBuffer("camera");
-        const depthTexture: GPUTexture = this.renderer.getTexture("depth");
+        const depthTexture: GPUTexture = this.renderer.getTexture("render-depth");
 
 
         const orbitBuffer = device.createBuffer({
@@ -213,7 +216,7 @@ export class CoordinatePlanePass extends RenderPass {
             },
             layout: pipelineLayout,
             depthStencil: {
-                format: "depth24plus-stencil8",
+                format: "depth32float",
                 depthWriteEnabled: true, // Enable writing to the depth buffer
                 depthCompare: "less", // Enable depth testing with "less" comparison
             }
@@ -231,8 +234,6 @@ export class CoordinatePlanePass extends RenderPass {
                 view: depthTexture.createView(),
                 depthLoadOp: "load",
                 depthStoreOp: "store",
-                stencilLoadOp: "load",
-                stencilStoreOp: "store",
                 depthClearValue: 1.0,
                 stencilClearValue: 1.0
             },
