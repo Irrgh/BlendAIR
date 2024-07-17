@@ -103,6 +103,34 @@ export class RaytracingPass extends RenderPass {
             }
         }
         
+        fn getRayColor (ray: Ray) -> vec3<f32> {
+
+            let x = Sphere(vec3<f32>(4.0,0.0,0.0),1.0);
+            let y = Sphere(vec3<f32>(0.0,4.0,0.0),1.0);
+            let z = Sphere(vec3<f32>(0.0,0.0,4.0),1.0);
+
+            let xhit = intersectRaySphere(ray,x);
+            let yhit = intersectRaySphere(ray,y);
+            let zhit = intersectRaySphere(ray,z);
+
+            if (xhit < yhit && xhit < zhit) {
+                return vec3<f32>(1.0,0.0,0.0);
+            }
+
+            if (yhit < xhit && yhit < zhit) {
+                return vec3<f32>(0.0,1.0,0.0);
+            }
+
+            if (zhit < yhit && zhit < xhit) {
+                return vec3<f32>(0.0,0.0,1.0);
+            }
+
+            return vec3<f32>(xhit,yhit,zhit);
+        }
+
+
+
+
 
         fn normalizeDepth(depth: f32, near: f32, far: f32) -> f32 {
             return (depth - near) / (far - near);
@@ -124,38 +152,28 @@ export class RaytracingPass extends RenderPass {
                 return;
             }
 
-            let right = vec3<f32>(-camera.view[0][0],-camera.view[0][1],-camera.view[0][2]);
-            let up = vec3<f32>(-camera.view[1][0],-camera.view[1][1],-camera.view[1][2]);
-            let forward = vec3<f32>(-camera.view[2][0],-camera.view[2][1],-camera.view[2][2]);
-            let pos = vec3<f32>(-camera.view[3][0],-camera.view[3][1],-camera.view[3][2]);
-            let uv = vec2<f32>(f32(x) / f32(camera.width), (f32(y) / f32(camera.height))); 
+            let right = vec3<f32>(camera.view[0].xyz);
+            let up = vec3<f32>(camera.view[1].xyz);
+            let forward = vec3<f32>(-camera.view[2].xyz);
+            let pos = vec3<f32>(-camera.view[3].xyz);
+            let ndc = vec2<f32>(
+                2.0 * f32(x) / f32(camera.width) - 1.0,
+                1.0 - (2.0 * f32(y)) / f32(camera.height)
+            ); 
 
-            let m10 = camera.proj[2][2];
-            let m14 = camera.proj[2][3];
+            
+            let aspectRatio = f32(dim.x) / f32(dim.y);
 
-            let near = m14 / (m10 - 1);
-            let far = m14 / (m10 + 1);
+            //var rayTarget = vec3<f32>((uv) * 2.0 - 1.0, 1.0);
+            var rayTarget = forward + ndc.x * right * aspectRatio + ndc.y * up ;
 
-            let s1 = Sphere(vec3<f32>(0.0,0.0,4.0),1.3);
-
-            var rayTarget = vec3<f32>((uv) * 2.0 - 1.0, 1.0);
-            //var rayTarget = pos + forward + (2.0 * uv.x - 1.0) * right * (f32(dim.x)/f32(dim.y)) + (2.0 * uv.y - 1.0) * up ;
-
-            var rayPos = vec3<f32>(0.0,0.0,0.0);
-
-            let rayDir = normalize(rayTarget - pos);
+            let rayDir = normalize(rayTarget);
             let ray = Ray(pos,rayDir);
 
-            let intersection = intersectRaySphere(ray,s1);
-
-            if (intersection < 0.0) {
-                textureStore(colorTexture, vec2<u32>(x,y) ,vec4<f32>(0.0,0.0,0.0,1.0));
-                textureStore(depthTexture, vec2<u32>(x,y), vec4<f32>(1.0,0.0,0.0,1.0));
-            } else {
-                textureStore(colorTexture, vec2<u32>(x,y), vec4<f32>(intersection,0.0,0.0,1.0));
-                textureStore(depthTexture, vec2<u32>(x,y), vec4<f32>(normalizeDepth(intersection,near,far),0.0,0.0,1.0));
-            }
+        
             
+            textureStore(colorTexture,vec2<u32>(x,y), vec4<f32>(getRayColor(ray),1.0));
+            textureStore(depthTexture,vec2<u32>(x,y), vec4<f32>(1.0,0.0,0.0,1.0));
         }
 
     
