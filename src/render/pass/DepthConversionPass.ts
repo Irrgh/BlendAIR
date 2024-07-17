@@ -29,11 +29,11 @@ export class DepthConversionPass extends RenderPass {
     
         ${fullQuadShader}
     
-        @binding(0) @group(0) var textureSampler : sampler;
-        @binding(1) @group(0) var computeDepth : texture_2d<f32>;
+        @binding(1) @group(0) var textureSampler : sampler;
+        @binding(0) @group(0) var computeDepth : texture_2d<f32>;
         
         @fragment 
-        fn depthFrag_main(input : VertexOutput) -> @builtin(frag_depth) : f32 {
+        fn depthFrag_main(input : VertexOutput) -> @builtin(frag_depth) f32 {
 
             let depth : f32 = textureSample(computeDepth,textureSampler,input.uv).r;
             return depth;
@@ -49,8 +49,6 @@ export class DepthConversionPass extends RenderPass {
         const renderDepth: GPUTexture = this.renderer.getTexture("render-depth");
 
         const sampler: GPUSampler = device.createSampler({
-            minFilter: "linear",
-            magFilter: "linear",
             addressModeU: "clamp-to-edge",
             addressModeV: "clamp-to-edge"
         });
@@ -97,6 +95,8 @@ export class DepthConversionPass extends RenderPass {
             depthStencilAttachment: {
                 view: renderDepth.createView(),
                 depthStoreOp: 'store',
+                depthLoadOp:"clear",
+                depthClearValue:1.0,
             }
         }
 
@@ -112,6 +112,11 @@ export class DepthConversionPass extends RenderPass {
             },
             primitive: {
                 topology: "triangle-list"
+            },
+            depthStencil: {
+                format: "depth32float",
+                depthWriteEnabled: true, // Enable writing to the depth buffer
+                depthCompare: "less", // Enable depth testing with "less" comparison
             },
             layout: pipelineLayout
         });

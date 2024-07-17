@@ -227,7 +227,7 @@ export class CoordinatePlanePass extends RenderPass {
                 {
                     storeOp: "store",
                     loadOp: "load",
-                    view: colorTexture.createView()
+                    view: colorTexture.createView(),
                 }
             ],
             depthStencilAttachment: {
@@ -235,11 +235,10 @@ export class CoordinatePlanePass extends RenderPass {
                 depthLoadOp: "load",
                 depthStoreOp: "store",
                 depthClearValue: 1.0,
-                stencilClearValue: 1.0
             },
             label: "plane pass"
         }
-
+        
 
         const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
 

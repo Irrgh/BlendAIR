@@ -87,7 +87,10 @@ export class WebGPU {
 
 
 
-
+    /**
+     * Attaches Timestamps to a pass. Called before the pass is started.
+     * @param passDescriptor 
+     */
     public attachTimestamps(passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor) {
 
         if (this.canTimestamp()) {

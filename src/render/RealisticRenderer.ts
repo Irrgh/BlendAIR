@@ -2,12 +2,14 @@ import { Renderer } from "./Renderer";
 import { Viewport } from '../engine/Viewport';
 import { RaytracingPass } from "./pass/RaytracingPass";
 import { RenderPass } from "./pass/RenderPass";
+import { CoordinatePlanePass } from "./pass/CoordinatePlanePass";
+import { DepthConversionPass } from "./pass/DepthConversionPass";
 
 export class RealisticRenderer extends Renderer {
     
     constructor(viewport:Viewport) {
         super("raytracer",viewport);
-        this.passes = [new RaytracingPass(this)]
+        this.passes = [new RaytracingPass(this), new DepthConversionPass(this), new CoordinatePlanePass(this)];
 
     } 
     
@@ -28,7 +30,13 @@ export class RealisticRenderer extends Renderer {
             size: {width:this.viewport.width, height:this.viewport.height},
             format: "r32float",
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
-        },"depth");
+        },"compute-depth");
+
+        this.createTexture({
+            size: {width:this.viewport.width, height:this.viewport.height},
+            format: "depth32float",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        },"render-depth");
 
 
         this.createTexture({
@@ -44,7 +52,7 @@ export class RealisticRenderer extends Renderer {
         }, "normal");
 
 
-
+        this.updateCameraData(this.viewport);
 
 
 
@@ -52,7 +60,7 @@ export class RealisticRenderer extends Renderer {
 
         this.passes.forEach((pass:RenderPass) => {
             pass.render(this.viewport);
-        })
+        });
 
 
         const shader = /* wgsl */`

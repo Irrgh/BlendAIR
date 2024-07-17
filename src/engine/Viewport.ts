@@ -14,6 +14,7 @@ import { Renderer } from '../render/Renderer';
 import { BasicRenderer } from "../render/BasicRenderer";
 import { App } from "../app";
 import fullQuadShader from "../../assets/shaders/fullQuadShader.wgsl";
+import { RealisticRenderer } from "../render/RealisticRenderer";
 
 
 export class Viewport implements Resizable {
@@ -87,7 +88,7 @@ export class Viewport implements Resizable {
         this.camera.setPosition(1, 1, 0); /** @todo please change this  */
 
 
-        this.renderer = new BasicRenderer(this);
+        this.renderer = new RealisticRenderer(this);
         this.renderer.render();
     }
 
