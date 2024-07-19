@@ -56,7 +56,9 @@ export class RaytracingPass extends RenderPass {
             far:f32,
             cameraRight:vec3<f32>,
             maxBounces:u32,
-            cameraPos:vec3<f32>
+            cameraPos:vec3<f32>,
+            proj:mat4x4<f32>,
+            view:mat4x4<f32>,
         }
 
         struct Ray {
@@ -75,7 +77,7 @@ export class RaytracingPass extends RenderPass {
         }
 
 
-        fn intersectRaySphere(ray : Ray, sphere: Sphere) -> f32 {
+        fn intersectRaySphere(ray : Ray, sphere: Sphere) -> RayHitInfo {
             // Vector from sphere center to ray origin
             let oc: vec3<f32> = ray.origin - sphere.center;
         
@@ -88,58 +90,51 @@ export class RaytracingPass extends RenderPass {
             let discriminant: f32 = b * b - 4.0 * a * c;
         
             if (discriminant < 0.0) {
-                return -1.0; // Return -1.0 to indicate no intersection
+                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,1.0));
             }
         
             // Calculate the two possible solutions
             let t1: f32 = (-b - sqrt(discriminant)) / (2.0 * a);
             let t2: f32 = (-b + sqrt(discriminant)) / (2.0 * a);
 
-        
             // Return the smallest positive t value (the nearest intersection)
             if (t1 > 0.0 && t2 > 0.0) {
-                return min(t1, t2);
+                let normal = normalize(ray.origin + ray.dir * min(t1, t2) - sphere.center);
+                return RayHitInfo(min(t1,t2),normal);
             } else if (t1 > 0.0) {
-                return t1;
+                let normal = normalize( ray.origin + ray.dir * t1 - sphere.center);
+                return RayHitInfo(t1,normal);
             } else if (t2 > 0.0) {
-                return t2;
-            } else {
-                return -1.0; // Both t values are negative, so no intersection
+                let normal = normalize(ray.origin + ray.dir * t2 - sphere.center);
+                return RayHitInfo(t2,normal);
             }
+
+            return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,1.0));  
         }
         
-        fn getRayColor (ray: Ray) -> vec3<f32> {
+        fn getHitInfo (ray: Ray) -> RayHitInfo {
 
-            let x = Sphere(vec3<f32>(4.0,0.0,0.0),1.0);
-            let y = Sphere(vec3<f32>(0.0,4.0,0.0),1.0);
-            let z = Sphere(vec3<f32>(0.0,0.0,4.0),1.0);
+            let spheres = array<Sphere,3>(
+                Sphere(vec3<f32>(4.0,0.0,-0.3),1.0),
+                Sphere(vec3<f32>(0.0,4.0,0.3),1.0),
+                Sphere(vec3<f32>(0.0,0.0,4.0),1.0),
+            );
 
-            let xhit = intersectRaySphere(ray,x);
-            let yhit = intersectRaySphere(ray,y);
-            let zhit = intersectRaySphere(ray,z);
+            var hit : RayHitInfo = RayHitInfo(info.far,vec3<f32>(0.0,0.0,0.0));
 
-            if (xhit < yhit && xhit < zhit && xhit > 0) {
-                return vec3<f32>(1.0,0.0,0.0);
+
+            for (var i : u32 = 0; i < 3; i++) {
+
+                let sphereIntersection = intersectRaySphere(ray,spheres[i]);
+                if (hit.dist > sphereIntersection.dist && sphereIntersection.dist > 0) {
+                    hit = sphereIntersection;
+                }
             }
 
-            if (yhit < xhit && yhit < zhit && yhit > 0) {
-                return vec3<f32>(0.0,1.0,0.0);
-            }
-
-            if (zhit < yhit && zhit < xhit && zhit > 0) {
-                return vec3<f32>(0.0,0.0,1.0);
-            }
-
-            return vec3<f32>(xhit,yhit,zhit);
+            return hit;
         }
 
 
-
-
-
-        fn normalizeDepth(depth: f32, near: f32, far: f32) -> f32 {
-            return (depth - near) / (far - near);
-        }
 
         @binding(7) @group(0) var depthTexture : texture_storage_2d<r32float,write>;
         @binding(5) @group(0) var colorTexture : texture_storage_2d<rgba8unorm,write>;
@@ -174,14 +169,14 @@ export class RaytracingPass extends RenderPass {
             let rayDir = normalize(rayTarget);
             let ray = Ray(pos,rayDir);
 
-            let color = vec3<f32>(
-                (rayDir.x + 1.0) * 0.5,
-                (rayDir.y + 1.0) * 0.5,
-                (rayDir.z + 1.0) * 0.5
-            );
             
-            textureStore(colorTexture,vec2<u32>(x,y), vec4<f32>(getRayColor(ray),1.0));
-            textureStore(depthTexture,vec2<u32>(x,y), vec4<f32>(1.0,0.0,0.0,1.0));
+            let hit = getHitInfo(ray);
+
+            let transformedPos = info.proj * info.view * vec4<f32>(ray.origin + ray.dir * hit.dist,1);
+            let ndcDepth = transformedPos.z / transformedPos.w;
+
+            textureStore(colorTexture,vec2<u32>(x,y), vec4<f32>(hit.normal,1.0));
+            textureStore(depthTexture,vec2<u32>(x,y), vec4<f32>(ndcDepth,0.0,0.0,1.0));
         }
 
     
@@ -189,7 +184,8 @@ export class RaytracingPass extends RenderPass {
 
     private createSceneInfoBuffer(viewport: Viewport) {
 
-        const sceneInfoValues = new ArrayBuffer(64);
+
+        const sceneInfoValues = new ArrayBuffer(192);
         const sceneInfoViews = {
             cameraForward: new Float32Array(sceneInfoValues, 0, 3),
             near: new Float32Array(sceneInfoValues, 12, 1),
@@ -198,6 +194,8 @@ export class RaytracingPass extends RenderPass {
             cameraRight: new Float32Array(sceneInfoValues, 32, 3),
             maxBounces: new Uint32Array(sceneInfoValues, 44, 1),
             cameraPos: new Float32Array(sceneInfoValues, 48, 3),
+            proj: new Float32Array(sceneInfoValues, 64, 16),
+            view: new Float32Array(sceneInfoValues, 128, 16),
         };
 
         const up = viewport.camera.getUp();
@@ -209,15 +207,17 @@ export class RaytracingPass extends RenderPass {
         sceneInfoViews.cameraRight.set(right);
         sceneInfoViews.cameraPos.set(viewport.camera.getPosition());
         sceneInfoViews.near.set([0.1]);         // testing values
-        sceneInfoViews.far.set([1000]);
+        sceneInfoViews.far.set([100]);
         sceneInfoViews.maxBounces.set([this.maxBounces]);
+        sceneInfoViews.proj.set(viewport.camera.getProjectionMatrix());
+        sceneInfoViews.view.set(viewport.camera.getViewMatrix());
 
         const sceneInfoBuffer = this.renderer.createBuffer({
-            size:sceneInfoValues.byteLength,
+            size: sceneInfoValues.byteLength,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-        },"scene-info");
+        }, "scene-info");
 
-        App.getRenderDevice().queue.writeBuffer(sceneInfoBuffer,0,sceneInfoValues);
+        App.getRenderDevice().queue.writeBuffer(sceneInfoBuffer, 0, sceneInfoValues);
 
     }
 

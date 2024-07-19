@@ -295,7 +295,6 @@ export class TrianglePass extends RenderPass {
                 depthLoadOp: "clear",
                 depthStoreOp: "store",
                 depthClearValue: 1.0,
-                stencilClearValue: 1.0
             },
             label: "triangle pass"
         }
