@@ -13,7 +13,7 @@ export class BlenderNavigator implements Navigator {
         this.viewport = viewport;
         this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward());
         this.cameraPosition.phi -= Math.PI/2;
-        this.orbitCenter = vec3.add([0,0,0],this.viewport.camera.getForward(),this.viewport.camera.position);
+        this.orbitCenter = vec3.add([0,0,0],this.viewport.camera.getForward(),this.viewport.camera.getPosition());
         this.horizontalRotationSign = vec3.dot([0,0,1],this.viewport.camera.getUp()) > 0 ? 1 : -1;
     }
 
@@ -86,7 +86,7 @@ export class BlenderNavigator implements Navigator {
 
         const offset = vec3.scale([0, 0, 0], camera.getForward(), -this.cameraPosition.r);
 
-        vec3.add(camera.position, this.orbitCenter, offset);
+        vec3.add(camera.getPosition(), this.orbitCenter, offset);
 
         requestAnimationFrame(this.viewport.render);
     }
@@ -109,7 +109,7 @@ export class BlenderNavigator implements Navigator {
         vec3.scale(u, u, -1 / 1000);
         
 
-        vec3.add(this.viewport.camera.position, u, this.viewport.camera.position);
+        vec3.add(this.viewport.camera.getPosition(), u, this.viewport.camera.getPosition());
         vec3.add(this.orbitCenter, u, this.orbitCenter);
 
         requestAnimationFrame(this.viewport.render);
@@ -128,7 +128,7 @@ export class BlenderNavigator implements Navigator {
         this.cameraPosition.phi += diff[1] * 0.005;
 
         const pos = Util.sphericalToCartesian(this.cameraPosition);
-        vec3.add(this.viewport.camera.position,pos,this.orbitCenter);
+        vec3.add(this.viewport.camera.getPosition(),pos,this.orbitCenter);
         
         const horizontalRot : quat = quat.create();
         const verticalRot : quat = quat.create();

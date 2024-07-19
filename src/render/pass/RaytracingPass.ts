@@ -2,6 +2,7 @@ import { App } from "../../app";
 import { Viewport } from "../../engine/Viewport";
 import { Renderer } from "../Renderer";
 import { RenderPass } from "./RenderPass";
+import { vec3 } from 'gl-matrix';
 
 export class RaytracingPass extends RenderPass {
 
@@ -41,17 +42,21 @@ export class RaytracingPass extends RenderPass {
     }
 
     private workgroupsize = 16;
+    private maxBounces = 4;
 
 
 
     private shader = /* wgsl */ `
 
 
-        struct Camera {
-            view: mat4x4<f32>,
-            proj: mat4x4<f32>,
-            width: u32,
-            height: u32   
+        struct SceneInfo {
+            cameraForward:vec3<f32>,
+            near:f32,  
+            cameraUp:vec3<f32>,
+            far:f32,
+            cameraRight:vec3<f32>,
+            maxBounces:u32,
+            cameraPos:vec3<f32>
         }
 
         struct Ray {
@@ -113,15 +118,15 @@ export class RaytracingPass extends RenderPass {
             let yhit = intersectRaySphere(ray,y);
             let zhit = intersectRaySphere(ray,z);
 
-            if (xhit < yhit && xhit < zhit) {
+            if (xhit < yhit && xhit < zhit && xhit > 0) {
                 return vec3<f32>(1.0,0.0,0.0);
             }
 
-            if (yhit < xhit && yhit < zhit) {
+            if (yhit < xhit && yhit < zhit && yhit > 0) {
                 return vec3<f32>(0.0,1.0,0.0);
             }
 
-            if (zhit < yhit && zhit < xhit) {
+            if (zhit < yhit && zhit < xhit && zhit > 0) {
                 return vec3<f32>(0.0,0.0,1.0);
             }
 
@@ -138,7 +143,7 @@ export class RaytracingPass extends RenderPass {
 
         @binding(7) @group(0) var depthTexture : texture_storage_2d<r32float,write>;
         @binding(5) @group(0) var colorTexture : texture_storage_2d<rgba8unorm,write>;
-        @binding(0) @group(0) var<uniform> camera : Camera;
+        @binding(0) @group(0) var<uniform> info : SceneInfo;
 
 
         @compute @workgroup_size(${this.workgroupsize},${this.workgroupsize})
@@ -152,25 +157,28 @@ export class RaytracingPass extends RenderPass {
                 return;
             }
 
-            let right = vec3<f32>(camera.view[0].xyz);
-            let up = vec3<f32>(camera.view[1].xyz);
-            let forward = vec3<f32>(-camera.view[2].xyz);
-            let pos = vec3<f32>(-camera.view[3].xyz);
+            let right = info.cameraRight;
+            let up = info.cameraUp;
+            let forward = info.cameraForward;
+            let pos = info.cameraPos;
             let ndc = vec2<f32>(
-                2.0 * f32(x) / f32(camera.width) - 1.0,
-                1.0 - (2.0 * f32(y)) / f32(camera.height)
+                2.0 * f32(x) / f32(dim.x) - 1.0,
+                1.0 - (2.0 * f32(y)) / f32(dim.y)
             ); 
 
             
             let aspectRatio = f32(dim.x) / f32(dim.y);
 
-            //var rayTarget = vec3<f32>((uv) * 2.0 - 1.0, 1.0);
             var rayTarget = forward + ndc.x * right * aspectRatio + ndc.y * up ;
 
             let rayDir = normalize(rayTarget);
             let ray = Ray(pos,rayDir);
 
-        
+            let color = vec3<f32>(
+                (rayDir.x + 1.0) * 0.5,
+                (rayDir.y + 1.0) * 0.5,
+                (rayDir.z + 1.0) * 0.5
+            );
             
             textureStore(colorTexture,vec2<u32>(x,y), vec4<f32>(getRayColor(ray),1.0));
             textureStore(depthTexture,vec2<u32>(x,y), vec4<f32>(1.0,0.0,0.0,1.0));
@@ -179,10 +187,49 @@ export class RaytracingPass extends RenderPass {
     
     `
 
+    private createSceneInfoBuffer(viewport: Viewport) {
+
+        const sceneInfoValues = new ArrayBuffer(64);
+        const sceneInfoViews = {
+            cameraForward: new Float32Array(sceneInfoValues, 0, 3),
+            near: new Float32Array(sceneInfoValues, 12, 1),
+            cameraUp: new Float32Array(sceneInfoValues, 16, 3),
+            far: new Float32Array(sceneInfoValues, 28, 1),
+            cameraRight: new Float32Array(sceneInfoValues, 32, 3),
+            maxBounces: new Uint32Array(sceneInfoValues, 44, 1),
+            cameraPos: new Float32Array(sceneInfoValues, 48, 3),
+        };
+
+        const up = viewport.camera.getUp();
+        const forward = viewport.camera.getForward();
+        const right = viewport.camera.getRight();
+
+        sceneInfoViews.cameraForward.set(forward);
+        sceneInfoViews.cameraUp.set(up);
+        sceneInfoViews.cameraRight.set(right);
+        sceneInfoViews.cameraPos.set(viewport.camera.getPosition());
+        sceneInfoViews.near.set([0.1]);         // testing values
+        sceneInfoViews.far.set([1000]);
+        sceneInfoViews.maxBounces.set([this.maxBounces]);
+
+        const sceneInfoBuffer = this.renderer.createBuffer({
+            size:sceneInfoValues.byteLength,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+        },"scene-info");
+
+        App.getRenderDevice().queue.writeBuffer(sceneInfoBuffer,0,sceneInfoValues);
+
+    }
+
+
+
+
 
     public render(viewport: Viewport): void {
 
-        const cameraBuffer = this.renderer.getBuffer("camera");
+        this.createSceneInfoBuffer(viewport);
+
+        const sceneInfoBuffer = this.renderer.getBuffer("scene-info");
         //const vertexBuffer = this.renderer.getBuffer("vertex");
         //const indexBuffer = this.renderer.getBuffer("index");
         //const materialBuffer = this.renderer.getBuffer("material");
@@ -258,7 +305,7 @@ export class RaytracingPass extends RenderPass {
             entries: [
                 {
                     binding: 0,
-                    resource: { buffer: cameraBuffer }
+                    resource: { buffer: sceneInfoBuffer }
                 },
                 // {
                 //    binding: 1,

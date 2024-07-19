@@ -29,7 +29,7 @@ export abstract class Entity {
     /**
      * Represent the position of origin of the entity in 3d world space.
      */
-    public position: vec3;
+    protected position: vec3;
 
     /**
      * Represents the rotation of the entity in world space.
@@ -49,6 +49,11 @@ export abstract class Entity {
     private up: vec3 = [0, 0, 1];
 
     private right: vec3 = [1, 0, 0];
+
+
+    public getPosition():vec3 {
+        return this.position;
+    }
 
 
 

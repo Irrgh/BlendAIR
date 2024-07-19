@@ -3,7 +3,8 @@ import { WebGPU } from "../engine/WebGPU";
 import { RenderPass } from "./pass/RenderPass";
 import { RenderGraph } from './RenderGraph';
 import { App } from "../app";
-import { mat4 } from 'gl-matrix';
+import { mat4, vec3 } from 'gl-matrix';
+import { Camera } from '../entity/Camera';
 
 export abstract class Renderer {
     public webgpu: WebGPU = App.getInstance().webgpu;
@@ -199,6 +200,9 @@ export abstract class Renderer {
             width: new Uint32Array(cameraValues, 128, 1),
             height: new Uint32Array(cameraValues, 132, 1),
         };
+
+        const camera = viewport.camera;
+        const view = camera.getViewMatrix();
 
         cameraViews.view.set(viewport.camera.getViewMatrix());
         cameraViews.proj.set(viewport.camera.getProjectionMatrix());

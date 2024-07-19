@@ -147,7 +147,6 @@ export class CoordinatePlanePass extends RenderPass {
             label: "orbit-center"
         });
 
-        App.getWebGPU().printBufferContent(cameraBuffer);
 
         device.queue.writeBuffer(orbitBuffer, 0, new Float32Array([100]));    /** @todo actually get the correct data  */
 
