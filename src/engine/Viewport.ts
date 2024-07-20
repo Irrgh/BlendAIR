@@ -85,7 +85,7 @@ export class Viewport implements Resizable {
 
         this.camera = new Camera();
         this.camera.setPerspectiveProjection(Util.degreeToRadians(90), aspect, 0.1, 100);
-        this.camera.setPosition(1, 1, 0); /** @todo please change this  */
+        this.camera.setPosition(0, 0, 0); /** @todo please change this  */
 
 
         this.renderer = new RealisticRenderer(this);

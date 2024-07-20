@@ -116,8 +116,8 @@ export class CoordinatePlanePass extends RenderPass {
         
         let coords : vec2<f32> = (input.uv * dist) - dist / 2.0;
         
-        let grid = PristineGrid(input.uv * 100, vec2f(0.03,0.03));
-        let grid2 = PristineGrid(input.uv * 10, vec2f(0.003,0.003));
+        let grid = PristineGrid(input.uv * 200, vec2f(0.03,0.03));
+        let grid2 = PristineGrid(input.uv * 20, vec2f(0.003,0.003));
 
         let dx = saturate(distance(input.uv.x, 0.5)*1000);
         let dy = saturate(distance(input.uv.y, 0.5)*1000);

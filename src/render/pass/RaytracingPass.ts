@@ -69,11 +69,105 @@ export class RaytracingPass extends RenderPass {
         struct Sphere {
             center: vec3<f32>,
             radius: f32,
+            material:Material
         }
+
+        struct Triangle {
+            v0: vec3<f32>,
+            v1: vec3<f32>,
+            v2: vec3<f32>,
+            n0: vec3<f32>,
+            n1: vec3<f32>,
+            n2: vec3<f32>,
+            material: Material,
+        }
+
+        struct Material {
+            color: vec3<f32>,
+            emission: f32,
+        }
+
+
+
+        struct PointLight {
+            center: vec3<f32>,
+            radius: f32,
+            color: vec3<f32>,
+            intensity: f32,
+        }
+
+
+
+
 
         struct RayHitInfo {
             dist : f32,
             normal : vec3<f32>,
+            material: Material,    
+        }
+
+        struct PixelData {
+            color: vec3<f32>,
+            depth: f32,
+        }
+
+
+
+        fn intersectRayTriangle(ray: Ray, tri: Triangle) -> RayHitInfo {
+
+            let ab = tri.v1 - tri.v0;
+            let ac = tri.v2 - tri.v0;
+
+            let p = cross(ray.dir, ac);
+            let det = dot(ab, p);
+
+            
+            if (abs(det) < 1e-8) {    // may need some epsilon
+                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
+            }
+
+            
+            // Compute the inverse of the determinant
+            let inv_det = 1.0 / det;
+
+            // Compute u parameter
+            let t = ray.origin - tri.v0;
+            let u = dot(t, p) * inv_det;
+
+            // Check if u is outside the triangle
+            if u < 0.0 || u > 1.0 {
+                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
+            }
+
+            // Compute v parameter
+            let q = cross(t, ab);
+            let v = dot(ray.dir, q) * inv_det;
+
+            // Check if v is outside the triangle
+            if v < 0.0 || u + v > 1.0 {
+                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
+            }
+
+            // Compute the intersection distance
+            let distance = dot(ac, q) * inv_det;
+    
+            // Check if the intersection is in the positive direction of the ray
+            if distance < 0.0 {
+                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
+            }
+
+            var normal = normalize(cross(normalize(ab),normalize(ac)));
+
+            // smooth shading
+            if (true) {
+                // Interpolate the normal using barycentric coordinates
+                let w = 1.0 - u - v;
+                normal = normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
+            }
+
+
+            // If all checks passed, return the distance
+            return RayHitInfo(distance,normal,tri.material);
         }
 
 
@@ -90,7 +184,7 @@ export class RaytracingPass extends RenderPass {
             let discriminant: f32 = b * b - 4.0 * a * c;
         
             if (discriminant < 0.0) {
-                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,1.0));
+                return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,1.0),sphere.material);
             }
         
             // Calculate the two possible solutions
@@ -100,38 +194,64 @@ export class RaytracingPass extends RenderPass {
             // Return the smallest positive t value (the nearest intersection)
             if (t1 > 0.0 && t2 > 0.0) {
                 let normal = normalize(ray.origin + ray.dir * min(t1, t2) - sphere.center);
-                return RayHitInfo(min(t1,t2),normal);
+                return RayHitInfo(min(t1,t2),normal,sphere.material);
             } else if (t1 > 0.0) {
                 let normal = normalize( ray.origin + ray.dir * t1 - sphere.center);
-                return RayHitInfo(t1,normal);
+                return RayHitInfo(t1,normal,sphere.material);
             } else if (t2 > 0.0) {
                 let normal = normalize(ray.origin + ray.dir * t2 - sphere.center);
-                return RayHitInfo(t2,normal);
+                return RayHitInfo(t2,normal,sphere.material);
             }
 
-            return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,1.0));  
+            return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,1.0),sphere.material);  
         }
         
-        fn getHitInfo (ray: Ray) -> RayHitInfo {
+        fn getHitInfo (ray: Ray) -> PixelData {
 
-            let spheres = array<Sphere,3>(
-                Sphere(vec3<f32>(4.0,0.0,-0.3),1.0),
-                Sphere(vec3<f32>(0.0,4.0,0.3),1.0),
-                Sphere(vec3<f32>(0.0,0.0,4.0),1.0),
+            let materials = array<Material,4>(
+                Material(vec3<f32>(1,0,0),1),
+                Material(vec3<f32>(0,1,0),1),
+                Material(vec3<f32>(0,0,1),1),
+                Material(vec3<f32>(1,1,1),0),
             );
 
-            var hit : RayHitInfo = RayHitInfo(info.far,vec3<f32>(0.0,0.0,0.0));
+            let spheres = array<Sphere,3>(
+                Sphere(vec3<f32>(4.0,0.0,0.0),0.5,materials[0]),
+                Sphere(vec3<f32>(0.0,4.0,0.0),0.5,materials[1]),
+                Sphere(vec3<f32>(0.0,0.0,4.0),0.5,materials[2]),
+            );
 
+            let tri : Triangle = Triangle(
+                spheres[0].center,
+                spheres[1].center,
+                spheres[2].center,
+                vec3<f32>(1,0,0),
+                vec3<f32>(0,1,0),
+                vec3<f32>(0,0,1),
+                materials[3],
+            );
+
+
+            var hit : RayHitInfo;
+            hit.dist = info.far;
+            
 
             for (var i : u32 = 0; i < 3; i++) {
-
                 let sphereIntersection = intersectRaySphere(ray,spheres[i]);
                 if (hit.dist > sphereIntersection.dist && sphereIntersection.dist > 0) {
                     hit = sphereIntersection;
                 }
             }
+            let triIntersection = intersectRayTriangle(ray,tri);
+            if (hit.dist > triIntersection.dist && triIntersection.dist > 0) {
+                hit = triIntersection;
+                hit.material.color = triIntersection.normal;
+            }
+            
+            let transformedPos = info.proj * info.view * vec4<f32>(ray.origin + ray.dir * hit.dist,1);
+            let depth = transformedPos.z / transformedPos.w;
 
-            return hit;
+            return PixelData(hit.material.color,depth);
         }
 
 
@@ -172,11 +292,8 @@ export class RaytracingPass extends RenderPass {
             
             let hit = getHitInfo(ray);
 
-            let transformedPos = info.proj * info.view * vec4<f32>(ray.origin + ray.dir * hit.dist,1);
-            let ndcDepth = transformedPos.z / transformedPos.w;
-
-            textureStore(colorTexture,vec2<u32>(x,y), vec4<f32>(hit.normal,1.0));
-            textureStore(depthTexture,vec2<u32>(x,y), vec4<f32>(ndcDepth,0.0,0.0,1.0));
+            textureStore(colorTexture,vec2<u32>(x,y), vec4<f32>(hit.color,1.0));
+            textureStore(depthTexture,vec2<u32>(x,y), vec4<f32>(hit.depth,0.0,0.0,1.0));
         }
 
     
