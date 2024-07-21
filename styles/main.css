@@ -3,6 +3,7 @@
     margin: 0;
     left: 0;
     top: 0;
+    font-family: "Dejavu Sans";
 }
 
 
@@ -88,4 +89,14 @@
 
 .window-header-element:hover {
     background-color: rgb(57, 106, 92);
+}
+
+.timeline {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(25, 46, 40);
+}
+
+.timeline::webkit::-webkit-slider-thumb:hover {
+    color:aqua;
 }

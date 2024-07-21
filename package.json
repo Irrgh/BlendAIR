@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@webgpu/types": "^0.1.40",
+    "ffmpeg.js": "^4.2.9003",
     "gl-matrix": "^3.4.3",
     "http-server": "^14.1.1",
     "ts-loader": "^9.5.1",

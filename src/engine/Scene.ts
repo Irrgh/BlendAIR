@@ -3,6 +3,7 @@ import { Entity } from '../entity/Entity';
 import { MeshInstance } from "../entity/MeshInstance";
 import { TriangleMesh } from "./TriangleMesh";
 import { Viewport } from "./Viewport";
+import { Timeline } from './Timeline';
 
 export class Scene {
 
@@ -19,7 +20,7 @@ export class Scene {
 
     public primarySelection?: Entity;
     public selections: Set<Entity>;
-
+    public timeline: Timeline;
 
 
     /**
@@ -33,6 +34,7 @@ export class Scene {
         this.entities = new Map<String,MeshInstance>();
         this.viewports = new Set<Viewport>();
         this.selections = new Set<Entity>;
+        this.timeline = new Timeline();
     }
 
     /**

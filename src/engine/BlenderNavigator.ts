@@ -4,6 +4,8 @@ import { mat4, quat, vec2, vec3 } from "gl-matrix";
 import { KeyListener } from './KeyListener';
 import { Util } from "../util/Util";
 import { App } from "../app";
+import { Entity } from "../entity/Entity";
+import { Scene } from './Scene';
 
 /**
  * Implements the {@link Navigator} interface to achieve Camera control similar to Blender.
@@ -27,8 +29,8 @@ export class BlenderNavigator implements Navigator {
 
     use(): void {
         this.viewport.canvas.addEventListener("mousedown", this.mouseDown);
-
         this.viewport.canvas.addEventListener("wheel", this.wheel);
+        document.addEventListener("keydown", this.keyDown);
 
     }
     stop(): void {
@@ -99,19 +101,19 @@ export class BlenderNavigator implements Navigator {
             readableBuffer.mapAsync(GPUMapMode.READ).then(() => {
 
                 const data = new Uint32Array(readableBuffer.getMappedRange());
-                
+
                 const rect = this.viewport.canvas.getBoundingClientRect();
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
 
 
-                const index = (y * (bytesPerRow / 4)  + x); // 4 bytes per pixel (RGBA)
+                const index = (y * (bytesPerRow / 4) + x); // 4 bytes per pixel (RGBA)
 
                 const objectIndex = data[index];
 
                 const scene = App.getInstance().currentScene;
 
-                if(!KeyListener.combinationPressed("ShiftLeft")) {
+                if (!KeyListener.combinationPressed("ShiftLeft")) {
                     scene.selections.clear();
                     scene.primarySelection = undefined;
                 }
@@ -120,8 +122,8 @@ export class BlenderNavigator implements Navigator {
                     return;
                 }
 
-                const entity = Array.from(scene.entities)[objectIndex-1][1];    // 0 is ENV hence id 0 could not be index 0
-                
+                const entity = Array.from(scene.entities)[objectIndex - 1][1];    // 0 is ENV hence id 0 could not be index 0
+
                 scene.primarySelection = entity;
                 scene.selections.add(entity);
 
@@ -129,7 +131,7 @@ export class BlenderNavigator implements Navigator {
 
                 requestAnimationFrame(this.viewport.render);
             });
-            
+
 
 
 
@@ -213,11 +215,102 @@ export class BlenderNavigator implements Navigator {
         requestAnimationFrame(this.viewport.render);
     }
 
+    private keyDown = async (event: KeyboardEvent) => {
+
+        console.log(event.code)
+        switch (event.code) {
+            case "KeyG":
+                await this.viewport.canvas.requestPointerLock();
+                this.viewport.canvas.addEventListener("pointermove", this.objectMove);
+                break;
+            case "KeyS":
+                await this.viewport.canvas.requestPointerLock();
+                this.viewport.canvas.addEventListener("pointermove",this.objectScale);
+                break;
+            //case "KeyR":
+            //    await this.viewport.canvas.requestPointerLock();
+            //    this.viewport.canvas.addEventListener("pointermove",this.objectRotate);
+            //    break;
+        }
+    }
+
+    private objectMove = (event: PointerEvent) => {
+
+        document.addEventListener("keydown", (event) => {
+            if (event.code == "Escape") {
+                this.viewport.canvas.removeEventListener("pointermove", this.objectMove);
+                document.exitPointerLock();
+            }
+        });
+
+        const scene = App.getInstance().currentScene;
+
+        const refObject = scene.primarySelection ? scene.primarySelection : Array.from(scene.selections)[0];
+
+        let factor = 1;
+
+
+        if (refObject) {
+            const toObject = vec3.sub(vec3.create(), refObject.getPosition(), this.viewport.camera.getPosition());
+            const dot = vec3.dot(toObject, this.viewport.camera.getForward());
+            factor = dot / vec3.length(this.viewport.camera.getForward());
+        }
+
+        const diff = vec2.fromValues(event.movementX, -event.movementY);
+
+        let u = this.viewport.camera.getRight();
+        let v = this.viewport.camera.getUp();
+
+
+        vec3.scale(u, u, diff[0] * this.cameraPosition.r);
+        vec3.scale(v, v, diff[1] * this.cameraPosition.r);
 
 
 
+        vec3.add(u, u, v);
+
+        vec3.scale(u, u, factor / 1000);
 
 
+
+        scene.selections.forEach((entity: Entity) => {
+
+            vec3.add(entity.getPosition(), u, entity.getPosition());
+
+
+
+        });
+
+        requestAnimationFrame(this.viewport.render);
+
+    }
+
+
+    private objectScale = (event:PointerEvent) => {
+
+        document.addEventListener("keydown", (event) => {
+            if (event.code == "Escape") {
+                this.viewport.canvas.removeEventListener("pointermove", this.objectScale);
+                document.exitPointerLock();
+            }
+        });
+
+        const scale = 1 + Math.sqrt(event.movementX + event.movementY**2) / 1000;
+
+        const scene = App.getInstance().currentScene;
+
+        console.log(scale);
+
+        scene.selections.forEach((entity) => {
+
+            vec3.scale(entity.scale,entity.scale,scale);
+
+        })
+        
+
+        requestAnimationFrame(this.viewport.render);
+
+    }
 
 
 }

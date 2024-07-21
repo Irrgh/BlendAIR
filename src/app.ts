@@ -7,6 +7,8 @@ import { quat, vec3 } from "gl-matrix";
 import { ResizableWindow } from './gui/ResizableWindow';
 import { ViewportWindow } from "./gui/ViewportWindow";
 import { Entity } from "./entity/Entity";
+import { TimelineWindow } from "./gui/TimelineWindow";
+import { AnimationSheet } from "./engine/AnimationSheet";
 
 export class App {
     private static instance: App;
@@ -58,9 +60,10 @@ export class App {
         const root = ResizableWindow.initializeRootWindow("horizontal");
         const right = root.addChild(0, "horizontal");
         const left = root.addChild(0, "vertical", 1200);
-        left.addChild(0, "horizontal");
+        const child1 = left.addChild(0, "horizontal");
         const child2 = left.addChild(0, "horizontal", 700);
-
+        
+        child1.setContent(new TimelineWindow());
         child2.setContent(new ViewportWindow());
 
 
@@ -75,7 +78,20 @@ export class App {
         const plane: TriangleMesh = TriangleMesh.parseFromObj(model2);
         const shard : TriangleMesh = TriangleMesh.parseFromObj(model3);
 
-        this.currentScene.addEntity(new MeshInstance(shard));
+        const shardPlease : MeshInstance = new MeshInstance(shard);
+        shardPlease.setPositionAsAnimation(new AnimationSheet([
+            {
+                frame: 0,
+                value: [0,0,0]
+            },
+            {
+                frame:250,
+                value: [0,0,3]
+            }
+        ]))
+
+
+        this.currentScene.addEntity(shardPlease);
 
         for (let i = 0; i < 5; i++) {
 

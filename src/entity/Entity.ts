@@ -1,5 +1,6 @@
 import { vec3, quat, mat4, mat3 } from "gl-matrix";
 import { Camera } from "./Camera";
+import { AnimationSheet } from '../engine/AnimationSheet';
 
 
 /**
@@ -29,7 +30,7 @@ export abstract class Entity {
     /**
      * Represent the position of origin of the entity in 3d world space.
      */
-    protected position: vec3;
+    private position: vec3 | AnimationSheet;
 
     /**
      * Represents the rotation of the entity in world space.
@@ -52,6 +53,11 @@ export abstract class Entity {
 
 
     public getPosition():vec3 {
+        
+        if (this.position instanceof AnimationSheet) {
+            return this.position.getValue();
+        }
+        
         return this.position;
     }
 
@@ -64,14 +70,17 @@ export abstract class Entity {
      */
     public getWorldTransform(): mat4 {
         const mat = mat4.create();
-        return mat4.fromRotationTranslationScale(mat, this.rotation, this.position, this.scale);
+        return mat4.fromRotationTranslationScale(mat, this.rotation, this.getPosition(), this.scale);
     }
 
 
     public setPosition(x: number, y: number, z: number) {
-        vec3.set(this.position, x, y, z);
+        vec3.set(this.getPosition(), x, y, z);
     }
 
+    public setPositionAsAnimation(anim:AnimationSheet) {
+        this.position = anim;
+    }
 
     public setXRotation(radians: number): void {
         quat.setAxisAngle(this.rotation, vec3.fromValues(1, 0, 0), radians);
