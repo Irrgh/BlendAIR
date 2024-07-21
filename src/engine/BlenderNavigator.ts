@@ -217,7 +217,6 @@ export class BlenderNavigator implements Navigator {
 
     private keyDown = async (event: KeyboardEvent) => {
 
-        console.log(event.code)
         switch (event.code) {
             case "KeyG":
                 await this.viewport.canvas.requestPointerLock();

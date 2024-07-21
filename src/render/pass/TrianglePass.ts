@@ -207,11 +207,9 @@ export class TrianglePass extends RenderPass {
 
     public render(viewport: Viewport): void {
 
-        console.time("mesh creation")
 
         this.createMeshBuffer(viewport);
         
-        console.timeEnd("mesh creation")
 
         const device: GPUDevice = App.getRenderDevice();
 

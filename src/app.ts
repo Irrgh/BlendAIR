@@ -79,7 +79,8 @@ export class App {
         const shard : TriangleMesh = TriangleMesh.parseFromObj(model3);
 
         const shardPlease : MeshInstance = new MeshInstance(shard);
-        shardPlease.setPositionAsAnimation(new AnimationSheet([
+
+        const shardAnimation = new AnimationSheet([
             {
                 frame: 0,
                 value: [0,0,0]
@@ -88,7 +89,9 @@ export class App {
                 frame:250,
                 value: [0,0,3]
             }
-        ]))
+        ]);
+        shardAnimation.setInterpolation("bezier");
+        shardPlease.setPositionAsAnimation(shardAnimation);
 
 
         this.currentScene.addEntity(shardPlease);
@@ -97,8 +100,26 @@ export class App {
 
             let entity: MeshInstance;
 
+            let anim = new AnimationSheet([
+                {
+                    frame: 0,
+                    value: vec3.random(vec3.create(),10)
+                },
+                {
+                    frame: 125,
+                    value: vec3.random(vec3.create(),10)
+                },
+                {
+                    frame: 250,
+                    value: vec3.random(vec3.create(),10)
+                },
+            ])
+
+
+
+
             entity = new MeshInstance(mesh);
-            entity.setPosition(Math.random() * 10, Math.random() * 10, Math.random() * 10);
+            entity.setPositionAsAnimation(anim);
             entity.scale = [1, 1, 1];
             entity.setFacing(vec3.random([0, 0, 0]));
             this.currentScene.addEntity(entity);
