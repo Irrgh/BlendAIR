@@ -200,11 +200,6 @@ export class TrianglePass extends RenderPass {
         device.queue.writeBuffer(objectIndexBuffer, 0, idArray);
         this.drawParameters = drawParameters;
 
-
-        //console.log("vertex: ",vertexArray);
-        //console.log("index: ", indexArray);
-        //console.log("transform: ", transformArray);
-
     }
 
 
@@ -352,10 +347,6 @@ export class TrianglePass extends RenderPass {
         renderPass.setVertexBuffer(0, vertexBuffer);
         renderPass.setIndexBuffer(indexBuffer, "uint32");
 
-
-        console.log("drawParameters: ", this.drawParameters);
-
-
         for (let i = 0; i < this.drawParameters.length; i += 5) {
 
             renderPass.drawIndexed(
@@ -377,7 +368,7 @@ export class TrianglePass extends RenderPass {
         device.queue.submit([commandEncoder.finish()]);
 
         App.getWebGPU().resolveTimestamp(renderPassDescriptor).then(result => {
-            console.log(`Rendering took ${result/1000} µs`);
+            //console.log(`Rendering took ${result/1000} µs`);
         }).catch(error => {
             console.error('Failed to resolve timestamps:', error);
         });

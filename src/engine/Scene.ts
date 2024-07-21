@@ -10,7 +10,7 @@ export class Scene {
      * All entities except viewport Camera are included in here;
      */
     entities : Map<String,Entity>;
-    private entityIndecies: Map<Entity,number> = new Map();
+    public entityIndecies: Map<Entity,number> = new Map();
 
     /**
      * @todo All scene changing updates will be routed through here to prompt redrawing in all associated Viewports.
@@ -65,6 +65,7 @@ export class Scene {
     public getIds():Map<Entity,number> {
         return this.entityIndecies;
     }
+
 
 
 

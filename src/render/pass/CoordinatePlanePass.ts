@@ -122,7 +122,7 @@ export class CoordinatePlanePass extends RenderPass {
         let dx = saturate(distance(input.uv.x, 0.5)*1000);
         let dy = saturate(distance(input.uv.y, 0.5)*1000);
 
-        let linecolor : vec4f = saturate(vec4<f32>(dy,dx,min(dx,dy),1.0));
+        let linecolor : vec4f = saturate(vec4<f32>(dx,dy,min(dx,dy),1.0));
 
         return mix(vec4f(0.0,0.0,0.0,0.0),vec4<f32>(1.0,1.0,1.0,1.0),saturate(grid+grid2) * linecolor);
     }

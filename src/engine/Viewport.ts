@@ -258,7 +258,7 @@ export class Viewport implements Resizable {
         device.queue.submit([commandEncoder.finish()]);
 
         App.getWebGPU().resolveTimestamp(passDescriptor).then(result => {
-            console.log(`Canvas Render took: ${result / 1000} µs`);
+            //console.log(`Canvas Render took: ${result / 1000} µs`);
         })
 
 

@@ -57,9 +57,9 @@ export class App {
 
         const root = ResizableWindow.initializeRootWindow("horizontal");
         const right = root.addChild(0, "horizontal");
-        const left = root.addChild(0, "vertical", 800);
+        const left = root.addChild(0, "vertical", 1200);
         left.addChild(0, "horizontal");
-        const child2 = left.addChild(0, "horizontal", 600);
+        const child2 = left.addChild(0, "horizontal", 700);
 
         child2.setContent(new ViewportWindow());
 
@@ -75,10 +75,6 @@ export class App {
         const plane: TriangleMesh = TriangleMesh.parseFromObj(model2);
         const shard : TriangleMesh = TriangleMesh.parseFromObj(model3);
 
-        console.log("mesh1: ", mesh);
-        console.log("mesh2: ", mesh2);
-        console.log("plane: ", plane);
-
         this.currentScene.addEntity(new MeshInstance(shard));
 
         for (let i = 0; i < 5; i++) {
@@ -91,9 +87,6 @@ export class App {
             entity.setFacing(vec3.random([0, 0, 0]));
             this.currentScene.addEntity(entity);
 
-            if (Math.random() < 0.1) {
-                this.currentScene.selections.add(entity);
-            }
         }
 
         for (let i = 0; i < 5; i++) {
@@ -106,9 +99,6 @@ export class App {
             entity.setFacing(vec3.random([0, 0, 0]));
             this.currentScene.addEntity(entity);
 
-            if (Math.random() < 0.1) {
-                this.currentScene.selections.add(entity);
-            }
         }
     
 

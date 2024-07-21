@@ -3,6 +3,7 @@ import { Viewport } from './Viewport';
 import { mat4, quat, vec2, vec3 } from "gl-matrix";
 import { KeyListener } from './KeyListener';
 import { Util } from "../util/Util";
+import { App } from "../app";
 
 /**
  * Implements the {@link Navigator} interface to achieve Camera control similar to Blender.
@@ -12,16 +13,16 @@ export class BlenderNavigator implements Navigator {
     constructor(viewport: Viewport) {
         this.viewport = viewport;
         this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward());
-        this.cameraPosition.phi -= Math.PI/2;
-        this.orbitCenter = vec3.add([0,0,0],this.viewport.camera.getForward(),this.viewport.camera.getPosition());
-        this.horizontalRotationSign = vec3.dot([0,0,1],this.viewport.camera.getUp()) > 0 ? 1 : -1;
+        this.cameraPosition.phi -= Math.PI / 2;
+        this.orbitCenter = vec3.add([0, 0, 0], this.viewport.camera.getForward(), this.viewport.camera.getPosition());
+        this.horizontalRotationSign = vec3.dot([0, 0, 1], this.viewport.camera.getUp()) > 0 ? 1 : -1;
     }
 
-    private viewport : Viewport;
+    private viewport: Viewport;
     private orbitCenter: vec3;
 
-    private cameraPosition : SphericalCoordinate;
-    private horizontalRotationSign : number;
+    private cameraPosition: SphericalCoordinate;
+    private horizontalRotationSign: number;
 
 
     use(): void {
@@ -32,18 +33,18 @@ export class BlenderNavigator implements Navigator {
     }
     stop(): void {
         const canvas = this.viewport.canvas;
-        canvas.removeEventListener("mousedown",this.mouseDown);
-        canvas.removeEventListener("pointerup",this.mouseUp);
-        canvas.removeEventListener("pointermove",this.pointerMove);
-        canvas.removeEventListener("pointermove",this.pointerRotate);
-        canvas.removeEventListener("wheel",this.wheel);
+        canvas.removeEventListener("mousedown", this.mouseDown);
+        canvas.removeEventListener("pointerup", this.mouseUp);
+        canvas.removeEventListener("pointermove", this.pointerMove);
+        canvas.removeEventListener("pointermove", this.pointerRotate);
+        canvas.removeEventListener("wheel", this.wheel);
     }
 
     private mouseDown = async (event: MouseEvent) => {
         event.preventDefault();
 
-        const startUp : vec3 = this.viewport.camera.getUp();
-        this.horizontalRotationSign = vec3.dot([0,0,1],startUp) > 0 ? 1 : -1
+        const startUp: vec3 = this.viewport.camera.getUp();
+        this.horizontalRotationSign = vec3.dot([0, 0, 1], startUp) > 0 ? 1 : -1
 
 
 
@@ -54,16 +55,83 @@ export class BlenderNavigator implements Navigator {
 
 
 
-            if (KeyListener.combinationPressed("ShiftLeft")){
+            if (KeyListener.combinationPressed("ShiftLeft")) {
                 this.viewport.canvas.addEventListener("pointermove", this.pointerMove);
             } else {
                 this.viewport.canvas.addEventListener("pointermove", this.pointerRotate);
             }
 
-            
+
 
 
             window.addEventListener("pointerup", this.mouseUp);
+
+
+        } else {
+
+            const objectIndexTexture: GPUTexture = this.viewport.getRenderer().getTexture("object-index");
+            const device = App.getRenderDevice();
+
+            const bytesPerRow = Math.ceil(objectIndexTexture.width * 4 / 256) * 256;
+
+
+            const readableBuffer = device.createBuffer({
+                size: bytesPerRow * objectIndexTexture.height,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+            });
+
+            const commandEncoder = device.createCommandEncoder();
+            commandEncoder.copyTextureToBuffer(
+                {
+                    texture: objectIndexTexture,
+                    origin: { x: 0, y: 0, z: 0 }
+                },
+                {
+                    buffer: readableBuffer,
+                    bytesPerRow: bytesPerRow,
+                    rowsPerImage: objectIndexTexture.height
+                },
+                { width: objectIndexTexture.width, height: objectIndexTexture.height }
+            );
+
+            device.queue.submit([commandEncoder.finish()]);
+
+            readableBuffer.mapAsync(GPUMapMode.READ).then(() => {
+
+                const data = new Uint32Array(readableBuffer.getMappedRange());
+                
+                const rect = this.viewport.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+
+                const index = (y * (bytesPerRow / 4)  + x); // 4 bytes per pixel (RGBA)
+
+                const objectIndex = data[index];
+
+                const scene = App.getInstance().currentScene;
+
+                if(!KeyListener.combinationPressed("ShiftLeft")) {
+                    scene.selections.clear();
+                    scene.primarySelection = undefined;
+                }
+
+                if (objectIndex == 0) { // ENV hit
+                    return;
+                }
+
+                const entity = Array.from(scene.entities)[objectIndex-1][1];    // 0 is ENV hence id 0 could not be index 0
+                
+                scene.primarySelection = entity;
+                scene.selections.add(entity);
+
+                readableBuffer.destroy();
+
+                requestAnimationFrame(this.viewport.render);
+            });
+            
+
+
 
 
         }
@@ -80,7 +148,7 @@ export class BlenderNavigator implements Navigator {
 
     private wheel = (event: WheelEvent) => {
 
-        this.cameraPosition.r += Math.max(Math.log(this.cameraPosition.r),0.1) * event.deltaY * 0.001 *(KeyListener.combinationPressed("ShiftLeft") ? 0.1 : 1);
+        this.cameraPosition.r += Math.max(Math.log(this.cameraPosition.r), 0.1) * event.deltaY * 0.001 * (KeyListener.combinationPressed("ShiftLeft") ? 0.1 : 1);
 
         const camera = this.viewport.camera;
 
@@ -107,7 +175,7 @@ export class BlenderNavigator implements Navigator {
         vec3.add(u, u, v);
 
         vec3.scale(u, u, -1 / 1000);
-        
+
 
         vec3.add(this.viewport.camera.getPosition(), u, this.viewport.camera.getPosition());
         vec3.add(this.orbitCenter, u, this.orbitCenter);
@@ -128,19 +196,19 @@ export class BlenderNavigator implements Navigator {
         this.cameraPosition.phi += diff[1] * 0.005;
 
         const pos = Util.sphericalToCartesian(this.cameraPosition);
-        vec3.add(this.viewport.camera.getPosition(),pos,this.orbitCenter);
-        
-        const horizontalRot : quat = quat.create();
-        const verticalRot : quat = quat.create();
+        vec3.add(this.viewport.camera.getPosition(), pos, this.orbitCenter);
 
-        quat.setAxisAngle(horizontalRot,[0,0,1],diff[0]*0.005* this.horizontalRotationSign);
+        const horizontalRot: quat = quat.create();
+        const verticalRot: quat = quat.create();
+
+        quat.setAxisAngle(horizontalRot, [0, 0, 1], diff[0] * 0.005 * this.horizontalRotationSign);
         quat.setAxisAngle(verticalRot, u, -diff[1] * 0.005);
-        
+
         const oldRotation = this.viewport.camera.rotation;
 
-        quat.mul(oldRotation,verticalRot,oldRotation);
-        quat.mul(oldRotation,horizontalRot,oldRotation); 
-        quat.normalize(oldRotation,oldRotation);
+        quat.mul(oldRotation, verticalRot, oldRotation);
+        quat.mul(oldRotation, horizontalRot, oldRotation);
+        quat.normalize(oldRotation, oldRotation);
 
         requestAnimationFrame(this.viewport.render);
     }

@@ -40,7 +40,7 @@ export class ViewportWindow extends ContentWindow {
             const scene = App.getInstance().currentScene;
             const entity : MeshInstance = new MeshInstance(mesh);
             scene.addEntity(entity);
-
+            requestAnimationFrame(this.viewport.render);
 
         });
 
@@ -72,6 +72,14 @@ export class ViewportWindow extends ContentWindow {
         });
         this.headerElement.append(button);
 
+        canvas.addEventListener("drop",(ev) => {
+            ev.preventDefault();
+            console.log(ev);
+        })
+
+        canvas.ondragover = (ev) => {
+            ev.preventDefault();
+        }
 
 
 

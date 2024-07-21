@@ -72,7 +72,7 @@ export class SelectionOutlinePass extends RenderPass {
 
         // i feel like inverting it is unintuitive
         fn fresnel(normal:vec3<f32>, view:vec3<f32>, exponent:f32) -> f32 {
-            return pow(1.0 - dot(normal,view), exponent);
+            return (1.0 - pow(dot(view,normal), exponent));
         }
 
         fn linearizeDepth(depth: f32, near: f32, far: f32) -> f32 {
@@ -107,13 +107,11 @@ export class SelectionOutlinePass extends RenderPass {
             let near = m14 / (m10 - 1);
             let far = m14 / (m10 + 1);
 
-            let depth = textureSample(texture,textureSampler,coords);
-
             let x : f32 = radius / (f32(camera.width));
             let y : f32 = radius / (f32(camera.height));
 
             var samples = array<f32,4>(
-                linearizeDepth(depth,near,far),
+                linearizeDepth(textureSample(texture,textureSampler,coords),near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(0,y)),near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,0)),near,far),
                 linearizeDepth(textureSample(texture,textureSampler,coords + vec2<f32>(x,y)),near,far),
@@ -155,28 +153,26 @@ export class SelectionOutlinePass extends RenderPass {
 
 
             var out : FragmentOut;
-            //out.color = vec4<f32>(input.uv,0.0,1.0);
             let delta : vec2<f32> = robertsCross(1.5,depthTexture,input.uv);
-            let gradient : f32 = sumDerivatives(delta);
+            let gradient : f32 = sumDerivatives(delta) / sqrt(2.0);
             let objectId : u32 = chooseObjectIndex(u32(1.5),input.uv,delta);
             let selected = isSelected(objectId);
 
-            let fresnel = fresnel(normal.xyz,view,1.0);
+            let fresnel = fresnel(normal.xyz,view,1);
             var outline = gradient * fresnel;
 
 
-            if (outline < 0.85 || !selected) { 
+            if (gradient < 0.80 || !selected) { 
                 out.color = color;
             } else {
                 if (objectId == selections.primary) {
-                    //if (selections.primary != 0) {
+                    if (selections.primary != 0) {
                         out.color = selections.primaryColor;
-                    //} 
+                    } 
                 } else {
                     out.color = selections.secondaryColor;
                 }
             }
-
 
             out.selection = vec4<f32>(outline,outline,outline,1.0);
         
@@ -204,8 +200,8 @@ export class SelectionOutlinePass extends RenderPass {
         selectionsViews.primaryColor.set(Object.values(this.primaryColor));
         selectionsViews.secondaryColor.set(Object.values(this.secondaryColor));
         selectionsViews.count.set([selections.length]);
-        selectionsViews.primary.set([scene.primarySelection ? scene.getId(scene.primarySelection) : 0]);   // Object index 0 in ENVIRONMENT 
-        selectionsViews.indecies.set(selections.map((entity: Entity) => { return scene.getId(entity) }));
+        selectionsViews.primary.set([scene.primarySelection ? scene.getId(scene.primarySelection) + 1 : 0]);   // Object index 0 is ENVIRONMENT 
+        selectionsViews.indecies.set(selections.map((entity: Entity) => { return scene.getId(entity) + 1 }));
 
         const selectionBuffer: GPUBuffer = this.renderer.createBuffer({
             size: selectionsValues.byteLength,
@@ -233,7 +229,7 @@ export class SelectionOutlinePass extends RenderPass {
         const colorTexture: GPUTexture = this.renderer.getTexture("color");
 
         const colorInputTexture: GPUTexture = device.createTexture({
-            size: {width:viewport.width,height:viewport.height},
+            size: { width: viewport.width, height: viewport.height },
             format: 'rgba8unorm',
             usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING
         });
@@ -380,7 +376,7 @@ export class SelectionOutlinePass extends RenderPass {
 
         const commandEncoder: GPUCommandEncoder = device.createCommandEncoder();
 
-        commandEncoder.copyTextureToTexture({texture:colorTexture},{texture:colorInputTexture},{width:viewport.width,height:viewport.height});
+        commandEncoder.copyTextureToTexture({ texture: colorTexture }, { texture: colorInputTexture }, { width: viewport.width, height: viewport.height });
 
         const pass: GPURenderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
