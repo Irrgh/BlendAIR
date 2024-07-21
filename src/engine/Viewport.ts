@@ -88,7 +88,7 @@ export class Viewport implements Resizable {
         this.camera.setPosition(0, 0, 0); /** @todo please change this  */
 
 
-        this.renderer = new RealisticRenderer(this);
+        this.renderer = new BasicRenderer(this);
         this.renderer.render();
     }
 
@@ -120,8 +120,8 @@ export class Viewport implements Resizable {
 
             const aspect = width / height;
 
+            
             this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1, 100);
-            //this.createRenderResults();
             this.renderer.render();
         }
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw

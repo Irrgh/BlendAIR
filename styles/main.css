@@ -24,30 +24,35 @@
     box-sizing: border-box;
 }
 
-.app-window:hover {
-    -webkit-box-shadow: inset 0px 0px 10px 5px rgba(255, 191, 28, 0.67);
-    box-shadow: inset 0px 0px 10px 5px rgba(255, 191, 28, 0.67);
-    transition: box-shadow, -webkit-box-shadow ease-in-out 0.5s;
-}
-
 
 .verticalResizer {
     position: absolute;
     height: 100%;
     background-color: rgb(119, 150, 149);
     z-index: 100;
+    transition: transform ease-in-out 0.2s, color ease-in-out 0.2s;
 }
+
+.verticalResizer:hover {
+    transform: scale(1.5);
+    background-color: rgb(76, 186, 183);
+}
+
+
 
 .horizontalResizer {
     position: absolute;
     width: 100%;
     background-color: rgb(119, 150, 149);
     z-index: 100;
+    transition: transform ease-in-out 0.2s, color ease-in-out 0.2s;
 }
 
-.debug {
-    background-color: rgba(127, 255, 212, 0.411);
+.horizontalResizer:hover {
+    transform: scale(1.5);
+    background-color: rgb(76, 186, 183);
 }
+
 
 
 .invisible {
@@ -56,4 +61,31 @@
 
 .hidden {
     display: none;;
+}
+
+
+.window-header {
+    display: flex;
+    flex: 1;
+    background-color: rgb(25, 46, 40);
+    color:aliceblue;
+}
+
+
+.window-header-element {
+    padding-left: 4px;
+    padding-right:4px;
+    padding-top:2px;
+    padding-bottom:2px;
+    margin: 2px;
+    border: 0;
+    border-radius: 3px;
+    background-color: rgb(25, 46, 40);
+    color:aliceblue;
+    align-items: center;
+    justify-content: center;
+}
+
+.window-header-element:hover {
+    background-color: rgb(57, 106, 92);
 }

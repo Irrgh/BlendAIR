@@ -20,8 +20,7 @@ export abstract class ContentWindow implements Resizable{
     constructor (content:HTMLElement) {
         this.headerElement = document.createElement("div");
         this.headerElement.style.height = `${ResizableWindow.MINIMUM_DIMENSIONS}px`
-        this.headerElement.style.width = `100%`;
-        this.headerElement.style.backgroundColor = `red`;
+        this.headerElement.classList.add("window-header");
         this.contentElement = content;
     }
 
