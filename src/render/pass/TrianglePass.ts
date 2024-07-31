@@ -6,7 +6,6 @@ import { App } from "../../app";
 import { TriangleMesh } from "../../engine/TriangleMesh";
 import { MeshInstance } from "../../entity/MeshInstance";
 import { Entity } from "../../entity/Entity";
-import { Util } from '../../util/Util';
 import { WebGPU } from "../../engine/WebGPU";
 import shader from "../../../assets/shaders/main.wgsl";
 

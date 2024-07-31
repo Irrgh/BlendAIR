@@ -48,16 +48,11 @@ export class Util {
   public static cartesianToSpherical(vec:vec3):SphericalCoordinate {
     // Compute the azimuth (phi)
 
-    const x = vec[0];
-    const y = vec[1];
-    const z = vec[2];
-
-    let azimuth = Math.atan2(y, x);
+    let azimuth = Math.atan2(vec[1], vec[0]);
     // Compute the length of the vector (r)
-    let r = Math.sqrt(x * x + y * y + z * z);
-
+    let r = vec3.len(vec);
     // Compute the elevation (theta)
-    let elevation = Math.asin(z / r);
+    let elevation = Math.asin(vec[2] / r);
 
     return {
       r:r,
@@ -71,7 +66,6 @@ export class Util {
     const x = vec.r * Math.sin(vec.phi) * Math.cos(vec.theta);
     const y = vec.r * Math.sin(vec.phi) * Math.sin(vec.theta);
     const z = vec.r * Math.cos(vec.phi);
-
 
     return [x,y,z];
   }

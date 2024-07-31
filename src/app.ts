@@ -120,7 +120,6 @@ export class App {
 
             entity = new MeshInstance(mesh);
             entity.setPositionAsAnimation(anim);
-            entity.scale = [1, 1, 1];
             entity.setFacing(vec3.random([0, 0, 0]));
             this.currentScene.addEntity(entity);
 
@@ -132,7 +131,6 @@ export class App {
 
             entity = new MeshInstance(plane);
             entity.setPosition(Math.random() * 10, Math.random() * 10, Math.random() * 10);
-            entity.scale = [1, 1, 1];
             entity.setFacing(vec3.random([0, 0, 0]));
             this.currentScene.addEntity(entity);
 
@@ -143,11 +141,7 @@ export class App {
 
 
 
-        this.currentScene.entities.forEach((entity: Entity, uuid: String) => {
-            const increment = quat.setAxisAngle(quat.create(), entity.getForward(), 0.01);
-            quat.multiply(entity.rotation, increment, entity.rotation);
-            quat.normalize(entity.rotation, entity.rotation);
-        })
+        
 
 
 

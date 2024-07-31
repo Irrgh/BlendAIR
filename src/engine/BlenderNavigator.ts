@@ -206,7 +206,7 @@ export class BlenderNavigator implements Navigator {
         quat.setAxisAngle(horizontalRot, [0, 0, 1], diff[0] * 0.005 * this.horizontalRotationSign);
         quat.setAxisAngle(verticalRot, u, -diff[1] * 0.005);
 
-        const oldRotation = this.viewport.camera.rotation;
+        const oldRotation = this.viewport.camera.getRotation();
 
         quat.mul(oldRotation, verticalRot, oldRotation);
         quat.mul(oldRotation, horizontalRot, oldRotation);
@@ -302,7 +302,7 @@ export class BlenderNavigator implements Navigator {
 
         scene.selections.forEach((entity) => {
 
-            vec3.scale(entity.scale,entity.scale,scale);
+            vec3.scale(entity.getScale(),entity.getScale(),scale);
 
         })
         

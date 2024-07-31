@@ -15,6 +15,7 @@ import { BasicRenderer } from "../render/BasicRenderer";
 import { App } from "../app";
 import fullQuadShader from "../../assets/shaders/fullQuadShader.wgsl";
 import { RealisticRenderer } from "../render/RealisticRenderer";
+import { InputStateMachine } from "../input/InputStateMachine";
 
 
 export class Viewport implements Resizable {
@@ -62,7 +63,7 @@ export class Viewport implements Resizable {
     width: number;
     height: number;
 
-    private navigator?: Navigator;
+    private navigator : InputStateMachine;
 
 
 
@@ -88,6 +89,11 @@ export class Viewport implements Resizable {
         this.camera.setPosition(0, 0, 0); /** @todo please change this  */
 
 
+        this.navigator = new InputStateMachine(this);
+
+
+
+
         this.renderer = new BasicRenderer(this);
         this.renderer.render();
     }
@@ -97,17 +103,6 @@ export class Viewport implements Resizable {
     getRenderer(): Renderer {
         return this.renderer;
     }
-
-
-
-
-
-    setNavigator(navigator: Navigator): void {
-        this.navigator?.stop();
-        this.navigator = navigator;
-        this.navigator.use();
-    }
-
 
 
     resize(width: number, height: number): void {

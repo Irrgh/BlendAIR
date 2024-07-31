@@ -35,12 +35,12 @@ export abstract class Entity {
     /**
      * Represents the rotation of the entity in world space.
      */
-    public rotation: quat;
+    private rotation: quat;
 
     /**
      * Represents the scale of the entity in world space.
      */
-    public scale: vec3;
+    private scale: vec3;
 
     /**
      * Represent the direction the the entity facing.
@@ -61,6 +61,11 @@ export abstract class Entity {
         return this.position;
     }
 
+    public getRotation():quat {
+        return this.rotation;
+    }
+
+
 
 
     /**
@@ -72,6 +77,13 @@ export abstract class Entity {
         const mat = mat4.create();
         return mat4.fromRotationTranslationScale(mat, this.rotation, this.getPosition(), this.scale);
     }
+
+
+    public getScale():vec3 {
+        return this.scale;
+    }
+
+
 
 
     public setPosition(x: number, y: number, z: number) {

@@ -22,7 +22,7 @@ export class ViewportWindow extends ContentWindow {
 
         this.viewport = viewport;
         this.canvas = canvas;
-        this.viewport.setNavigator(new BlenderNavigator(viewport));
+        this.canvas.tabIndex = 0;
 
         const importButton = document.createElement("button");
         importButton.innerText = "Import .obj";

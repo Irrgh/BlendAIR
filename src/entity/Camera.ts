@@ -1,4 +1,4 @@
-import { mat4, vec3 } from "gl-matrix";
+import { mat4, vec3, vec4 } from "gl-matrix";
 import { Entity } from "./Entity";
 
 /**
@@ -58,8 +58,8 @@ export class Camera extends Entity {
      * Returns the projection matrix of the camera.
      * @returns {mat4} projection matrix of the camera.
      */
-    public getProjectionMatrix():mat4 {
-        return this.projectionMatrix; 
+    public getProjectionMatrix(): mat4 {
+        return this.projectionMatrix;
     }
 
 
@@ -73,22 +73,51 @@ export class Camera extends Entity {
         mat4.identity(this.viewMatrix);
         mat4.lookAt(this.viewMatrix,
             this.getPosition(),
-            vec3.add(vec3.create(),direction,this.getPosition()),
+            vec3.add(vec3.create(), direction, this.getPosition()),
             this.getUp()
         );
         return this.viewMatrix;
     }
 
 
-    public getProjectionType():Projection {
+    public getProjectionType(): Projection {
         return this.projection;
     }
 
 
+    /**
+     * Returns the normalized device coordinates of an Entity as seen from the camera.
+     * @param entity 
+     */
+    public getNdcCoords(pos:vec3): vec4 {
+        const proj = this.getProjectionMatrix();
+        const view = this.getViewMatrix();
+
+        const posVector = vec4.fromValues(pos[0], pos[1], pos[2], 1);
+
+        const viewTransform = vec4.transformMat4(vec4.create(), posVector, view);
+        const projTransform = vec4.transformMat4(vec4.create(), viewTransform, proj);
+        vec4.scale(projTransform, projTransform, 1 / projTransform[3]); // normalize
+
+        return projTransform;
+    }
 
 
+    public getWorldCoordsFromNdc(ndc: vec4): vec4 {
 
+        const invProj = mat4.invert(mat4.create(),this.getProjectionMatrix());
+        const invView = mat4.invert(mat4.create(),this.getViewMatrix());
 
+        const eyeCoords = vec4.create();
+        vec4.transformMat4(eyeCoords, ndc, invProj);
+
+        const worldCoords = vec4.create();
+        vec4.transformMat4(worldCoords, eyeCoords, invView);
+
+        vec4.scale(worldCoords, worldCoords, 1 / worldCoords[3]);
+
+        return worldCoords;
+    }
 
 
 
