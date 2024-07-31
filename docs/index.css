@@ -1,0 +1,30 @@
+* {
+    font-family: "Dejavu Sans";
+    background-color: rgb(25, 46, 40);
+    color:whitesmoke;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color:rgb(251, 200, 104);
+}
+
+a {
+    color:rgb(225, 137, 225);
+}
+
+p {
+    padding: 10px;
+}
+
+
+li {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.combo {
+    background-color: rgb(56, 69, 66);
+    color: gray;
+    border: 0;
+    border-radius: 3px;
+}

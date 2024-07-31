@@ -277,9 +277,9 @@
         var out = new ARRAY_TYPE(3);
         return ARRAY_TYPE != Float32Array && (out[0] = 0, out[1] = 0, out[2] = 0), out;
     }
-    function vec3_length(a) {
-        var x = a[0], y = a[1], z = a[2];
-        return Math.hypot(x, y, z);
+    function clone(a) {
+        var out = new ARRAY_TYPE(3);
+        return out[0] = a[0], out[1] = a[1], out[2] = a[2], out;
     }
     function fromValues(x, y, z) {
         var out = new ARRAY_TYPE(3);
@@ -321,14 +321,32 @@
     });
     var vec, sub = function subtract(out, a, b) {
         return out[0] = a[0] - b[0], out[1] = a[1] - b[1], out[2] = a[2] - b[2], out;
-    }, len = vec3_length;
+    }, len = function vec3_length(a) {
+        var x = a[0], y = a[1], z = a[2];
+        return Math.hypot(x, y, z);
+    };
     vec = create();
+    function vec4_create() {
+        var out = new ARRAY_TYPE(4);
+        return ARRAY_TYPE != Float32Array && (out[0] = 0, out[1] = 0, out[2] = 0, out[3] = 0), 
+        out;
+    }
+    function vec4_fromValues(x, y, z, w) {
+        var out = new ARRAY_TYPE(4);
+        return out[0] = x, out[1] = y, out[2] = z, out[3] = w, out;
+    }
+    function vec4_scale(out, a, b) {
+        return out[0] = a[0] * b, out[1] = a[1] * b, out[2] = a[2] * b, out[3] = a[3] * b, 
+        out;
+    }
+    function vec4_transformMat4(out, a, m) {
+        var x = a[0], y = a[1], z = a[2], w = a[3];
+        return out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w, out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w, 
+        out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w, out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w, 
+        out;
+    }
     !function() {
-        var vec = function vec4_create() {
-            var out = new ARRAY_TYPE(4);
-            return ARRAY_TYPE != Float32Array && (out[0] = 0, out[1] = 0, out[2] = 0, out[3] = 0), 
-            out;
-        }();
+        var vec = vec4_create();
     }();
     function quat_create() {
         var out = new ARRAY_TYPE(4);
@@ -341,12 +359,6 @@
         return out[0] = s * axis[0], out[1] = s * axis[1], out[2] = s * axis[2], out[3] = Math.cos(rad), 
         out;
     }
-    function quat_multiply(out, a, b) {
-        var ax = a[0], ay = a[1], az = a[2], aw = a[3], bx = b[0], by = b[1], bz = b[2], bw = b[3];
-        return out[0] = ax * bw + aw * bx + ay * bz - az * by, out[1] = ay * bw + aw * by + az * bx - ax * bz, 
-        out[2] = az * bw + aw * bz + ax * by - ay * bx, out[3] = aw * bw - ax * bx - ay * by - az * bz, 
-        out;
-    }
     function slerp(out, a, b, t) {
         var omega, cosom, sinom, scale0, scale1, ax = a[0], ay = a[1], az = a[2], aw = a[3], bx = b[0], by = b[1], bz = b[2], bw = b[3];
         return (cosom = ax * bx + ay * by + az * bz + aw * bw) < 0 && (cosom = -cosom, bx = -bx, 
@@ -355,7 +367,12 @@
         scale1 = t), out[0] = scale0 * ax + scale1 * bx, out[1] = scale0 * ay + scale1 * by, 
         out[2] = scale0 * az + scale1 * bz, out[3] = scale0 * aw + scale1 * bw, out;
     }
-    var tmpvec3, xUnitVec3, yUnitVec3, temp1, temp2, matr, quat_mul = quat_multiply, quat_normalize = function vec4_normalize(out, a) {
+    var tmpvec3, xUnitVec3, yUnitVec3, temp1, temp2, matr, quat_mul = function quat_multiply(out, a, b) {
+        var ax = a[0], ay = a[1], az = a[2], aw = a[3], bx = b[0], by = b[1], bz = b[2], bw = b[3];
+        return out[0] = ax * bw + aw * bx + ay * bz - az * by, out[1] = ay * bw + aw * by + az * bx - ax * bz, 
+        out[2] = az * bw + aw * bz + ax * by - ay * bx, out[3] = aw * bw - ax * bx - ay * by - az * bz, 
+        out;
+    }, quat_normalize = function vec4_normalize(out, a) {
         var x = a[0], y = a[1], z = a[2], w = a[3], len = x * x + y * y + z * z + w * w;
         return len > 0 && (len = 1 / Math.sqrt(len)), out[0] = x * len, out[1] = y * len, 
         out[2] = z * len, out[3] = w * len, out;
@@ -376,6 +393,18 @@
         return out[0] = 1, out[1] = 0, out[2] = 0, out[3] = 0, out[4] = 0, out[5] = 1, out[6] = 0, 
         out[7] = 0, out[8] = 0, out[9] = 0, out[10] = 1, out[11] = 0, out[12] = 0, out[13] = 0, 
         out[14] = 0, out[15] = 1, out;
+    }
+    function mat4_invert(out, a) {
+        var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3], a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7], a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11], a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15], b00 = a00 * a11 - a01 * a10, b01 = a00 * a12 - a02 * a10, b02 = a00 * a13 - a03 * a10, b03 = a01 * a12 - a02 * a11, b04 = a01 * a13 - a03 * a11, b05 = a02 * a13 - a03 * a12, b06 = a20 * a31 - a21 * a30, b07 = a20 * a32 - a22 * a30, b08 = a20 * a33 - a23 * a30, b09 = a21 * a32 - a22 * a31, b10 = a21 * a33 - a23 * a31, b11 = a22 * a33 - a23 * a32, det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+        return det ? (det = 1 / det, out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det, 
+        out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det, out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det, 
+        out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det, out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det, 
+        out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det, out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det, 
+        out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det, out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det, 
+        out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det, out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det, 
+        out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det, out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det, 
+        out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det, out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det, 
+        out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det, out) : null;
     }
     var perspective = function perspectiveNO(out, fovy, aspect, near, far) {
         var nf, f = 1 / Math.tan(fovy / 2);
@@ -456,6 +485,9 @@
         getPosition() {
             return this.position instanceof AnimationSheet ? this.position.getValue() : this.position;
         }
+        getRotation() {
+            return this.rotation;
+        }
         getWorldTransform() {
             return function fromRotationTranslationScale(out, q, v, s) {
                 var x = q[0], y = q[1], z = q[2], w = q[3], x2 = x + x, y2 = y + y, z2 = z + z, xx = x * x2, xy = x * y2, xz = x * z2, yy = y * y2, yz = y * z2, zz = z * z2, wx = w * x2, wy = w * y2, wz = w * z2, sx = s[0], sy = s[1], sz = s[2];
@@ -464,6 +496,9 @@
                 out[7] = 0, out[8] = (xz + wy) * sz, out[9] = (yz - wx) * sz, out[10] = (1 - (xx + yy)) * sz, 
                 out[11] = 0, out[12] = v[0], out[13] = v[1], out[14] = v[2], out[15] = 1, out;
             }(mat4_create(), this.rotation, this.getPosition(), this.scale);
+        }
+        getScale() {
+            return this.scale;
         }
         setPosition(x, y, z) {
             !function set(out, x, y, z) {
@@ -745,10 +780,7 @@
             return this.projectionMatrix;
         }
         getViewMatrix() {
-            const direction = function clone(a) {
-                var out = new ARRAY_TYPE(3);
-                return out[0] = a[0], out[1] = a[1], out[2] = a[2], out;
-            }(this.getForward());
+            const direction = clone(this.getForward());
             return mat4_identity(this.viewMatrix), function lookAt(out, eye, center, up) {
                 var x0, x1, x2, y0, y1, y2, z0, z1, z2, len, eyex = eye[0], eyey = eye[1], eyez = eye[2], upx = up[0], upy = up[1], upz = up[2], centerx = center[0], centery = center[1], centerz = center[2];
                 return Math.abs(eyex - centerx) < 1e-6 && Math.abs(eyey - centery) < 1e-6 && Math.abs(eyez - centerz) < 1e-6 ? mat4_identity(out) : (z0 = eyex - centerx, 
@@ -765,6 +797,17 @@
         }
         getProjectionType() {
             return this.projection;
+        }
+        getNdcCoords(pos) {
+            const proj = this.getProjectionMatrix(), view = this.getViewMatrix(), posVector = vec4_fromValues(pos[0], pos[1], pos[2], 1), viewTransform = vec4_transformMat4(vec4_create(), posVector, view), projTransform = vec4_transformMat4(vec4_create(), viewTransform, proj);
+            return vec4_scale(projTransform, projTransform, 1 / projTransform[3]), projTransform;
+        }
+        getWorldCoordsFromNdc(ndc) {
+            const invProj = mat4_invert(mat4_create(), this.getProjectionMatrix()), invView = mat4_invert(mat4_create(), this.getViewMatrix()), eyeCoords = vec4_create();
+            vec4_transformMat4(eyeCoords, ndc, invProj);
+            const worldCoords = vec4_create();
+            return vec4_transformMat4(worldCoords, eyeCoords, invView), vec4_scale(worldCoords, worldCoords, 1 / worldCoords[3]), 
+            worldCoords;
         }
     }
     class Util {
@@ -790,11 +833,10 @@
             return radians * (180 / Math.PI);
         }
         static cartesianToSpherical(vec) {
-            const x = vec[0], y = vec[1], z = vec[2];
-            let azimuth = Math.atan2(y, x), r = Math.sqrt(x * x + y * y + z * z);
+            let azimuth = Math.atan2(vec[1], vec[0]), r = len(vec);
             return {
                 r,
-                phi: Math.asin(z / r),
+                phi: Math.asin(vec[2] / r),
                 theta: azimuth
             };
         }
@@ -1439,6 +1481,329 @@
             this.viewport.drawTexture(this.getTexture("color"), "rgba8unorm", "\n        let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * f32(res.x)),i32(input.uv.y * f32(res.y)));\n        let color = textureLoad(texture,coords);\n        return color;\n        ");
         }
     }
+    function vec2_create() {
+        var out = new ARRAY_TYPE(2);
+        return ARRAY_TYPE != Float32Array && (out[0] = 0, out[1] = 0), out;
+    }
+    function vec2_fromValues(x, y) {
+        var out = new ARRAY_TYPE(2);
+        return out[0] = x, out[1] = y, out;
+    }
+    function vec2_add(out, a, b) {
+        return out[0] = a[0] + b[0], out[1] = a[1] + b[1], out;
+    }
+    var vec2_sub = function vec2_subtract(out, a, b) {
+        return out[0] = a[0] - b[0], out[1] = a[1] - b[1], out;
+    }, vec2_dist = function vec2_distance(a, b) {
+        var x = b[0] - a[0], y = b[1] - a[1];
+        return Math.hypot(x, y);
+    };
+    !function() {
+        var vec = vec2_create();
+    }();
+    class State {}
+    class ObjectMove extends State {
+        cursorMovement;
+        viewport;
+        refEntity;
+        depth;
+        startPos;
+        currentPos;
+        name="object-move";
+        constructor(viewport) {
+            super(), this.refEntity = Array.from(App.getInstance().currentScene.selections)[0], 
+            this.viewport = viewport, this.cursorMovement = vec2_create(), this.depth = this.viewport.camera.getNdcCoords(this.refEntity.getPosition())[2];
+            const worldCursor = this.cursorToWorldSpace();
+            this.startPos = [ worldCursor[0], worldCursor[1], worldCursor[2] ], this.currentPos = clone(this.startPos), 
+            this.viewport.canvas.requestPointerLock();
+        }
+        abort() {
+            const diff = sub(create(), this.startPos, this.currentPos);
+            App.getInstance().currentScene.selections.forEach((entity => {
+                add(entity.getPosition(), entity.getPosition(), diff);
+            })), requestAnimationFrame(this.viewport.render), document.exitPointerLock();
+        }
+        finalize() {
+            document.exitPointerLock();
+        }
+        handlePointerMove(event) {
+            vec2_add(this.cursorMovement, this.cursorMovement, vec2_fromValues(event.movementX, event.movementY));
+            const scene = App.getInstance().currentScene, oldDiff = sub(create(), this.currentPos, this.startPos), cursorWorld = this.cursorToWorldSpace();
+            this.currentPos = [ cursorWorld[0], cursorWorld[1], cursorWorld[2] ];
+            const newDiff = sub(create(), this.currentPos, this.startPos);
+            sub(newDiff, newDiff, oldDiff), scene.selections.forEach((entity => {
+                add(entity.getPosition(), entity.getPosition(), newDiff);
+            })), requestAnimationFrame(this.viewport.render);
+        }
+        cursorToWorldSpace() {
+            const cursorNdc = [ this.cursorMovement[0] / this.viewport.canvas.width * 2 - 1, -this.cursorMovement[1] / this.viewport.canvas.height * 2 + 1, this.depth, 1 ];
+            return this.viewport.camera.getWorldCoordsFromNdc(cursorNdc);
+        }
+    }
+    class ObjectRotate extends State {
+        name="object-rotate";
+        axis;
+        angle=0;
+        angleInit;
+        viewport;
+        cursorPos;
+        centroidNdc;
+        constructor(viewport, cursorPos) {
+            super(), this.viewport = viewport, this.axis = this.viewport.camera.getForward(), 
+            this.angle = 0;
+            const ndc = this.viewport.camera.getNdcCoords(this.getAverage());
+            this.centroidNdc = [ ndc[0], ndc[1] ], this.cursorPos = cursorPos;
+            const centerToCursor = vec2_sub(vec2_create(), this.toCursorCoords(this.centroidNdc), this.cursorPos);
+            this.angleInit = Math.atan2(centerToCursor[1], centerToCursor[0]);
+        }
+        abort() {
+            const scene = this.viewport.scene, invRotation = quat_create();
+            setAxisAngle(invRotation, this.axis, -this.angle), scene.selections.forEach((entity => {
+                quat_mul(entity.getRotation(), invRotation, entity.getRotation()), quat_normalize(entity.getRotation(), entity.getRotation());
+            })), requestAnimationFrame(this.viewport.render), document.exitPointerLock();
+        }
+        finalize() {
+            document.exitPointerLock();
+        }
+        handlePointerMove(event) {
+            vec2_add(this.cursorPos, this.cursorPos, vec2_fromValues(event.movementX, event.movementY));
+            const centerToCursor = vec2_sub(vec2_create(), this.toCursorCoords(this.centroidNdc), this.cursorPos), newAngle = Math.atan2(centerToCursor[1], centerToCursor[0]) - this.angleInit, diff = newAngle - this.angle;
+            this.angle = newAngle;
+            const scene = this.viewport.scene, rotation = quat_create();
+            setAxisAngle(rotation, this.axis, diff), scene.selections.forEach((entity => {
+                quat_mul(entity.getRotation(), rotation, entity.getRotation()), quat_normalize(entity.getRotation(), entity.getRotation());
+            })), requestAnimationFrame(this.viewport.render);
+        }
+        getAverage() {
+            const sum = create();
+            return this.viewport.scene.selections.forEach((entity => {
+                add(sum, sum, entity.getPosition());
+            })), vec3_scale(sum, sum, 1 / this.viewport.scene.selections.size), sum;
+        }
+        toCursorCoords(ndc) {
+            return [ (ndc[0] + 1) / 2 * this.viewport.canvas.width, (ndc[0] - 1) / -2 * this.viewport.canvas.height ];
+        }
+    }
+    class ObjectScale extends State {
+        name="object-scale";
+        viewport;
+        cursorPosition;
+        scale=1;
+        oneUnitLength;
+        centroidNdc;
+        constructor(viewport, cursorPos) {
+            super(), this.viewport = viewport, this.cursorPosition = function vec2_clone(a) {
+                var out = new ARRAY_TYPE(2);
+                return out[0] = a[0], out[1] = a[1], out;
+            }(cursorPos);
+            const averageNdc = this.viewport.camera.getNdcCoords(this.getAverage());
+            this.centroidNdc = [ averageNdc[0], averageNdc[1] ], this.oneUnitLength = vec2_dist(this.cursorPosition, this.toCursorCoords(this.centroidNdc)), 
+            this.viewport.canvas.requestPointerLock();
+        }
+        abort() {
+            this.viewport.scene.selections.forEach((entity => {
+                vec3_scale(entity.getScale(), entity.getScale(), 1 / this.scale);
+            })), document.exitPointerLock(), requestAnimationFrame(this.viewport.render);
+        }
+        finalize() {
+            document.exitPointerLock();
+        }
+        handlePointerMove(event) {
+            vec2_add(this.cursorPosition, this.cursorPosition, vec2_fromValues(event.movementX, event.movementY));
+            const scale = vec2_dist(this.cursorPosition, this.toCursorCoords(this.centroidNdc)) / this.oneUnitLength, factor = scale / this.scale;
+            this.scale = scale;
+            this.viewport.scene.selections.forEach((entity => {
+                vec3_scale(entity.getScale(), entity.getScale(), factor);
+            })), requestAnimationFrame(this.viewport.render);
+        }
+        getAverage() {
+            const sum = create();
+            return this.viewport.scene.selections.forEach((entity => {
+                add(sum, sum, entity.getPosition());
+            })), vec3_scale(sum, sum, 1 / this.viewport.scene.selections.size), sum;
+        }
+        toCursorCoords(ndc) {
+            return [ (ndc[0] + 1) / 2 * this.viewport.canvas.width, (ndc[0] - 1) / -2 * this.viewport.canvas.height ];
+        }
+    }
+    class KeyListener {
+        constructor() {
+            this.keyboardButtonsPressed = new Set, document.addEventListener("keydown", this.keyPressed), 
+            document.addEventListener("keyup", this.keyReleased), document.addEventListener("visibilitychange", this.visibility);
+        }
+        static instance;
+        keyboardButtonsPressed;
+        static getInstance() {
+            return KeyListener.instance || (KeyListener.instance = new KeyListener), KeyListener.instance;
+        }
+        keyPressed=event => {
+            this.keyboardButtonsPressed.add(event.code);
+        };
+        keyReleased=event => {
+            this.keyboardButtonsPressed.delete(event.code);
+        };
+        visibility=event => {
+            this.keyboardButtonsPressed.clear();
+        };
+        static combinationPressed(...keys) {
+            const instance = KeyListener.getInstance();
+            return keys.reduce(((acc, curr) => acc && instance.keyboardButtonsPressed.has(curr)), !0);
+        }
+    }
+    class CameraPan extends State {
+        name="camera-pan";
+        viewport;
+        orbitCenter;
+        cameraPos;
+        sensitivity=.001;
+        constructor(viewport, orbitCenter, cameraPos) {
+            super(), this.viewport = viewport, this.orbitCenter = orbitCenter, this.cameraPos = cameraPos, 
+            this.viewport.canvas.requestPointerLock();
+        }
+        abort() {
+            document.exitPointerLock();
+        }
+        finalize() {
+            document.exitPointerLock();
+        }
+        handlePointerMove(event) {
+            const camera = this.viewport.camera, up = camera.getUp(), right = camera.getRight();
+            vec3_scale(up, up, event.movementY * this.cameraPos.r), vec3_scale(right, right, event.movementX * this.cameraPos.r);
+            const uv = add(create(), up, right);
+            vec3_scale(uv, uv, -this.sensitivity), add(camera.getPosition(), camera.getPosition(), uv), 
+            add(this.orbitCenter, this.orbitCenter, uv), requestAnimationFrame(this.viewport.render);
+        }
+    }
+    class CameraOrbit extends State {
+        name="camera-orbit";
+        viewport;
+        orbitCenter;
+        cameraPos;
+        sensitivity=.001 * Math.PI * 2;
+        horizontalRotationSign;
+        constructor(viewport, orbitCenter, cameraPos) {
+            super(), this.viewport = viewport, this.orbitCenter = orbitCenter, this.cameraPos = cameraPos, 
+            this.horizontalRotationSign = vec3_dot([ 0, 0, 1 ], this.viewport.camera.getUp()) > 0 ? 1 : -1, 
+            this.viewport.canvas.requestPointerLock();
+        }
+        abort() {
+            document.exitPointerLock();
+        }
+        finalize() {
+            document.exitPointerLock();
+        }
+        handlePointerMove(event) {
+            const camera = this.viewport.camera, right = camera.getRight();
+            this.cameraPos.theta += event.movementX * this.sensitivity * this.horizontalRotationSign, 
+            this.cameraPos.phi += event.movementY * this.sensitivity;
+            const pos = Util.sphericalToCartesian(this.cameraPos);
+            add(this.viewport.camera.getPosition(), pos, this.orbitCenter);
+            const horizontalQuat = setAxisAngle(quat_create(), [ 0, 0, 1 ], event.movementX * this.sensitivity * this.horizontalRotationSign), verticalQuat = setAxisAngle(quat_create(), right, -event.movementY * this.sensitivity), rotation = camera.getRotation();
+            quat_mul(rotation, verticalQuat, rotation), quat_mul(rotation, horizontalQuat, rotation), 
+            quat_normalize(rotation, rotation), requestAnimationFrame(this.viewport.render);
+        }
+    }
+    class InputStateMachine {
+        viewport;
+        constructor(viewport) {
+            this.viewport = viewport, this.cursorPos = vec2_create(), this.viewport.canvas.addEventListener("pointerenter", (() => {
+                this.viewport.canvas.focus();
+            })), this.viewport.canvas.addEventListener("keydown", this.keyDown), this.viewport.canvas.addEventListener("keyup", this.keyUp), 
+            this.viewport.canvas.addEventListener("wheel", this.cameraZoom), this.viewport.canvas.addEventListener("pointermove", this.pointerMove), 
+            this.viewport.canvas.addEventListener("pointerdown", this.pointerDown), this.viewport.canvas.addEventListener("pointerup", this.pointerUp), 
+            document.addEventListener("pointerlockchange", (event => {
+                if (!document.pointerLockElement) {
+                    const state = this.stateStack.pop();
+                    state?.abort();
+                }
+            })), this.cameraCentroid = create(), this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward()), 
+            this.cameraPosition.phi -= Math.PI / 2;
+        }
+        cursorPos;
+        cameraCentroid;
+        cameraPosition;
+        stateStack=[];
+        keyDown=event => {
+            event.preventDefault();
+            const state = this.stateStack.pop();
+            if (state) {
+                if (this.stateStack.push(state), "Escape" === event.code) state.abort(), this.stateStack.pop();
+            } else if (0 !== this.viewport.scene.selections.size) switch (event.code) {
+              case "KeyG":
+                this.stateStack.push(new ObjectMove(this.viewport));
+                break;
+
+              case "KeyR":
+                this.stateStack.push(new ObjectRotate(this.viewport, this.cursorPos));
+                break;
+
+              case "KeyS":
+                this.stateStack.push(new ObjectScale(this.viewport, this.cursorPos));
+            }
+        };
+        keyUp=event => {};
+        pointerDown=event => {
+            const state = this.stateStack.pop();
+            if (state) switch (this.stateStack.push(state), state.name) {
+              case "object-move":
+              case "object-scale":
+              case "object-rotate":
+                0 === event.button && (state.finalize(), this.stateStack.pop());
+            } else KeyListener.combinationPressed("AltLeft") && 0 === event.button || 1 === event.button ? KeyListener.combinationPressed("ShiftLeft") ? this.stateStack.push(new CameraPan(this.viewport, this.cameraCentroid, this.cameraPosition)) : this.stateStack.push(new CameraOrbit(this.viewport, this.cameraCentroid, this.cameraPosition)) : 0 === event.button && this.select(event);
+        };
+        pointerMove=event => {
+            event.preventDefault();
+            const rect = this.viewport.canvas.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
+            !function vec2_set(out, x, y) {
+                return out[0] = x, out[1] = y, out;
+            }(this.cursorPos, x, y);
+            const state = this.stateStack.pop();
+            state && (this.stateStack.push(state), state.handlePointerMove(event));
+        };
+        pointerUp=event => {
+            const state = this.stateStack.pop();
+            if (state) switch (this.stateStack.push(state), state.name) {
+              case "camera-orbit":
+              case "camera-pan":
+                state.finalize(), this.stateStack.pop();
+            }
+        };
+        cameraZoom=event => {
+            this.cameraPosition.r += Math.max(Math.log(this.cameraPosition.r), .1) * event.deltaY * .001 * (KeyListener.combinationPressed("ShiftLeft") ? .1 : 1);
+            const camera = this.viewport.camera, offset = vec3_scale([ 0, 0, 0 ], camera.getForward(), -this.cameraPosition.r);
+            add(camera.getPosition(), this.cameraCentroid, offset), requestAnimationFrame(this.viewport.render);
+        };
+        select(event) {
+            const objectIndexTexture = this.viewport.getRenderer().getTexture("object-index"), device = App.getRenderDevice(), bytesPerRow = 256 * Math.ceil(4 * objectIndexTexture.width / 256), readableBuffer = device.createBuffer({
+                size: bytesPerRow * objectIndexTexture.height,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+            }), commandEncoder = device.createCommandEncoder();
+            commandEncoder.copyTextureToBuffer({
+                texture: objectIndexTexture,
+                origin: {
+                    x: 0,
+                    y: 0,
+                    z: 0
+                }
+            }, {
+                buffer: readableBuffer,
+                bytesPerRow,
+                rowsPerImage: objectIndexTexture.height
+            }, {
+                width: objectIndexTexture.width,
+                height: objectIndexTexture.height
+            }), device.queue.submit([ commandEncoder.finish() ]), readableBuffer.mapAsync(GPUMapMode.READ).then((() => {
+                const data = new Uint32Array(readableBuffer.getMappedRange()), rect = this.viewport.canvas.getBoundingClientRect(), x = Math.floor(event.clientX - rect.left), index = Math.floor(event.clientY - rect.top) * (bytesPerRow / 4) + x;
+                const objectIndex = data[index], scene = App.getInstance().currentScene;
+                if (KeyListener.combinationPressed("ShiftLeft") || (scene.selections.clear(), scene.primarySelection = void 0), 
+                0 !== objectIndex) {
+                    const entity = Array.from(scene.entities)[objectIndex - 1][1];
+                    scene.primarySelection = entity, scene.selections.add(entity);
+                }
+                readableBuffer.destroy(), requestAnimationFrame(this.viewport.render);
+            }));
+        }
+    }
     class Viewport {
         webgpu;
         canvas;
@@ -1460,13 +1825,11 @@
             }), this.width = canvas.width, this.height = canvas.height;
             const aspect = this.width / this.height;
             this.camera = new Camera, this.camera.setPerspectiveProjection(Util.degreeToRadians(90), aspect, .1, 100), 
-            this.camera.setPosition(0, 0, 0), this.renderer = new BasicRenderer(this), this.renderer.render();
+            this.camera.setPosition(0, 0, 0), this.navigator = new InputStateMachine(this), 
+            this.renderer = new BasicRenderer(this), this.renderer.render();
         }
         getRenderer() {
             return this.renderer;
-        }
-        setNavigator(navigator) {
-            this.navigator?.stop(), this.navigator = navigator, this.navigator.use();
         }
         resize(width, height) {
             if (width != this.width || height != this.height) {
@@ -1551,166 +1914,10 @@
             this.renderer.render();
         };
     }
-    function vec2_fromValues(x, y) {
-        var out = new ARRAY_TYPE(2);
-        return out[0] = x, out[1] = y, out;
-    }
-    !function() {
-        var vec = function vec2_create() {
-            var out = new ARRAY_TYPE(2);
-            return ARRAY_TYPE != Float32Array && (out[0] = 0, out[1] = 0), out;
-        }();
-    }();
-    class KeyListener {
-        constructor() {
-            this.keyboardButtonsPressed = new Set, document.addEventListener("keydown", this.keyPressed), 
-            document.addEventListener("keyup", this.keyReleased), document.addEventListener("visibilitychange", this.visibility);
-        }
-        static instance;
-        keyboardButtonsPressed;
-        static getInstance() {
-            return KeyListener.instance || (KeyListener.instance = new KeyListener), KeyListener.instance;
-        }
-        keyPressed=event => {
-            this.keyboardButtonsPressed.add(event.code);
-        };
-        keyReleased=event => {
-            this.keyboardButtonsPressed.delete(event.code);
-        };
-        visibility=event => {
-            this.keyboardButtonsPressed.clear();
-        };
-        static combinationPressed(...keys) {
-            const instance = KeyListener.getInstance();
-            return keys.reduce(((acc, curr) => acc && instance.keyboardButtonsPressed.has(curr)), !0);
-        }
-    }
-    class BlenderNavigator {
-        constructor(viewport) {
-            this.viewport = viewport, this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward()), 
-            this.cameraPosition.phi -= Math.PI / 2, this.orbitCenter = add([ 0, 0, 0 ], this.viewport.camera.getForward(), this.viewport.camera.getPosition()), 
-            this.horizontalRotationSign = vec3_dot([ 0, 0, 1 ], this.viewport.camera.getUp()) > 0 ? 1 : -1;
-        }
-        viewport;
-        orbitCenter;
-        cameraPosition;
-        horizontalRotationSign;
-        use() {
-            this.viewport.canvas.addEventListener("mousedown", this.mouseDown), this.viewport.canvas.addEventListener("wheel", this.wheel), 
-            document.addEventListener("keydown", this.keyDown);
-        }
-        stop() {
-            const canvas = this.viewport.canvas;
-            canvas.removeEventListener("mousedown", this.mouseDown), canvas.removeEventListener("pointerup", this.mouseUp), 
-            canvas.removeEventListener("pointermove", this.pointerMove), canvas.removeEventListener("pointermove", this.pointerRotate), 
-            canvas.removeEventListener("wheel", this.wheel);
-        }
-        mouseDown=async event => {
-            event.preventDefault();
-            const startUp = this.viewport.camera.getUp();
-            if (this.horizontalRotationSign = vec3_dot([ 0, 0, 1 ], startUp) > 0 ? 1 : -1, 1 === event.button || 0 === event.button && KeyListener.combinationPressed("AltLeft")) await this.viewport.canvas.requestPointerLock(), 
-            KeyListener.combinationPressed("ShiftLeft") ? this.viewport.canvas.addEventListener("pointermove", this.pointerMove) : this.viewport.canvas.addEventListener("pointermove", this.pointerRotate), 
-            window.addEventListener("pointerup", this.mouseUp); else {
-                const objectIndexTexture = this.viewport.getRenderer().getTexture("object-index"), device = App.getRenderDevice(), bytesPerRow = 256 * Math.ceil(4 * objectIndexTexture.width / 256), readableBuffer = device.createBuffer({
-                    size: bytesPerRow * objectIndexTexture.height,
-                    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-                }), commandEncoder = device.createCommandEncoder();
-                commandEncoder.copyTextureToBuffer({
-                    texture: objectIndexTexture,
-                    origin: {
-                        x: 0,
-                        y: 0,
-                        z: 0
-                    }
-                }, {
-                    buffer: readableBuffer,
-                    bytesPerRow,
-                    rowsPerImage: objectIndexTexture.height
-                }, {
-                    width: objectIndexTexture.width,
-                    height: objectIndexTexture.height
-                }), device.queue.submit([ commandEncoder.finish() ]), readableBuffer.mapAsync(GPUMapMode.READ).then((() => {
-                    const data = new Uint32Array(readableBuffer.getMappedRange()), rect = this.viewport.canvas.getBoundingClientRect(), x = event.clientX - rect.left, objectIndex = data[(event.clientY - rect.top) * (bytesPerRow / 4) + x], scene = App.getInstance().currentScene;
-                    if (KeyListener.combinationPressed("ShiftLeft") || (scene.selections.clear(), scene.primarySelection = void 0), 
-                    0 == objectIndex) return;
-                    const entity = Array.from(scene.entities)[objectIndex - 1][1];
-                    scene.primarySelection = entity, scene.selections.add(entity), readableBuffer.destroy(), 
-                    requestAnimationFrame(this.viewport.render);
-                }));
-            }
-        };
-        mouseUp=event => {
-            this.viewport.canvas.removeEventListener("pointermove", this.pointerMove), this.viewport.canvas.removeEventListener("pointermove", this.pointerRotate), 
-            document.exitPointerLock();
-        };
-        wheel=event => {
-            this.cameraPosition.r += Math.max(Math.log(this.cameraPosition.r), .1) * event.deltaY * .001 * (KeyListener.combinationPressed("ShiftLeft") ? .1 : 1);
-            const camera = this.viewport.camera, offset = vec3_scale([ 0, 0, 0 ], camera.getForward(), -this.cameraPosition.r);
-            add(camera.getPosition(), this.orbitCenter, offset), requestAnimationFrame(this.viewport.render);
-        };
-        pointerMove=event => {
-            const diff = vec2_fromValues(event.movementX, -event.movementY);
-            let u = this.viewport.camera.getRight(), v = this.viewport.camera.getUp();
-            vec3_scale(u, u, diff[0] * this.cameraPosition.r), vec3_scale(v, v, diff[1] * this.cameraPosition.r), 
-            add(u, u, v), vec3_scale(u, u, -.001), add(this.viewport.camera.getPosition(), u, this.viewport.camera.getPosition()), 
-            add(this.orbitCenter, u, this.orbitCenter), requestAnimationFrame(this.viewport.render);
-        };
-        pointerRotate=event => {
-            const diff = vec2_fromValues(event.movementX, event.movementY);
-            let u = this.viewport.camera.getRight();
-            this.viewport.camera.getUp();
-            this.cameraPosition.theta += .005 * diff[0] * this.horizontalRotationSign, this.cameraPosition.phi += .005 * diff[1];
-            const pos = Util.sphericalToCartesian(this.cameraPosition);
-            add(this.viewport.camera.getPosition(), pos, this.orbitCenter);
-            const horizontalRot = quat_create(), verticalRot = quat_create();
-            setAxisAngle(horizontalRot, [ 0, 0, 1 ], .005 * diff[0] * this.horizontalRotationSign), 
-            setAxisAngle(verticalRot, u, .005 * -diff[1]);
-            const oldRotation = this.viewport.camera.rotation;
-            quat_mul(oldRotation, verticalRot, oldRotation), quat_mul(oldRotation, horizontalRot, oldRotation), 
-            quat_normalize(oldRotation, oldRotation), requestAnimationFrame(this.viewport.render);
-        };
-        keyDown=async event => {
-            switch (event.code) {
-              case "KeyG":
-                await this.viewport.canvas.requestPointerLock(), this.viewport.canvas.addEventListener("pointermove", this.objectMove);
-                break;
-
-              case "KeyS":
-                await this.viewport.canvas.requestPointerLock(), this.viewport.canvas.addEventListener("pointermove", this.objectScale);
-            }
-        };
-        objectMove=event => {
-            document.addEventListener("keydown", (event => {
-                "Escape" == event.code && (this.viewport.canvas.removeEventListener("pointermove", this.objectMove), 
-                document.exitPointerLock());
-            }));
-            const scene = App.getInstance().currentScene, refObject = scene.primarySelection ? scene.primarySelection : Array.from(scene.selections)[0];
-            let factor = 1;
-            if (refObject) {
-                factor = vec3_dot(sub(create(), refObject.getPosition(), this.viewport.camera.getPosition()), this.viewport.camera.getForward()) / vec3_length(this.viewport.camera.getForward());
-            }
-            const diff = vec2_fromValues(event.movementX, -event.movementY);
-            let u = this.viewport.camera.getRight(), v = this.viewport.camera.getUp();
-            vec3_scale(u, u, diff[0] * this.cameraPosition.r), vec3_scale(v, v, diff[1] * this.cameraPosition.r), 
-            add(u, u, v), vec3_scale(u, u, factor / 1e3), scene.selections.forEach((entity => {
-                add(entity.getPosition(), u, entity.getPosition());
-            })), requestAnimationFrame(this.viewport.render);
-        };
-        objectScale=event => {
-            document.addEventListener("keydown", (event => {
-                "Escape" == event.code && (this.viewport.canvas.removeEventListener("pointermove", this.objectScale), 
-                document.exitPointerLock());
-            }));
-            const scale = 1 + Math.sqrt(event.movementX + event.movementY ** 2) / 1e3, scene = App.getInstance().currentScene;
-            console.log(scale), scene.selections.forEach((entity => {
-                vec3_scale(entity.scale, entity.scale, scale);
-            })), requestAnimationFrame(this.viewport.render);
-        };
-    }
     class ViewportWindow extends ContentWindow {
         constructor() {
             const canvas = document.createElement("canvas"), app = App.getInstance(), viewport = new Viewport(App.getWebGPU(), canvas, app.currentScene);
-            super(canvas), this.viewport = viewport, this.canvas = canvas, this.viewport.setNavigator(new BlenderNavigator(viewport));
+            super(canvas), this.viewport = viewport, this.canvas = canvas, this.canvas.tabIndex = 0;
             const importButton = document.createElement("button");
             importButton.innerText = "Import .obj", importButton.classList.add("window-header-element"), 
             importButton.addEventListener("click", (async () => {
@@ -1805,18 +2012,15 @@
                     frame: 250,
                     value: random(create(), 10)
                 } ]);
-                entity = new MeshInstance(mesh), entity.setPositionAsAnimation(anim), entity.scale = [ 1, 1, 1 ], 
-                entity.setFacing(random([ 0, 0, 0 ])), this.currentScene.addEntity(entity);
+                entity = new MeshInstance(mesh), entity.setPositionAsAnimation(anim), entity.setFacing(random([ 0, 0, 0 ])), 
+                this.currentScene.addEntity(entity);
             }
             for (let i = 0; i < 5; i++) {
                 let entity;
                 entity = new MeshInstance(plane), entity.setPosition(10 * Math.random(), 10 * Math.random(), 10 * Math.random()), 
-                entity.scale = [ 1, 1, 1 ], entity.setFacing(random([ 0, 0, 0 ])), this.currentScene.addEntity(entity);
+                entity.setFacing(random([ 0, 0, 0 ])), this.currentScene.addEntity(entity);
             }
-            this.currentScene.entities.forEach(((entity, uuid) => {
-                const increment = setAxisAngle(quat_create(), entity.getForward(), .01);
-                quat_multiply(entity.rotation, increment, entity.rotation), quat_normalize(entity.rotation, entity.rotation);
-            })), this.currentScene.viewports.forEach((viewport => {
+            this.currentScene.viewports.forEach((viewport => {
                 requestAnimationFrame(viewport.render);
             }));
         };

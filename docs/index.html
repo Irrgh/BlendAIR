@@ -7,16 +7,108 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title></title>
+        <title>BlenderAIR documentation</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="main.css">
+        <link rel="stylesheet" href="index.css">
     </head>
     <body>
-        <!--[if lt IE 7]>
-            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
-        <![endif]-->
         
-        <script src="app.js" async defer></script>
+        <h1>Motivation</h1>
+        <p>
+            Modern 3D animation software like Blender, Autodesk Maya and Houdini offer a wide range of tools used for creating 3d and 2d animations.
+            This includes simulations, special effects, modelling and shading. <a href="https://github.com/Irrgh/BlendAIR">BlendAIR</a> aims to recreate the basic animation pipeline
+            in a lightweight, browser based tool. As the name implies this project is heavily inspired by the open source project <a href="https://github.com/Blender/Blender">Blender</a>.
+        </p>
+        <p>
+            There are multiple reasons for using the web platform of native.
+
+            <ol>
+                <li>Web applications work on almost any device without the need for platform specific code. This includes mobile, although it may not be used for content creation,
+                    there is potential for usage in presenting. 
+                </li>
+                <li>No need for local installation of the tool.</li>
+                <li>Since this is a project for my university's multimedia class I aimed to combine it with the web engineering project from another class.</li>
+            </ol>
+        </p>
+
+        <h1>Features</h1>
+
+        <p>
+            The main objective of this project is to create a Blender like 3d tool, the following features is what I achieved until now.
+
+            <ul>
+                <li>interactive, resizable windows which can be used to implement various Blender interfaces. For example:
+                    <ul>
+                        <li>viewport: selection and transformation of entities, orbit and panning camera</li>
+                        <li>timeline: animation scrolling</li>
+                    </ul>
+                </li>
+                <li>rendering support for mesh type entities</li>
+                <li>groundwork for keyframe based animations (no UI yet)</li>
+                <li>importable .obj models</li>
+            </ul>
+        </p>
+
+
+        <h1>Viewport Controls</h1>
+
+        <p>
+            left mouse button: <span class="combo">lmb</span><br>
+            middle mouse button: <span class="combo">mmb</span><br>
+            <br>
+            camera rotation: <span class="combo">lmb drag + LeftAlt</span> or <span class="combo">mmb drag</span><br>
+            camera panning: <span class="combo">lmb drag + LeftAlt + LeftShift</span> or <span class="combo">mmb drag + LeftShift</span><br>
+            camera zoom: <span class="combo">mmb scroll</span>  or <span class="combo">mmb scroll + LeftShift</span> (for fine control) <br>
+            <br>
+            object move: <span class="combo">KeyG</span> use <span class="combo">lbm click</span> to finalize<br>
+            object scale: <span class="combo">KeyS</span> use <span class="combo">lbm click</span> to finalize<br>
+            object rotate: <span class="combo">KeyR</span> use <span class="combo">lbm click</span> to finalize<br>
+            <br>
+            select: <span class="combo">lmb click</span> or <span class="combo">lmb click + LeftShift</span> (for multiple)<br>
+            abort: <span class="combo">Escape</span>
+        </p>
+
+
+
+
+
+        <h1>Resources</h1>
+        <p>
+            The main difficulties in this project stemmed from the fact the fact that WebGPU as a graphics API was entirely new to me. Although
+            my prior experience with OpenGL certainly helped, it limited to basic concepts so there was a lot to learn in the field of computer graphics.
+
+            Helpful Web Resources:
+            <ul>
+                <li><a href="https://webgpufundamentals.org/">webgpufundamentals</a></li>
+                <li><a href="https://webgpu.github.io/webgpu-samples/">WebGPU samples</a></li>
+                <li><a href="https://gpuweb.github.io/gpuweb/">WebGPU Specifications</a></li>
+                <li><a href="https://gpuweb.github.io/gpuweb/wgsl/">WGSL Specifications</a></li>
+                <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API">MDN WebGPU API</a></li>
+                <li><a href="https://toji.dev/webgpu-best-practices/">Best practices WebGPU</a></li>
+            </ul>
+
+            Other Resources:
+            <ul>
+                <li><a href="https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/">Raytracing blog</a></li>
+                <li><a href="https://www.opengl-tutorial.org/">OpenGl Tutorial</a></li>
+            </ul>
+
+
+
+        </p>
+
+
+
+
+        <h1>Demo</h1>
+        <p>
+            The <a href="demo.html">demo</a> offers insight into the current development status.
+        </p>
+
+
+
+
+
     </body>
 </html>
