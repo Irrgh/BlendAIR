@@ -4,6 +4,14 @@
     left: 0;
     top: 0;
     font-family: "Dejavu Sans";
+    user-select: none;
+    font-size: 13.3333px;
+    outline: none;
+}
+
+abbr {
+    text-decoration: none;
+    cursor: pointer;
 }
 
 

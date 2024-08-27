@@ -1,4 +1,5 @@
 
+
 declare module '*.wgsl' {
     const value: string;
     export default value;
@@ -14,13 +15,6 @@ declare type Vertex = {
     u: number,
     v: number
 }
-
-declare type TriangleFace = {
-    v1: number,
-    v2: number,
-    v3: number
-}
-
 
 
 /**

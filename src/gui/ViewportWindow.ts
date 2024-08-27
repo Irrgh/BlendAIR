@@ -24,7 +24,8 @@ export class ViewportWindow extends ContentWindow {
         this.canvas = canvas;
         this.canvas.tabIndex = 0;
 
-        const importButton = document.createElement("button");
+        const importButton = document.createElement("abbr");
+        importButton.title = "Import .obj 3d-models from a file";
         importButton.innerText = "Import .obj";
         importButton.classList.add("window-header-element");
         importButton.addEventListener("click", async () => {
@@ -50,7 +51,8 @@ export class ViewportWindow extends ContentWindow {
 
 
 
-        const button = document.createElement("button");
+        const button = document.createElement("abbr");
+        button.title = "This is mainly meant as a debug tool to check wgsl shaders since the vscode wgsl language server extensions are very cryptic in there descriptions"
         button.innerText = "Check shader";
         button.classList.add("window-header-element");
         button.addEventListener("click",  async () => {

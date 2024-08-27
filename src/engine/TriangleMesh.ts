@@ -5,12 +5,12 @@ import { Float32ArrayStorage, Uint32ArrayStorage } from "./ArrayStorage";
 export class TriangleMesh {
 
     /** Includes all Vertex Attributes  */
-    public vertexBuffer: Float32Array
+    private vertexBuffer: Float32Array
 
     /** 3 indicies construct one triangle face */
-    public elementBuffer: Uint32Array
+    private elementBuffer: Uint32Array
 
-    public instancedBy: Set<MeshInstance>
+    private instancedBy: Set<MeshInstance>
 
     public static attributes: GPUVertexAttribute[] = [
         {
@@ -148,6 +148,14 @@ export class TriangleMesh {
         this.instancedBy.delete(instance);
     }
 
+
+    public getVertexBuffer():Float32Array {
+        return this.vertexBuffer;
+    }
+
+    public getElementBuffer():Uint32Array {
+        return this.elementBuffer;
+    }
 
 
 

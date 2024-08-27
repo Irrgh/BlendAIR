@@ -125,8 +125,8 @@ export class TrianglePass extends RenderPass {
             transformArray.set(object.getWorldTransform(), (id*16));
 
             if (!instance) {
-                vertexSize += mesh.vertexBuffer.length;
-                indexSize += mesh.elementBuffer.length;
+                vertexSize += mesh.getVertexBuffer().length;
+                indexSize += mesh.getElementBuffer().length;
                 instances.set(mesh, { count: 1, ids: [id] });
                 return;
             }
@@ -149,18 +149,18 @@ export class TrianglePass extends RenderPass {
 
         instances.forEach((value: { count: number, ids: number[] }, mesh: TriangleMesh) => {
 
-            vertexArray.set(mesh.vertexBuffer, vertexOffset);
-            indexArray.set(mesh.elementBuffer.map((index) => { return index + vertexOffset / 8 }), indexOffset);
+            vertexArray.set(mesh.getVertexBuffer(), vertexOffset);
+            indexArray.set(mesh.getElementBuffer().map((index) => { return index + vertexOffset / 8 }), indexOffset);
             idArray.set(value.ids, objectOffset);
             drawParameters.set([
-                mesh.elementBuffer.length,   // index count
+                mesh.getElementBuffer().length,   // index count
                 value.count,                // instance count
                 indexOffset,                // first index
                 0,                          // base vertex
                 objectOffset                // first instance
             ], index * 5);
-            vertexOffset += mesh.vertexBuffer.length;
-            indexOffset += mesh.elementBuffer.length;
+            vertexOffset += mesh.getVertexBuffer().length;
+            indexOffset += mesh.getElementBuffer().length;
             objectOffset += value.count;
             index++;
 

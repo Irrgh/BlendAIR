@@ -135,7 +135,7 @@ export class RaytracingPass extends RenderPass {
             let u = dot(t, p) * inv_det;
 
             // Check if u is outside the triangle
-            if u < 0.0 || u > 1.0 {
+            if (u < 0.0 || u > 1.0) {
                 return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
             }
 
@@ -144,7 +144,7 @@ export class RaytracingPass extends RenderPass {
             let v = dot(ray.dir, q) * inv_det;
 
             // Check if v is outside the triangle
-            if v < 0.0 || u + v > 1.0 {
+            if (v < 0.0 || u + v > 1.0) {
                 return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
             }
 
@@ -152,7 +152,7 @@ export class RaytracingPass extends RenderPass {
             let distance = dot(ac, q) * inv_det;
     
             // Check if the intersection is in the positive direction of the ray
-            if distance < 0.0 {
+            if (distance < 0.0) {
                 return RayHitInfo(-1.0,vec3<f32>(0.0,0.0,0.0),tri.material);
             }
 
