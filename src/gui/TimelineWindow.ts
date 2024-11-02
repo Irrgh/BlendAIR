@@ -13,7 +13,7 @@ export class TimelineWindow extends ContentWindow {
         const div = document.createElement("div");
         super(div)
         
-        const timeline = App.getInstance().currentScene.timeline;
+        const timeline = App.getScene().timeline;
 
         this.current = document.createElement("span");
         this.current.innerText = `${timeline.getCurrent()}`;
@@ -30,7 +30,7 @@ export class TimelineWindow extends ContentWindow {
 
             timeline.setCurrent(parseInt(this.range.value));
             this.current.innerText = this.range.value;
-            requestAnimationFrame(() => {App.getInstance().currentScene.viewports.forEach(viewport => {viewport.render()})});
+            requestAnimationFrame(() => {App.getScene().viewports.forEach(viewport => {viewport.render()})});
         });
 
         div.append(this.range);

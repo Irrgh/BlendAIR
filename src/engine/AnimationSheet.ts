@@ -25,7 +25,7 @@ export class AnimationSheet {
     }
 
     public setKeyframe(value: vec3) {
-        this.keyFrames.push({ frame: App.getInstance().currentScene.timeline.getCurrent(), value: value });
+        this.keyFrames.push({ frame: App.getScene().timeline.getCurrent(), value: value });
         this.keyFrames.sort((a, b) => {
             return a.frame - b.frame;
         });
@@ -33,7 +33,7 @@ export class AnimationSheet {
     }
 
     public getValue():vec3 {
-        return this.getValueAt(App.getInstance().currentScene.timeline.getCurrent());
+        return this.getValueAt(App.getScene().timeline.getCurrent());
     }
 
     private getValueAt(frame: number):vec3 {

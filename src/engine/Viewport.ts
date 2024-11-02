@@ -21,12 +21,6 @@ import { InputStateMachine } from "../input/InputStateMachine";
 export class Viewport implements Resizable {
 
 
-
-    /**
-     * Handle to WebGPU capabilities
-     */
-    webgpu: WebGPU
-
     /**
      * Rendering Canvas 
      */
@@ -38,7 +32,7 @@ export class Viewport implements Resizable {
 
 
     /**
-     * Scene to render
+     * Scene to view, is needed instead of {@link App.getScene()} to allow smth like material preview scene.
      */
     scene: Scene
 
@@ -48,13 +42,7 @@ export class Viewport implements Resizable {
     camera: Camera;
 
 
-
-    /**
-     * Results of the last Render are stored here
-     */
-    renderResults!: RenderLayers
-
-
+    public redrawNext: boolean = false;
 
 
     private renderer: Renderer;
@@ -67,15 +55,14 @@ export class Viewport implements Resizable {
 
 
 
-    constructor(webgpu: WebGPU, canvas: HTMLCanvasElement, scene: Scene) {
-        this.webgpu = webgpu;
+    constructor(canvas: HTMLCanvasElement, scene: Scene) {
         this.canvas = canvas;
         this.scene = scene;
         this.scene.viewports.add(this);
         this.canvasFormat = "rgba8unorm";
         this.context = <GPUCanvasContext>canvas.getContext("webgpu");
         this.context.configure({
-            device: this.webgpu.getDevice(),
+            device: App.getRenderDevice(),
             format: this.canvasFormat,
             alphaMode: "premultiplied",
         });

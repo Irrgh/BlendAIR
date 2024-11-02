@@ -15,7 +15,7 @@ export class ViewportWindow extends ContentWindow {
         const canvas = document.createElement("canvas");
 
         const app: App = App.getInstance();
-        const viewport = new Viewport(App.getWebGPU(), canvas, app.currentScene);
+        const viewport = new Viewport(canvas,App.getScene());
 
 
         super(canvas);
@@ -38,7 +38,7 @@ export class ViewportWindow extends ContentWindow {
             const mesh = TriangleMesh.parseFromObj(model);
             console.timeEnd("import parsing");
             
-            const scene = App.getInstance().currentScene;
+            const scene = App.getScene()
             const entity : MeshInstance = new MeshInstance(mesh);
             scene.addEntity(entity);
             requestAnimationFrame(this.viewport.render);

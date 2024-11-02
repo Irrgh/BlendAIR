@@ -19,7 +19,7 @@ export class ObjectMove extends State {
 
     constructor(viewport: Viewport) {
         super();
-        this.refEntity = Array.from(App.getInstance().currentScene.selections)[0];
+        this.refEntity = Array.from(App.getScene().selections)[0];
         this.viewport = viewport;
         this.cursorMovement = vec2.create();
         this.depth = this.viewport.camera.getNdcCoords(this.refEntity.getPosition())[2]; 
@@ -35,7 +35,7 @@ export class ObjectMove extends State {
     public abort(): void {
 
         const diff = vec3.sub(vec3.create(), this.startPos, this.currentPos);
-        const scene = App.getInstance().currentScene;
+        const scene = App.getScene();
 
         scene.selections.forEach((entity: Entity) => {
             vec3.add(entity.getPosition(), entity.getPosition(), diff);
@@ -53,7 +53,7 @@ export class ObjectMove extends State {
     public handlePointerMove(event: MouseEvent): void {
         vec2.add(this.cursorMovement, this.cursorMovement, vec2.fromValues(event.movementX, event.movementY));
 
-        const scene = App.getInstance().currentScene;
+        const scene = App.getScene();
         
         const oldDiff = vec3.sub(vec3.create(), this.currentPos, this.startPos);
         const cursorWorld = this.cursorToWorldSpace();

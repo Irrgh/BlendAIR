@@ -9,6 +9,8 @@ import { ViewportWindow } from "./gui/ViewportWindow";
 import { Entity } from "./entity/Entity";
 import { TimelineWindow } from "./gui/TimelineWindow";
 import { AnimationSheet } from "./engine/AnimationSheet";
+import { Bvh } from "./engine/Bvh";
+import { Ray } from "./engine/Ray";
 
 export class App {
     private static instance: App;
@@ -16,8 +18,9 @@ export class App {
 
     private constructor() {
 
-        this.loadedScenes = new Array();
+        
         this.currentScene = new Scene();
+        this.loadedScenes = [this.currentScene];
     }
 
 
@@ -41,12 +44,14 @@ export class App {
         return App.getInstance().webgpu;
     }
 
-
+    public static getScene():Scene {
+        return App.getInstance().currentScene;
+    }
 
 
 
     private loadedScenes: Scene[];
-    public currentScene: Scene;
+    private currentScene: Scene;
     public webgpu!: WebGPU;
 
 
@@ -71,12 +76,18 @@ export class App {
         const model1: string = await (await fetch("../assets/models/cube.obj")).text();
         const model2: string = await (await fetch("../assets/models/donut.obj")).text();
         const model3: string = await (await fetch("../assets/models/shard.obj")).text();
+        const model4: string = await (await fetch("../assets/models/tree.obj")).text();
 
 
         const mesh: TriangleMesh = TriangleMesh.parseFromObj(model);
         const mesh2: TriangleMesh = TriangleMesh.parseFromObj(model1);
-        const plane: TriangleMesh = TriangleMesh.parseFromObj(model2);
+        const donut: TriangleMesh = TriangleMesh.parseFromObj(model2);
         const shard : TriangleMesh = TriangleMesh.parseFromObj(model3);
+        const tree : TriangleMesh = TriangleMesh.parseFromObj(model4);
+
+
+        console.log(tree);
+
 
         const shardPlease : MeshInstance = new MeshInstance(shard);
 
@@ -125,11 +136,11 @@ export class App {
 
         }
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 100; i++) {
 
             let entity: MeshInstance;
 
-            entity = new MeshInstance(plane);
+            entity = new MeshInstance(tree);
             entity.setPosition(Math.random() * 10, Math.random() * 10, Math.random() * 10);
             entity.setFacing(vec3.random([0, 0, 0]));
             this.currentScene.addEntity(entity);
@@ -137,6 +148,11 @@ export class App {
         }
     
 
+        console.time("bvh");
+        const bvh = new Bvh(shard);
+        console.timeEnd("bvh");
+        const ray = new Ray(vec3.normalize(vec3.create(),[-1,-1,-1]),[2,2,2]);
+        console.log(bvh.intersectionBvh(ray))
 
 
 

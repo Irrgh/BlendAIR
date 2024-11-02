@@ -111,7 +111,7 @@ export class BlenderNavigator implements Navigator {
 
                 const objectIndex = data[index];
 
-                const scene = App.getInstance().currentScene;
+                const scene = this.viewport.scene;
 
                 if (!KeyListener.combinationPressed("ShiftLeft")) {
                     scene.selections.clear();
@@ -242,7 +242,7 @@ export class BlenderNavigator implements Navigator {
             }
         });
 
-        const scene = App.getInstance().currentScene;
+        const scene = this.viewport.scene;
 
         const refObject = scene.primarySelection ? scene.primarySelection : Array.from(scene.selections)[0];
 
@@ -296,7 +296,7 @@ export class BlenderNavigator implements Navigator {
 
         const scale = 1 + Math.sqrt(event.movementX + event.movementY**2) / 1000;
 
-        const scene = App.getInstance().currentScene;
+        const scene = this.viewport.scene;
 
         console.log(scale);
 

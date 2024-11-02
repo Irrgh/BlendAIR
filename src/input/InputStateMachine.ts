@@ -247,7 +247,7 @@ export class InputStateMachine {
 
             const objectIndex = data[index];
 
-            const scene = App.getInstance().currentScene;
+            const scene = this.viewport.scene;
 
             if (!KeyListener.combinationPressed("ShiftLeft")) {
 
