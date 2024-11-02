@@ -7,7 +7,7 @@ export class Ray {
     private static epsilon = 1e-8;
 
     constructor (dir?:vec3,origin?:vec3) {
-        this.dir = dir || vec3.create();
+        this.dir = dir || vec3.fromValues(0,0,-1);
         this.origin = origin || vec3.create();
     }
 
