@@ -254,7 +254,7 @@ export class Bvh {
 
                 return tmin;
             }
-            console.log(stackElements, intersectionStack);
+            
             const node = this.nodes[intersectionStack[--stackElements]]; // stack pop
 
 

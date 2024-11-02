@@ -1,6 +1,5 @@
 import { MeshInstance } from "../entity/MeshInstance";
-import { Util } from "../util/Util";
-import { Float32ArrayStorage, Uint32ArrayStorage } from "./ArrayStorage";
+import { ArrayStorage } from "../util/ArrayStorage";
 
 export class TriangleMesh {
 
@@ -51,18 +50,18 @@ export class TriangleMesh {
 
         const lines = string.split("\n");
 
-        const tempPos: Float32ArrayStorage = new Float32ArrayStorage();
-        const tempUv: Float32ArrayStorage = new Float32ArrayStorage();
-        const tempNorm: Float32ArrayStorage = new Float32ArrayStorage();
+        const tempPos: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
+        const tempUv: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
+        const tempNorm: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
 
         /**
          * We be converted to vbo
          */
-        const vertices: Float32ArrayStorage = new Float32ArrayStorage;
+        const vertices: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
 
 
         const vertexMap = new Map<string, number>()
-        const faces: Uint32ArrayStorage = new Uint32ArrayStorage;
+        const faces: ArrayStorage<Uint32Array> = new ArrayStorage(Uint32Array);
 
         const all = /f\s+(\d+)\/(\d+)\/(\d+)\s+(\d+)\/(\d+)\/(\d+)\s+(\d+)\/(\d+)\/(\d+)/;
         const posAndUv = /f\s+(\d+)\/(\d+)\s+(\d+)\/(\d+)\s+(\d+)\/(\d+)/;
@@ -119,16 +118,16 @@ export class TriangleMesh {
                                 faces.push(index)
                             }
 
-                            
+
                         }
-                        
+
                     } else {
 
-                        
+
                     }
 
 
-                    
+
 
 
 
@@ -149,11 +148,11 @@ export class TriangleMesh {
     }
 
 
-    public getVertexBuffer():Float32Array {
+    public getVertexBuffer(): Float32Array {
         return this.vertexBuffer;
     }
 
-    public getElementBuffer():Uint32Array {
+    public getElementBuffer(): Uint32Array {
         return this.elementBuffer;
     }
 
