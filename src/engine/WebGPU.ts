@@ -5,63 +5,49 @@ export class WebGPU {
     private querySet?: GPUQuerySet;
     private resolveBuffer?: GPUBuffer;
     private resultBuffer?: GPUBuffer;
-    private timeStamps?: Map<GPURenderPassDescriptor | GPUComputePassDescriptor, TimestampData>
+    private timeStamps: Map<GPURenderPassDescriptor | GPUComputePassDescriptor, TimestampData>
 
 
 
-    private constructor() { }
+    private constructor(adapter: GPUAdapter, device: GPUDevice) {
+        this.adapter = adapter;
+        this.device = device;
+        this.timeStamps = new Map();
+    }
 
     /**
      * Physical GPU device
      */
-    private adapter!: GPUAdapter
+    private adapter: GPUAdapter
 
-    private device!: GPUDevice;
+    private device: GPUDevice;
 
     static minBuffersize: number = 32
 
-    /**
-     * Initializes a new WebGPU instance and returns it.
-     */
-    public static async initializeInstance(): Promise<WebGPU> {
-        const webgpu = new WebGPU();
-        await webgpu.init();
-        return webgpu;
-    }
-
-
-    private async init(): Promise<void> {
+    public static async init(): Promise<WebGPU> {
 
         if (!navigator.gpu) {
-            throw new Error("WebGPU not supported on this browser.");
+            return Promise.reject(new Error("WebGPU not supported on this browser."));
         }
 
-        try {
-            this.adapter = <GPUAdapter>await navigator.gpu.requestAdapter();
-            if (!this.adapter) {
-                throw new Error("No appropriate GPUAdapter found.");
-            }
+        const adapter = await navigator.gpu.requestAdapter();
 
-            const canTimestamp = this.adapter.features.has('timestamp-query');
-            this.device = <GPUDevice>await this.adapter.requestDevice({
-                requiredFeatures:
-                    (canTimestamp ? ['timestamp-query'] : []),
-            });
-            if (!this.device) {
-                throw new Error("No appropriate GPUDevice found.");
-            }
-
-            if (canTimestamp) {
-                this.timeStamps = new Map();
-            }
-
-
-
-        } catch (error) {
-            console.error("Error initializing WebGPU:", error);
-            // Handle error gracefully, e.g., display a message to the user
+        if (!adapter) {
+            return Promise.reject(new Error("No appropriate GPUAdapter found."));
         }
 
+        const canTimestamp = adapter.features.has("timestamp-query");
+        const device = await adapter.requestDevice(
+            {
+                requiredFeatures: canTimestamp ? ["timestamp-query"] : []
+            }
+        );
+
+        if (!device) {
+            return Promise.reject(new Error("No appropriate GPUDevice found."));
+        }
+
+        return Promise.resolve(new WebGPU(adapter,device));
 
     }
 
@@ -82,7 +68,7 @@ export class WebGPU {
     }
 
     public canTimestamp(): boolean {
-        return this.timeStamps ? true : false;
+        return this.device.features.has("timestamp-query");
     }
 
 
@@ -154,8 +140,8 @@ export class WebGPU {
      * @todo add mapping with a renderpass because mapping / unmapping is async meaning one resultBuffer is not enough
      */
     public resolveTimestamp(passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor): Promise<number> {
-        
-          
+
+
         return new Promise((resolve, reject) => {
             if (this.canTimestamp()) {
 

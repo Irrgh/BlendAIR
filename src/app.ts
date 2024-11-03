@@ -59,7 +59,7 @@ export class App {
 
     initialize = async () => {
 
-        this.webgpu = await WebGPU.initializeInstance();
+        this.webgpu = await WebGPU.init();
         this.currentScene = new Scene();
 
         const root = ResizableWindow.initializeRootWindow("horizontal");
