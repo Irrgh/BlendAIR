@@ -470,9 +470,6 @@ export class RaytracingPass extends RenderPass {
 
         const descriptor: GPUComputePassDescriptor = {};
 
-        App.getWebGPU().attachTimestamps(descriptor);
-
-
         const computePass: GPUComputePassEncoder = commandEncoder.beginComputePass(descriptor);
 
         computePass.setPipeline(pipeline);
@@ -485,19 +482,9 @@ export class RaytracingPass extends RenderPass {
 
         computePass.end();
 
-        App.getWebGPU().prepareTimestampsResolution(descriptor, commandEncoder);
-
-
-
+        
         device.queue.submit([commandEncoder.finish()]);
 
-        App.getWebGPU().resolveTimestamp(descriptor).then(result => {
-            console.log(`Raytracing took ${result / 1000} µs`);
-        }).catch(error => {
-            console.error('Failed to resolve timestamps:', error);
-        });
-
-
-
+        
     }
 }

@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     preset: 'ts-jest',
     testMatch: [
         '**/tests/**/*.ts', // Tests in __tests__ folders

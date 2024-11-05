@@ -20,6 +20,20 @@ export abstract class RenderPass {
 
     protected renderer : Renderer;
 
+    private passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor = {};
+
+
+    public getDescriptor() : GPURenderPassDescriptor | GPUComputePassDescriptor {
+        return  this.passDescriptor;
+    }
+
+    private name : string = "";
+
+    public getName():string {
+        return this.name;
+    }
+
+
 
 
     /**
@@ -36,5 +50,9 @@ export abstract class RenderPass {
     public getOutputResources(): PassResource[] {
         return this.outputResources;
     }
+
+
+
+
 
 }

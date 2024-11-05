@@ -96,6 +96,22 @@ declare type TimestampData = {
 }
 
 
+/**
+ * Should be used on classes that contain {@link GPU} resources.
+ * GPU include {@link GPUBuffer}, {@link GPUTexture}, {@link GPUQuerySet} and {@link GPUDevice}.
+ */
+declare interface GPUResource {
+    
+    /**
+     * Destroys all GPU resources allocated.
+     * GPU include {@link GPUBuffer}, {@link GPUTexture}, {@link GPUQuerySet} and {@link GPUDevice}.
+     */
+    destroy():void
+}
+
+
+
+
 interface Window {
     showOpenFilePicker(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>;
 }

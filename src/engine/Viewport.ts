@@ -220,7 +220,6 @@ export class Viewport implements Resizable {
             label: "render texture to viewport"
         }
 
-        App.getInstance().webgpu.attachTimestamps(passDescriptor)
 
         const commandEncoder = device.createCommandEncoder();
         const renderPassEncoder = commandEncoder.beginRenderPass(passDescriptor)
@@ -235,13 +234,9 @@ export class Viewport implements Resizable {
         renderPassEncoder.popDebugGroup();
         renderPassEncoder.end();
 
-        App.getWebGPU().prepareTimestampsResolution(passDescriptor, commandEncoder);
 
         device.queue.submit([commandEncoder.finish()]);
 
-        App.getWebGPU().resolveTimestamp(passDescriptor).then(result => {
-            //console.log(`Canvas Render took: ${result / 1000} µs`);
-        })
 
 
     }
