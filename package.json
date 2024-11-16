@@ -7,9 +7,9 @@
   "scripts": {
     "build": "tsc --watch & tsc-alias -p tsconfig.json --watch",
     "docs": "mkdir docs 2>nul & npx typedoc --out docs src/**/*.ts",
-    "server": "http-server",
+    "server": "http-server -c-1",
     "test": "npx jest",
-    "bundle": "node bundle.js"
+    "bundle": "node bundler.js"
   },
   "author": "",
   "license": "ISC",
