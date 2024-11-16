@@ -11,7 +11,7 @@ npm run bundle
 npm run server
 ```
 
-The current state of the project will be available on http://127.0.0.1:8080 and is automatically recompiled on file change.
+The current state of the project will be available on http://localhost:8080 and is automatically recompiled on file change.
 
 
 
