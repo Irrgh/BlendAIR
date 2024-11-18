@@ -1,4 +1,5 @@
 import { RenderPass } from "./pass/RenderPass";
+import { RenderPassBuilder } from "./RenderPassBuilder";
 
 /**
  * 
@@ -7,12 +8,38 @@ import { RenderPass } from "./pass/RenderPass";
  */
 export class RenderGraph {
 
-    static topSort(passes:RenderPass[]):RenderPass[] {
-        throw new Error("This method is not implemented yet");
+    private passBuilders: Map<string, RenderPassBuilder> = new Map();
+    private textures: Map<string,GPUTextureDescriptor> = new Map();
+    private buffers: Map<string, GPUBufferDescriptor> = new Map();
 
 
 
-        return [];
+    public addPass<PassData>(name: string): { builder: RenderPassBuilder, data: PassData } {
+
+        if (this.passBuilders.has(name)) {
+            throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
+        }
+        const passBuilder = new RenderPassBuilder();
+        this.passBuilders.set(name,passBuilder);
+
+        return { builder: new RenderPassBuilder(), data: {} as PassData };
+    }
+
+    public createBuffer(name:string, desc: GPUBufferDescriptor) {
+        if (this.buffers.has(name)) {
+            throw new Error(`Buffer creation error: [${name}] already exists.`);
+        }
+        this.buffers.set(name,desc);    
+    }
+
+
+
+
+    public createTexture (name: string, desc:GPUTextureDescriptor) {
+        if (this.textures.has(name)) {
+            throw new Error(`Texture creation error: [${name}] already exists.`);
+        }
+        this.textures.set(name,desc);
     }
 
 
