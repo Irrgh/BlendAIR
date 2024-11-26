@@ -347,7 +347,7 @@ export class Bvh {
 
         // there was no premature return --> no triangle intersected
 
-        return -1.0;
+        return tmin;
 
 
 

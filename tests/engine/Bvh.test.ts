@@ -28,7 +28,10 @@ describe("Bvh Class", () => {
         const value = bvh.intersectionBvh(ray);
 
         expect(value).toBeInstanceOf(Object);
-        expect(value).toHaveProperty(["t","u","v","w"]);
+        expect(value).toHaveProperty("t");
+        expect(value).toHaveProperty("u");
+        expect(value).toHaveProperty("v");
+        expect(value).toHaveProperty("w");
 
 
 
