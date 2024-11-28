@@ -1,119 +1,77 @@
+import { PassBuilder, ResourceAccess } from "./PassBuilder";
 
-type ResourceAccess
-    = "read-only"
-    | "write-only"
-    | "read-write"
+export class RenderPassBuilder extends PassBuilder {
 
-
-interface BindingInfo {
-    access: ResourceAccess,
-    visibility: GPUShaderStageFlags,
-    binding: GPUIndex32,
-    group: GPUIndex32,
-    /**
-     * New resource name to set after traversing the pass.
-     */
-    alias?: string
-}
-
-
-interface BufferBindingInfo extends BindingInfo {
-    type: GPUBufferBindingType,
-}
-
-interface TextureBindingInfo extends BindingInfo {
-    sampleType?: GPUTextureSampleType,
-}
+    private colorAttachments: Map<number,{name:string,access:ResourceAccess}>;
+    private depthAttachment?: {name:string,access:ResourceAccess};
 
 
 
+    constructor () {
+        super();
+        this.colorAttachments = new Map();
 
-export class RenderPassBuilder {
-
-    private boundBuffers: Map<string, BufferBindingInfo> = new Map();
-    private boundTextures: Map<string,TextureBindingInfo> = new Map();
-    private boundSamplers: Map<string, TextureBindingInfo> = new Map();
-    
-
-
-
-
-    /**
-     * Registers a {@link GPUBuffer} to be bound in the passes pipeline.
-     * @param name name of the buffer inside the {@link RenderGraph}.
-     * @param info declares how the buffer should be bound.
-     */
-    public bindBuffer(name: string, info: BufferBindingInfo) {
-        const buffer = this.boundBuffers.get(name);
-        if (buffer) {
-            throw new Error(`Buffer binding declaration error: [${name}] has already been defined with [${buffer}] for this pass.`);
-        }
-
-        if (info.access !== "read-write" && info.alias) {
-            throw new Error(`Buffer binding declaration error: [${name}] can not have an alias because access is not "read-write".`);
-        }
-
-        this.boundBuffers.set(name,info);
 
     }
 
+
+
+
     /**
-     * Registers a {@link GPUTexture} to be bound in the passes pipeline.
-     * @param name name of the texture inside the {@link RenderGraph}.
-     * @param info declares how the texture should be bound.
+     * Adds a texture as a color attachment. Shader layout will follow the insertion order.
+     * @param name name of the texture
+     * @param access used to manage `loadOp` and `storeOp` in the actual attachment
+     * @param slot 
      */
-    public bindTexture(name: string, info: TextureBindingInfo) {
-        const texture = this.boundBuffers.get(name);
-        if (texture) {
-            throw new Error(`Texture binding declaration error: [${name}] has already been defined with [${texture}] for this pass.`);
+    public addColorAttachment(name:string,access:ResourceAccess, slot:number) {
+        if (this.colorAttachments.has(slot)) {
+            throw new Error(`ColorAttachment slot ${slot} is already take`)
         }
-
-        if (info.access !== "read-write" && info.alias) {
-            throw new Error(`Texture binding declaration error: [${name}] can not have an alias because access is not "read-write".`);
-        }
-
-        this.boundTextures.set(name,info);
+        this.colorAttachments.set(slot,{name,access})
     }
 
+    public setDepthAttachment(name:string,access:ResourceAccess) {
+        this.depthAttachment =  {name,access};
+    }
+
+
+
+
+
+    public render?: (<PassData>(enc: GPURenderPassEncoder, passData: PassData) => {});
+
     /**
-     * Registers a {@link GPUSampler} to be bound in the passes pipeline.
-     * @param name name of the sampler inside the {@link RenderGraph}.
-     * @param info declares how the texture should be bound.
+     * Sets a callback function to execute draws and dispatches on pass traversal.
+     * @param passFunc 
      */
-    public bindSamplers(name:string, info: BindingInfo) {
-        const sampler = this.boundBuffers.get(name);
-        if (sampler) {
-            throw new Error(`Sampler binding declaration error: [${name}] has already been defined with [${sampler}] for this pass.`);
+    public setPassFunc(passFunc:<PassData>(enc: GPURenderPassEncoder, passData:PassData) => {}) {
+        this.render = passFunc;
+    }
+
+
+    private getPassDescriptor():GPURenderPassDescriptor {
+        throw new Error("Implementation missing");
+    }
+
+
+    /**
+     * Executes the render function of this pass.
+     * @param cmd {@link GPUCommandEncoder} to write the commands into
+     * @param passData arbitrary data that might be need for rendering.
+     */
+    public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
+        const enc = cmd.beginRenderPass(this.getPassDescriptor());
+        enc.pushDebugGroup("TODO: name");
+
+        if (this.render) {
+            this.render(enc, passData);
         }
+
+        enc.popDebugGroup();
+        enc.end()
+    }
+
 
     
-        this.boundSamplers.set(name,info);
-    }
-
-
-    public useColorAttachment(name:string, index:GPUIndex32) {
-
-
-    }
-
-    public useDepthAttachment(name:string) {
-
-
-    }
-
-
-
-
-
-
-
-    public setRenderFunc<PassData>(renderFunc:(cmd:GPUCommandEncoder, passData:PassData) => {}) {
-
-
-
-
-    }
-
-
 
 }
