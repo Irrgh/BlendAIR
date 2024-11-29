@@ -25,13 +25,13 @@ The current state of the project will be available on http://localhost:8080 and 
 
 
 # Todo
-- [] (WIP) implement render graphs to reduce manual configuration when creating render passes.
-- [] (WIP) setup github actions to automatically build the demo site on commit to main branch.
-- [] complete a raytracing pipeline to use actual geometry.
-- [] implement a proper material system.
-- [] use WASM and WebWorkers in performance critical parts:
+- [ ] (WIP) implement render graphs to reduce manual configuration when creating render passes.
+- [ ] (WIP) setup github actions to automatically build the demo site on commit to main branch.
+- [ ] complete a raytracing pipeline to use actual geometry.
+- [ ] implement a proper material system.
+- [ ] use WASM and WebWorkers in performance critical parts:
     - construction of acceleration structures
     - preparation of render data
     - material compilation
     - asset loaders
-- [] improve and add a lot of UI elements.
+- [ ] improve and add a lot of UI elements.
