@@ -19,7 +19,7 @@ export class RenderGraph {
         if (this.passBuilders.has(name)) {
             throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
         }
-        const passBuilder = new RenderPassBuilder();
+        const passBuilder = new RenderPassBuilder(name);
         this.passBuilders.set(name, passBuilder);
 
         return { builder: passBuilder, data: {} as PassData };
@@ -29,7 +29,7 @@ export class RenderGraph {
         if (this.passBuilders.has(name)) {
             throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
         }
-        const passBuilder = new ComputePassBuilder();
+        const passBuilder = new ComputePassBuilder(name);
         this.passBuilders.set(name, passBuilder);
 
         return { builder: passBuilder, data: {} as PassData };

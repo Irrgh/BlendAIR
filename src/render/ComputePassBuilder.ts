@@ -1,18 +1,21 @@
 import { PassBuilder } from "./PassBuilder";
+import { PassTimestamp } from "./PassTimestamp";
 
 export class ComputePassBuilder extends PassBuilder {
     
-    constructor () {
-        super();
+    private descriptor : GPUComputePassDescriptor;
+
+
+    constructor (name:string) {
+        super(name);
+        this.descriptor = {label:name};
     }
 
 
     
     public compute?: (<PassData>(enc: GPUComputePassEncoder, passData: PassData) => {});
 
-    public getPassDescriptor() : GPUComputePassDescriptor {
-        throw new Error("Implementation missing");
-    }
+    
 
 
 
@@ -30,7 +33,7 @@ export class ComputePassBuilder extends PassBuilder {
      * @param passData arbitrary data that might be need for rendering.
      */
     public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
-        const enc = cmd.beginComputePass(this.getPassDescriptor());
+        const enc = cmd.beginComputePass(this.descriptor);
         enc.pushDebugGroup("TODO: name");
 
         if (this.compute) {
@@ -41,6 +44,8 @@ export class ComputePassBuilder extends PassBuilder {
         enc.end();
     }
 
-    
+    public attachTimestamp(): PassTimestamp {
+        return PassTimestamp.attachTimestamps(this.descriptor,this.name);
+    }
 
 }

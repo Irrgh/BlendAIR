@@ -1,5 +1,5 @@
 import { App } from "../app";
-import { RenderPass } from "./pass/RenderPass";
+import { PassBuilder } from "./PassBuilder";
 
 export class PassTimestamp implements GPUResource {
 
@@ -13,13 +13,13 @@ export class PassTimestamp implements GPUResource {
         this.resultBuffer = resultBuffer;
     }
 
-    destroy(): void {
+    public destroy(): void {
         this.querySet.destroy();
         this.resolveBuffer.destroy();
         this.resultBuffer.destroy();
     }
 
-    public static attachTimestamps(pass: RenderPass): PassTimestamp {
+    public static attachTimestamps(passDescriptor : GPURenderPassDescriptor | GPUComputePassDescriptor, name:string): PassTimestamp {
         const device = App.getWebGPU().getDevice();
 
         if (!device.features.has("timestamp-query")) {
@@ -32,19 +32,19 @@ export class PassTimestamp implements GPUResource {
         const querySet = device.createQuerySet({
             type: "timestamp",
             count: 2,
-            label: `${pass.getName()}-pass-timestamp-queryset`
+            label: `${name}-pass-timestamp-queryset`
         });
 
         const resolveBuffer = device.createBuffer({
             size: 16,
             usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
-            label: `${pass.getName()}-pass-timestamp-resolve`
+            label: `${name}-pass-timestamp-resolve`
         });
 
         const resultBuffer = device.createBuffer({
             size: 16,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-            label: `${pass.getName()}-pass-timestamp-result`
+            label: `${name}-pass-timestamp-result`
         });
 
         const timestampWrites: GPURenderPassTimestampWrites = {
@@ -53,15 +53,15 @@ export class PassTimestamp implements GPUResource {
             endOfPassWriteIndex: 1,
         };
 
-        pass.getDescriptor().timestampWrites = timestampWrites;
+        passDescriptor.timestampWrites = timestampWrites;
 
         return new PassTimestamp(querySet, resolveBuffer, resultBuffer);
     }
 
 
-    public prepareResolve(encoder: GPUCommandEncoder): void {
-        encoder.resolveQuerySet(this.querySet, 0, 2, this.resolveBuffer, 0);
-        encoder.copyBufferToBuffer(this.resolveBuffer, 0, this.resultBuffer, 0, this.resolveBuffer.size);
+    public prepareResolve(enc: GPUCommandEncoder): void {
+        enc.resolveQuerySet(this.querySet, 0, 2, this.resolveBuffer, 0);
+        enc.copyBufferToBuffer(this.resolveBuffer, 0, this.resultBuffer, 0, this.resolveBuffer.size);
     }
 
     public resolve(): Promise<bigint> {

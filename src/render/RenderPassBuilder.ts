@@ -1,17 +1,18 @@
 import { PassBuilder, ResourceAccess } from "./PassBuilder";
+import { PassTimestamp } from "./PassTimestamp";
 
 export class RenderPassBuilder extends PassBuilder {
 
     private colorAttachments: Map<string,ResourceAccess>;
     private depthAttachment?: {name:string,access:ResourceAccess};
+    private descriptor: GPURenderPassDescriptor;
 
 
 
-    constructor () {
-        super();
+    constructor (name:string) {
+        super(name);
         this.colorAttachments = new Map();
-
-
+        this.descriptor = {label:name} as GPURenderPassDescriptor;
     }
 
 
@@ -53,18 +54,13 @@ export class RenderPassBuilder extends PassBuilder {
     }
 
 
-    private getPassDescriptor():GPURenderPassDescriptor {
-        throw new Error("Implementation missing");
-    }
-
-
     /**
      * Executes the render function of this pass.
      * @param cmd {@link GPUCommandEncoder} to write the commands into
      * @param passData arbitrary data that might be need for rendering.
      */
     public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
-        const enc = cmd.beginRenderPass(this.getPassDescriptor());
+        const enc = cmd.beginRenderPass(this.descriptor);
         enc.pushDebugGroup("TODO: name");
 
         if (this.render) {
@@ -75,6 +71,9 @@ export class RenderPassBuilder extends PassBuilder {
         enc.end()
     }
 
+    public attachTimestamp(): PassTimestamp {
+        return PassTimestamp.attachTimestamps(this.descriptor,this.name);
+    }
 
     
 
