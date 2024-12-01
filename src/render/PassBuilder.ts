@@ -6,7 +6,7 @@ import { PassTimestamp } from './PassTimestamp';
 export type ResourceAccess = GPUStorageTextureAccess
 
 
-interface BindingInfo {
+export interface BindingInfo {
     group: number,
     binding: number,
     type: "buffer" | "sampler" | "texture"
@@ -15,7 +15,7 @@ interface BindingInfo {
 
 
 
-interface TextureBindingLayout {
+export interface TextureBindingLayout {
     texture?: GPUTextureBindingLayout,
     storageTexture?: GPUStorageTextureBindingLayout,
     externalTexture?: GPUExternalTextureBindingLayout,
@@ -29,17 +29,15 @@ interface TextureBindingLayout {
 export abstract class PassBuilder {
 
 
-    private bindingLayouts: GPUBindGroupLayoutDescriptor[];
+    private bindgroupLayouts: Map<number,GPUBindGroupLayoutDescriptor>;
     private bindingMap: Map<string, BindingInfo>;
     private accessMap: Map<string, ResourceAccess>;
 
     public readonly name: string;
 
     constructor(name: string) {
-        const device: GPUDevice = App.getRenderDevice();
-        device.limits.maxBindGroups
 
-        this.bindingLayouts = new Array();
+        this.bindgroupLayouts = new Map;
         this.bindingMap = new Map();
         this.accessMap = new Map();
 
@@ -63,11 +61,16 @@ export abstract class PassBuilder {
             buffer: { type: type }
         }
 
-        if (!this.bindingLayouts[group]) {
-            this.bindingLayouts[group] = { entries: new Array() }
+        
+
+        if (this.bindgroupLayouts.has(group)) {
+            this.bindgroupLayouts.set(group,{entries: new Array()});
         }
 
-        (this.bindingLayouts[group].entries as Array<GPUBindGroupLayoutEntry>).push(entry);
+        const groupLayout = this.bindgroupLayouts.get(group)!;
+        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
+
+
         this.bindingMap.set(name, { group, binding, type: "texture" });
 
         switch (type) {
@@ -102,11 +105,12 @@ export abstract class PassBuilder {
             externalTexture: textureLayout.externalTexture
         }
 
-        if (!this.bindingLayouts[group]) {
-            this.bindingLayouts[group] = { entries: new Array() }
+        if (this.bindgroupLayouts.has(group)) {
+            this.bindgroupLayouts.set(group,{entries: new Array()});
         }
 
-        (this.bindingLayouts[group].entries as Array<GPUBindGroupLayoutEntry>).push(entry);
+        const groupLayout = this.bindgroupLayouts.get(group)!;
+        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
         this.bindingMap.set(name, { group, binding, type: "texture" });
     }
 
@@ -126,14 +130,29 @@ export abstract class PassBuilder {
             sampler : {type}
         }
         
-        if (!this.bindingLayouts[group]) {
-            this.bindingLayouts[group] = { entries: new Array() }
+        if (this.bindgroupLayouts.has(group)) {
+            this.bindgroupLayouts.set(group,{entries: new Array()});
         }
-        (this.bindingLayouts[group].entries as Array<GPUBindGroupLayoutEntry>).push(entry);
+
+        const groupLayout = this.bindgroupLayouts.get(group)!;
+        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
         this.bindingMap.set(name, { group, binding, type: "sampler" });
 
         this.accessMap.set(name,"read-only");
     }
+
+    public getBindingLayouts() : Map<number,GPUBindGroupLayoutDescriptor> {
+        return this.bindgroupLayouts;
+    }
+
+    public getBindingMap(): Map<string,BindingInfo> {
+        return this.bindingMap;
+    }
+
+    public getAccessMap(): Map<string,ResourceAccess> {
+        return this.accessMap;
+    }
+
 
 
     public abstract execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void

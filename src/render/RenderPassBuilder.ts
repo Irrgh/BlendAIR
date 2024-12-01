@@ -55,13 +55,13 @@ export class RenderPassBuilder extends PassBuilder {
 
 
     /**
-     * Executes the render function of this pass.
+     * Executes the render function of this pass. 
      * @param cmd {@link GPUCommandEncoder} to write the commands into
      * @param passData arbitrary data that might be need for rendering.
      */
     public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
         const enc = cmd.beginRenderPass(this.descriptor);
-        enc.pushDebugGroup("TODO: name");
+        enc.pushDebugGroup(this.name);
 
         if (this.render) {
             this.render(enc, passData);

@@ -34,7 +34,7 @@ export class ComputePassBuilder extends PassBuilder {
      */
     public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
         const enc = cmd.beginComputePass(this.descriptor);
-        enc.pushDebugGroup("TODO: name");
+        enc.pushDebugGroup(this.name);
 
         if (this.compute) {
             this.compute(enc,passData)
