@@ -18,6 +18,24 @@ type RenderGraphBufferHandle = string
  */
 type RenderGraphSamplerHandle = string
 
+type ResourceAccess = GPUStorageTextureAccess
+
+
+interface BindingInfo {
+    group: number,
+    binding: number,
+    type: "buffer" | "sampler" | "texture"
+}
+
+interface TextureBindingLayout {
+    texture?: GPUTextureBindingLayout,
+    storageTexture?: GPUStorageTextureBindingLayout,
+    externalTexture?: GPUExternalTextureBindingLayout,
+}
+
+
+
+
 interface RenderPassColorAttachment {
     /**
      * A {@link RenderGraphResourceHandle} describing the texture subresource that will be output to for this

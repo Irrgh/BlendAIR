@@ -1,32 +1,4 @@
-import { App } from '../app';
-import { WebGPU } from '../engine/WebGPU';
-import { PassTimestamp } from './PassTimestamp';
-
-
-export type ResourceAccess = GPUStorageTextureAccess
-
-
-export interface BindingInfo {
-    group: number,
-    binding: number,
-    type: "buffer" | "sampler" | "texture"
-}
-
-
-
-
-export interface TextureBindingLayout {
-    texture?: GPUTextureBindingLayout,
-    storageTexture?: GPUStorageTextureBindingLayout,
-    externalTexture?: GPUExternalTextureBindingLayout,
-}
-
-
-
-
-
-
-export abstract class PassBuilder {
+export class PassBuilder {
 
 
     private bindgroupLayouts: Map<number,GPUBindGroupLayoutDescriptor>;
@@ -61,15 +33,12 @@ export abstract class PassBuilder {
             buffer: { type: type }
         }
 
-        
-
         if (this.bindgroupLayouts.has(group)) {
             this.bindgroupLayouts.set(group,{entries: new Array()});
         }
 
         const groupLayout = this.bindgroupLayouts.get(group)!;
         (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
-
 
         this.bindingMap.set(name, { group, binding, type: "texture" });
 
@@ -153,10 +122,5 @@ export abstract class PassBuilder {
         return this.accessMap;
     }
 
-
-
-    public abstract execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void
-
-    public abstract attachTimestamp(): PassTimestamp
 
 }

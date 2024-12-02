@@ -1,20 +1,14 @@
-import { PassBuilder, ResourceAccess } from "./PassBuilder";
-import { PassTimestamp } from "./PassTimestamp";
-
+import { PassBuilder } from "./PassBuilder";
 export class RenderPassBuilder extends PassBuilder {
 
     private colorAttachments: RenderPassColorAttachment[];
-    private depthAttachment?: RenderPassDepthStencilAttachment;
-    private descriptor: GPURenderPassDescriptor;
-    private pipelineDescriptor?: RenderPipelineDescriptor
-
+    private depthStencilAttachment?: RenderPassDepthStencilAttachment;
+    private pipelineDescriptor?: RenderPipelineDescriptor;
 
     constructor(name: string) {
         super(name);
         this.colorAttachments = new Array();
-        this.descriptor = { label: name } as GPURenderPassDescriptor;
     }
-
 
     /**
      * Adds a {@link GPURenderPassColorAttachment} to this pass on compilation,
@@ -31,7 +25,7 @@ export class RenderPassBuilder extends PassBuilder {
      * @param attachment 
      */
     public setDepthAttachment(attachment:RenderPassDepthStencilAttachment) {
-        this.depthAttachment = attachment;
+        this.depthStencilAttachment = attachment;
     }
 
     /**
@@ -39,10 +33,27 @@ export class RenderPassBuilder extends PassBuilder {
      * after resolving the {@link RenderGraphTextureHandle} in the {@link RenderGraph}.
      * @param desc 
      */
-    public setPipeline(desc: RenderPipelineDescriptor) {
+    public setRenderPipelineDescriptor(desc: RenderPipelineDescriptor) {
         this.pipelineDescriptor = desc;
     }
 
+    public getColorAttachment(): RenderPassColorAttachment[] {
+        return this.colorAttachments;
+    }
+
+    public getDepthStencilAttachment(): RenderPassDepthStencilAttachment | undefined {
+        return this.depthStencilAttachment;
+    }
+
+    /**
+     * TODO: decide whether to have this nullable or not.
+     */
+    public getRenderPipelineDescriptor(): RenderPipelineDescriptor {
+        if (!this.pipelineDescriptor) {
+            throw new Error(`Missing pipeline descriptor for render pass [${this.name}].`);
+        }
+        return this.pipelineDescriptor;
+    }
 
 
     public render?: <PassData>(enc: GPURenderPassEncoder, passData: PassData) => {};
@@ -54,29 +65,5 @@ export class RenderPassBuilder extends PassBuilder {
     public setPassFunc(passFunc: <PassData>(enc: GPURenderPassEncoder, passData: PassData) => {}) {
         this.render = passFunc;
     }
-
-
-    /**
-     * Executes the render function of this pass. 
-     * @param cmd {@link GPUCommandEncoder} to write the commands into
-     * @param passData arbitrary data that might be need for rendering.
-     */
-    public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
-        const enc = cmd.beginRenderPass(this.descriptor);
-        enc.pushDebugGroup(this.name);
-
-        if (this.render) {
-            this.render(enc, passData);
-        }
-
-        enc.popDebugGroup();
-        enc.end()
-    }
-
-    public attachTimestamp(): PassTimestamp {
-        return PassTimestamp.attachTimestamps(this.descriptor, this.name);
-    }
-
-
 
 }

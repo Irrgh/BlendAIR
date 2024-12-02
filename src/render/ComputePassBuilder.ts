@@ -3,22 +3,15 @@ import { PassTimestamp } from "./PassTimestamp";
 
 export class ComputePassBuilder extends PassBuilder {
     
-    private descriptor : GPUComputePassDescriptor;
-
+    private pipelineDescriptor?: GPUComputePipelineDescriptor;
 
     constructor (name:string) {
         super(name);
-        this.descriptor = {label:name};
     }
 
+    public compute?: <PassData>(enc: GPUComputePassEncoder, passData: PassData) => {};
 
     
-    public compute?: (<PassData>(enc: GPUComputePassEncoder, passData: PassData) => {});
-
-    
-
-
-
     /**
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
@@ -26,26 +19,18 @@ export class ComputePassBuilder extends PassBuilder {
     public setComputeFunc(passFunc:<PassData>(enc: GPUComputePassEncoder, passData:PassData) => {}) {
         this.compute = passFunc;
     }
+    
+    public setComputePipelineDescriptor(desc: GPUComputePipelineDescriptor) {
+        this.pipelineDescriptor = desc;
+    }
 
-    /**
-     * Executes the compute function of this pass.
-     * @param cmd {@link GPUCommandEncoder} to write the commands into
-     * @param passData arbitrary data that might be need for rendering.
-     */
-    public execute<PassData>(cmd: GPUCommandEncoder, passData: PassData): void {
-        const enc = cmd.beginComputePass(this.descriptor);
-        enc.pushDebugGroup(this.name);
-
-        if (this.compute) {
-            this.compute(enc,passData)
+    public getComputePipelineDescriptor() : GPUComputePipelineDescriptor {
+        if(!this.pipelineDescriptor){
+            throw new Error(`Missing pipeline descriptor for compute pass [${this.name}].`);
         }
+        return this.pipelineDescriptor;
         
-        enc.popDebugGroup();
-        enc.end();
     }
 
-    public attachTimestamp(): PassTimestamp {
-        return PassTimestamp.attachTimestamps(this.descriptor,this.name);
-    }
 
 }
