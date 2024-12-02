@@ -119,7 +119,7 @@ export abstract class PassBuilder {
      * @param name name of the sampler inside the {@link RenderGraph}
      * @param group {@link GPUBindGroup} to bind the buffer in.
      * @param binding slot to bind int the {@link GPUBindGroup}
-     * @param visiblity visibility in different parts of the shader pipeline
+     * @param visibility visibility in different parts of the shader pipeline
      * @param type type of sampler
      */
     public bindSamplers(name: string, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, type?:GPUSamplerBindingType) {

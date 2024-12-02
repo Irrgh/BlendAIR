@@ -3,53 +3,55 @@ import { PassTimestamp } from "./PassTimestamp";
 
 export class RenderPassBuilder extends PassBuilder {
 
-    private colorAttachments: Map<string,ResourceAccess>;
-    private depthAttachment?: {name:string,access:ResourceAccess};
+    private colorAttachments: RenderPassColorAttachment[];
+    private depthAttachment?: RenderPassDepthStencilAttachment;
     private descriptor: GPURenderPassDescriptor;
+    private pipelineDescriptor?: RenderPipelineDescriptor
 
 
-
-    constructor (name:string) {
+    constructor(name: string) {
         super(name);
-        this.colorAttachments = new Map();
-        this.descriptor = {label:name} as GPURenderPassDescriptor;
+        this.colorAttachments = new Array();
+        this.descriptor = { label: name } as GPURenderPassDescriptor;
     }
-
-
 
 
     /**
-     * Adds a texture as a color attachment. Shader layout will follow the insertion order.
-     * @param name name of the texture to be used as a color attachment.
-     * @param access used to manage `loadOp` and `storeOp` in the actual attachment.
+     * Adds a {@link GPURenderPassColorAttachment} to this pass on compilation,
+     * after resolving the {@link RenderGraphTextureHandle}s in the {@link RenderGraph}.
+     * @param attachment {@link RenderPassColorAttachment}
      */
-    public addColorAttachment(name:string,access:ResourceAccess) {
-        if (this.colorAttachments.has(name)) {
-            throw new Error(`Color attachment declaration error: [${name}] is already used as color attachment.`)
-        }
-        this.colorAttachments.set(name,access);
+    public addColorAttachment(attachment:RenderPassColorAttachment) {
+        this.colorAttachments.push(attachment);
     }
 
     /**
-     * Adds a texture a depth Attachment.
-     * @param name name of the texture to be used as a depth attachment.
-     * @param access used to manage `loadOp` and `storeOp` in the actual attachment.
+     * Sets a {@link RenderPassDepthStencilAttachment} for this on compilation,
+     * after resolving the {@link RenderGraphTextureHandle} in the {@link RenderGraph}.
+     * @param attachment 
      */
-    public setDepthAttachment(name:string,access:ResourceAccess) {
-        this.depthAttachment =  {name,access};
+    public setDepthAttachment(attachment:RenderPassDepthStencilAttachment) {
+        this.depthAttachment = attachment;
+    }
+
+    /**
+     * Sets a {@link RenderPipelineDescriptor} for this pass on compilation,
+     * after resolving the {@link RenderGraphTextureHandle} in the {@link RenderGraph}.
+     * @param desc 
+     */
+    public setPipeline(desc: RenderPipelineDescriptor) {
+        this.pipelineDescriptor = desc;
     }
 
 
 
-
-
-    public render?: (<PassData>(enc: GPURenderPassEncoder, passData: PassData) => {});
+    public render?: <PassData>(enc: GPURenderPassEncoder, passData: PassData) => {};
 
     /**
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
      */
-    public setPassFunc(passFunc:<PassData>(enc: GPURenderPassEncoder, passData:PassData) => {}) {
+    public setPassFunc(passFunc: <PassData>(enc: GPURenderPassEncoder, passData: PassData) => {}) {
         this.render = passFunc;
     }
 
@@ -72,9 +74,9 @@ export class RenderPassBuilder extends PassBuilder {
     }
 
     public attachTimestamp(): PassTimestamp {
-        return PassTimestamp.attachTimestamps(this.descriptor,this.name);
+        return PassTimestamp.attachTimestamps(this.descriptor, this.name);
     }
 
-    
+
 
 }
