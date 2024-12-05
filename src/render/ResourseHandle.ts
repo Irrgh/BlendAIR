@@ -1,30 +1,27 @@
-class ResourceHandle<T> {
-    public readonly name: string;
-    private promise: Promise<T>;
-    private _resolve!: (value: T) => void;
+import { FutureValue } from "../util/FutureValue";
 
-    constructor(name: string) {
-        this.name = name;
+type GPUResource = GPUBuffer | GPUTexture | GPUSampler
 
-        // Create a deferred Promise
-        this.promise = new Promise<T>((resolve) => {
-            this._resolve = resolve; // Capture the resolve function
-        });
-    }
-
-    // Assign the resolve value later
-    setResolveValue(value: T): void {
-        this._resolve(value); // Resolve the Promise
-    }
-
-    // Wait for the resolve value
-    resolve(): Promise<T> {
-        return this.promise;
+export class ResourceHandle<T extends GPUResource> extends FutureValue<T> {
+    public readonly name : string;
+    constructor (name: string) {
+        super();
+        this.name = name
     }
 }
 
+/**
+ * Represents a {@link GPUBuffer} that will be resolved in the future.
+ */
 export class BufferHandle extends ResourceHandle<GPUBuffer> {}
-export class TextureHandle extends ResourceHandle<GPUTexture> {}
-export class SamplerHandle extends ResourceHandle<GPUSampler> {}
 
+/**
+ * Represents a {@link GPUTexture} that will be resolved in the future.
+ */
+export class TextureHandle extends ResourceHandle<GPUTexture> {}
+
+/**
+ * Represents a {@link GPUSampler} that will be resolved in the future.
+ */
+export class SamplerHandle extends ResourceHandle<GPUSampler> {}
 

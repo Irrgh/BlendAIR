@@ -1,8 +1,8 @@
 import { ComputePassBuilder } from "./ComputePassBuilder";
 import { RenderPass } from "./pass/RenderPass";
 import { PassBuilder } from "./PassBuilder";
-import { PassTimestamp } from "./PassTimestamp";
 import { RenderPassBuilder } from "./RenderPassBuilder";
+import { BufferHandle, TextureHandle } from "./ResourseHandle";
 
 /**
  * 
@@ -14,7 +14,7 @@ export class RenderGraph {
     private passBuilders: Map<string, PassBuilder<any>> = new Map();
     private textures: Map<string, GPUTextureDescriptor> = new Map();
     private buffers: Map<string, GPUBufferDescriptor> = new Map();
-    private exports: Set<string> = new Set();
+    private exports: Set<BufferHandle | TextureHandle> = new Set();
 
     public addRenderPass<PassData>(name: string): { builder: RenderPassBuilder<PassData>, data: PassData } {
         if (this.passBuilders.has(name)) {
@@ -57,14 +57,14 @@ export class RenderGraph {
     /**
      * Sets whether a {@link GPUBuffer} or {@link GPUTexture} should be exported after execution of the {@link RenderGraph}.
      * Resources that are not set to be exported might result in passes that provide them being culled.
-     * @param name name of the {@link GPUBuffer} | {@link GPUTexture} to export.
+     * @param handle name of the {@link GPUBuffer} | {@link GPUTexture} to export.
      * @param exported 
      */
-    public setExport(name:RenderGraphBufferHandle | RenderGraphTextureHandle, exported:boolean) {
+    public setExport(handle:BufferHandle | TextureHandle, exported:boolean) {
         if (exported) {
-            this.exports.add(name);
+            this.exports.add(handle);
         } else {
-            this.exports.delete(name);
+            this.exports.delete(handle);
         }
     }
 
@@ -73,7 +73,7 @@ export class RenderGraph {
         
 
 
-        
+
 
 
 

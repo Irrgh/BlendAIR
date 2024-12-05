@@ -31,7 +31,7 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
     /**
      * Sets a {@link RenderPipelineDescriptor} for this pass on compilation,
      * after resolving the {@link RenderGraphTextureHandle} in the {@link RenderGraph}.
-     * @param desc 
+     * @param desc a {@link RenderPipelineDescriptor}
      */
     public setRenderPipelineDescriptor(desc: RenderPipelineDescriptor) {
         this.pipelineDescriptor = desc;
@@ -45,17 +45,26 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
         this.render = passFunc;
     }
 
-
+    /**
+     * Returns the `color attachments` registered for this pass.
+     * @returns a list of {@link RenderPassColorAttachment}
+     */
     public getColorAttachment(): RenderPassColorAttachment[] {
         return this.colorAttachments;
     }
 
+    /**
+     * Returns the `depth attachment` registered for this pass.
+     * @returns a {@link RenderPassDepthStencilAttachment} or `undefined`.
+     */
     public getDepthStencilAttachment(): RenderPassDepthStencilAttachment | undefined {
         return this.depthStencilAttachment;
     }
 
     /**
-     * TODO: decide whether to have this nullable or not.
+     * Returns the {@link RenderPipelineDescriptor} registered for this pass.
+     * @returns a {@link RenderPipelineDescriptor}.
+     * @throws an {@link Error} when the `pipelineDescriptor` is not set.
      */
     public getRenderPipelineDescriptor(): RenderPipelineDescriptor {
         if (!this.pipelineDescriptor) {
@@ -64,6 +73,9 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
         return this.pipelineDescriptor;
     }
 
+    /**
+     * Function to be executed upon rendering this pass.
+     */
     public render?: (enc: GPURenderPassEncoder, passData: T) => void;
 
 }

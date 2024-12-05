@@ -1,4 +1,4 @@
-import { BufferHandle, SamplerHandle, TextureHandle } from "./ResourseHandle";
+import { BufferHandle, ResourceHandle, SamplerHandle, TextureHandle } from './ResourseHandle';
 
 export class PassBuilder<T> {
 
@@ -6,6 +6,7 @@ export class PassBuilder<T> {
     private bindgroupLayouts: Map<number,GPUBindGroupLayoutDescriptor>;
     private bindingMap: Map<string, BindingInfo>;
     protected accessMap: Map<string, ResourceAccess>;
+    protected handleMap: Map<string, ResourceHandle<any>>;
     protected passData: T;
 
     public readonly name: string;
@@ -15,6 +16,7 @@ export class PassBuilder<T> {
         this.bindgroupLayouts = new Map;
         this.bindingMap = new Map();
         this.accessMap = new Map();
+        this.handleMap = new Map();
         this.passData = passData;
         this.name = name;
     }
@@ -22,14 +24,16 @@ export class PassBuilder<T> {
 
     /**
      * Registers a {@link GPUBuffer} to be bound in the pipeline.
-     * @param name name of the buffer inside the {@link RenderGraph}.
+     * @param handle  of the buffer inside the {@link RenderGraph}.
      * @param group {@link GPUBindGroup} to bind the buffer in.
      * @param binding slot to bind int the {@link GPUBindGroup}
      * @param visiblity visibility in different parts of the shader pipeline
      * @param type type of buffer
+     * @returns a updated {@link BufferHandle} to the {@link GPUBuffer}.
      */
-    public bindBuffer(name: RenderGraphBufferHandle, group: GPUIndex32, binding: number, visiblity: GPUShaderStageFlags, type: GPUBufferBindingType) : BufferHandle {
+    public bindBuffer(handle: BufferHandle, group: GPUIndex32, binding: number, visiblity: GPUShaderStageFlags, type: GPUBufferBindingType) : BufferHandle {
 
+        const name = handle.name
         const entry: GPUBindGroupLayoutEntry = {
             binding: binding,
             visibility: visiblity,
@@ -50,16 +54,24 @@ export class PassBuilder<T> {
             case "read-only-storage": this.accessMap.set(name, "read-only");
             case "storage": this.accessMap.set(name, "read-write");
         }
-        return new BufferHandle(name);
+
+        const existingHandle = this.handleMap.get(name);
+        if (existingHandle) {return existingHandle;}
+
+        this.handleMap.set(name,handle);
+        return handle;
     }
 
     /**
      * Registers a {@link GPUTexture} to be bound in the pipeline.
-     * @param name name of the texture inside the {@link RenderGraph}.
+     * @param handle name of the texture inside the {@link RenderGraph}.
      * @param info declares how the texture should be bound.
+     * @returns a updated {@link TextureHandle} to the {@link GPUTexture}.
      */
-    public bindTexture(name: RenderGraphTextureHandle, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, textureLayout: TextureBindingLayout) : TextureHandle {
-        
+    public bindTexture(handle: TextureHandle, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, textureLayout: TextureBindingLayout) : TextureHandle {
+
+        const name = handle.name;
+
         if (textureLayout.texture && !textureLayout.storageTexture && !textureLayout.externalTexture) {
             this.accessMap.set(name, "read-only");
         } else if (!textureLayout.texture && textureLayout.storageTexture && !textureLayout.externalTexture) {
@@ -85,19 +97,27 @@ export class PassBuilder<T> {
         const groupLayout = this.bindgroupLayouts.get(group)!;
         (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
         this.bindingMap.set(name, { group, binding, type: "texture" });
-        return new TextureHandle(name);
+
+        const existingHandle = this.handleMap.get(name);
+        if (existingHandle) {return existingHandle;}
+
+        this.handleMap.set(name,handle);
+        return handle;
     }
 
     /**
      * Registers a {@link GPUSampler} to be bound in the pipeline.
-     * @param name name of the sampler inside the {@link RenderGraph}
+     * @param handle handle of the sampler inside the {@link RenderGraph}
      * @param group {@link GPUBindGroup} to bind the buffer in.
      * @param binding slot to bind int the {@link GPUBindGroup}
      * @param visibility visibility in different parts of the shader pipeline
      * @param type type of sampler
+     * @returns a updated {@link SamplerHandle} to the {@link GPUTexture}.
      */
-    public bindSampler(name: RenderGraphSamplerHandle, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, type?:GPUSamplerBindingType) : SamplerHandle {
+    public bindSampler(handle: SamplerHandle, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, type?:GPUSamplerBindingType) : SamplerHandle {
         
+        const name = handle.name;
+
         const entry: GPUBindGroupLayoutEntry = {
             binding: binding,
             visibility: visibility,
@@ -113,25 +133,65 @@ export class PassBuilder<T> {
         this.bindingMap.set(name, { group, binding, type: "sampler" });
 
         this.accessMap.set(name,"read-only");
-        return new SamplerHandle(name);
+        
+        const existingHandle = this.handleMap.get(name);
+        if (existingHandle) {return existingHandle;}
+
+        this.handleMap.set(name,handle);
+        return handle;
     }
 
-    public useBuffer(name: RenderGraphBufferHandle, access: ResourceAccess) {
-        this.accessMap.set(name,access);
+    /**
+     * Registers a {@link GPUBuffer} to be used in this pass without being bound.
+     * @param handle handle of the buffer inside the {@link RenderGraph}
+     * @param access resource access of the buffer in this pass.
+     * @returns a updated {@link BufferHandle} to the {@link GPUBuffer}.
+     */
+    public useBuffer(handle: BufferHandle, access: ResourceAccess) : BufferHandle {
+        this.accessMap.set(handle.name,access);
+        
+        const existingHandle = this.handleMap.get(handle.name);
+        if (existingHandle) {return existingHandle;}
+        this.handleMap.set(handle.name,handle);
+        return handle;
     }
 
+    /**
+     * Returns the bindgroup layout of this pass.
+     * @returns a Map of bindgroup layouts.
+     */
     public getBindingLayouts() : Map<number,GPUBindGroupLayoutDescriptor> {
         return this.bindgroupLayouts;
     }
 
+    /**
+     * Returns the binding information of the resources used. 
+     * @returns a Map of {@link BindingInfo}.
+     */
     public getBindingMap(): Map<string,BindingInfo> {
         return this.bindingMap;
     }
 
+    /**
+     * Returns the resource access of the resources used.
+     * @returns a Map of {@link ResourceAccess}
+     */
     public getAccessMap(): Map<string,ResourceAccess> {
         return this.accessMap;
     }
 
+    /**
+     * Returns the handles of the resources used.
+     * @returns a Map of {@link ResourceHandle}
+     */
+    public getHandleMap(): Map<string,ResourceHandle<any>> {
+        return this.handleMap;
+    }
+
+    /**
+     * Returns the additional data registered for this pass.
+     * @returns a value {@link T}
+     */
     public getPassData() : T {
         return this.passData;
     }

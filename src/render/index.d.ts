@@ -1,22 +1,3 @@
-/**
- * Reference to a webgpu resource within a {@link RenderGraph}.
- */
-type RenderGraphResourceHandle = string
-
-/**
- * Reference to a {@link GPUTexture} within a {@link RenderGraph}.
- */
-type RenderGraphTextureHandle = string
-
-/**
- * Reference to a {@link GPUBuffer} within a {@link RenderGraph}.
- */
-type RenderGraphBufferHandle = string
-
-/**
- * Reference to a {@link GPUSampler} within a {@link RenderGraph}.
- */
-type RenderGraphSamplerHandle = string
 
 type ResourceAccess = GPUStorageTextureAccess
 
@@ -41,7 +22,7 @@ interface RenderPassColorAttachment {
      * A {@link RenderGraphResourceHandle} describing the texture subresource that will be output to for this
      * color attachment.
      */
-    view: RenderGraphTextureHandle;
+    view: TextureHandle;
     /**
      * Indicates the depth slice index of {@link GPUTextureViewDimension#"3d"} {@link GPURenderPassColorAttachment#view}
      * that will be output to for this color attachment.
@@ -52,7 +33,7 @@ interface RenderPassColorAttachment {
      * output for this color attachment if {@link GPURenderPassColorAttachment#view} is
      * multisampled.
      */
-    resolveTarget?: RenderGraphTextureHandle;
+    resolveTarget?: TextureHandle;
     /**
      * Indicates the value to clear {@link GPURenderPassColorAttachment#view} to prior to executing the
      * render pass. If not map/exist|provided, defaults to `{r: 0, g: 0, b: 0, a: 0}`. Ignored
@@ -80,7 +61,7 @@ interface RenderPassDepthStencilAttachment {
      * A {@link RenderGraphTextureHandle} describing the texture subresource that will be output to
      * and read from for this depth/stencil attachment.
      */
-    view: RenderGraphTextureHandle;
+    view: TextureHandle;
     /**
      * Indicates the value to clear {@link GPURenderPassDepthStencilAttachment#view}'s depth component
      * to prior to executing the render pass. Ignored if {@link GPURenderPassDepthStencilAttachment#depthLoadOp}
