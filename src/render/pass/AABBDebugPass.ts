@@ -1,10 +1,10 @@
 import { Viewport } from '../../engine/Viewport';
 import { Renderer } from "../Renderer";
-import { RenderPass } from "./RenderPass";
+import { OldRenderPass } from "./OldRenderPass";
 import { Scene } from '../../engine/Scene';
 import { Entity } from '../../entity/Entity';
 
-export class AABBDebugPass extends RenderPass {
+export class AABBDebugPass extends OldRenderPass {
     
     constructor (renderer:Renderer) {
 

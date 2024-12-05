@@ -1,10 +1,10 @@
 import { Viewport } from "../../engine/Viewport";
-import { RenderPass } from "./RenderPass"
+import { OldRenderPass } from "./OldRenderPass"
 import { Renderer } from '../Renderer';
 import fullQuadShader from "../../../assets/shaders/fullQuadShader.wgsl";
 import { App } from "../../app";
 
-export class DepthConversionPass extends RenderPass {
+export class DepthConversionPass extends OldRenderPass {
 
     constructor(renderer: Renderer) {
         const input: PassResource[] = [

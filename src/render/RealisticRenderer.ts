@@ -1,7 +1,7 @@
 import { Renderer } from "./Renderer";
 import { Viewport } from '../engine/Viewport';
 import { RaytracingPass } from "./pass/RaytracingPass";
-import { RenderPass } from "./pass/RenderPass";
+import { OldRenderPass } from "./pass/OldRenderPass";
 import { CoordinatePlanePass } from "./pass/CoordinatePlanePass";
 import { DepthConversionPass } from "./pass/DepthConversionPass";
 
@@ -58,7 +58,7 @@ export class RealisticRenderer extends Renderer {
 
 
 
-        this.passes.forEach((pass:RenderPass) => {
+        this.passes.forEach((pass:OldRenderPass) => {
             pass.render(this.viewport);
         });
 

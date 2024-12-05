@@ -1,7 +1,7 @@
 import { Renderer } from "./Renderer";
 import { Viewport } from '../engine/Viewport';
 import { TrianglePass } from "./pass/TrianglePass";
-import { RenderPass } from "./pass/RenderPass";
+import { OldRenderPass } from "./pass/OldRenderPass";
 import { SelectionOutlinePass } from './pass/SelectionOutlinePass';
 import { CoordinatePlanePass } from './pass/CoordinatePlanePass';
 
@@ -46,7 +46,7 @@ export class BasicRenderer extends Renderer {
         //const sorted = RenderGraph.topSort(this.passes);
         this.updateCameraData(this.viewport);
         
-        this.passes.forEach((pass: RenderPass) => {
+        this.passes.forEach((pass: OldRenderPass) => {
 
             pass.render(this.viewport);
 

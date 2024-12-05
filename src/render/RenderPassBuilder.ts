@@ -4,6 +4,11 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
     private colorAttachments: RenderPassColorAttachment[];
     private depthStencilAttachment?: RenderPassDepthStencilAttachment;
     private pipelineDescriptor?: RenderPipelineDescriptor;
+    /**
+     * Function to be executed upon rendering this pass.
+     */
+    public render?: RenderFunc
+
 
     constructor(name: string, passData: T) {
         super(name,passData);
@@ -41,7 +46,7 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
      */
-    public setPassFunc(passFunc: (enc: GPURenderPassEncoder, passData: T) => void) {
+    public setPassFunc(passFunc: RenderFunc) {
         this.render = passFunc;
     }
 
@@ -73,9 +78,5 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
         return this.pipelineDescriptor;
     }
 
-    /**
-     * Function to be executed upon rendering this pass.
-     */
-    public render?: (enc: GPURenderPassEncoder, passData: T) => void;
-
+    
 }

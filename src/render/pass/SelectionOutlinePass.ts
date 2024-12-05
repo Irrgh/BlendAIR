@@ -1,6 +1,6 @@
 import { Viewport } from '../../engine/Viewport';
 import { Renderer } from '../Renderer';
-import { RenderPass } from "./RenderPass";
+import { OldRenderPass } from "./OldRenderPass";
 import { WebGPU } from '../../engine/WebGPU';
 import { App } from "../../app";
 import { Entity } from '../../entity/Entity';
@@ -9,7 +9,7 @@ import fullQuadShader from "../../../assets/shaders/fullQuadShader.wgsl";
 
 
 
-export class SelectionOutlinePass extends RenderPass {
+export class SelectionOutlinePass extends OldRenderPass {
 
     constructor(renderer: Renderer, primaryColor: GPUColor, secondaryColor: GPUColor) {
 

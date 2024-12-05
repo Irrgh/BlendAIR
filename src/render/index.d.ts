@@ -14,9 +14,6 @@ interface TextureBindingLayout {
     externalTexture?: GPUExternalTextureBindingLayout,
 }
 
-
-
-
 interface RenderPassColorAttachment {
     /**
      * A {@link RenderGraphResourceHandle} describing the texture subresource that will be output to for this
@@ -155,3 +152,7 @@ interface RenderPipelineDescriptor
      */
     fragment?: FragmentState;
 }
+
+type RenderFunc = (enc: GPURenderPassEncoder, passData: T) => void
+
+type ComputeFunc = (enc: GPUComputePassEncoder, passData: T) => void

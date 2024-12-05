@@ -1,6 +1,6 @@
 import { Viewport } from '../engine/Viewport';
 import { WebGPU } from "../engine/WebGPU";
-import { RenderPass } from "./pass/RenderPass";
+import { OldRenderPass } from "./pass/OldRenderPass";
 import { RenderGraph } from './RenderGraph';
 import { App } from "../app";
 import { mat4, vec3 } from 'gl-matrix';
@@ -36,7 +36,7 @@ export abstract class Renderer {
 
     private name: string;
 
-    protected passes: RenderPass[] = [];
+    protected passes: OldRenderPass[] = [];
 
     /**
      * Creates a new {@link GPUBuffer} according to the {@link GPUBufferDescriptor}.

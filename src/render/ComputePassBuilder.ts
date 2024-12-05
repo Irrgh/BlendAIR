@@ -4,21 +4,20 @@ import { PassTimestamp } from "./PassTimestamp";
 export class ComputePassBuilder<T> extends PassBuilder<T> {
     
     private pipelineDescriptor?: GPUComputePipelineDescriptor;
+    /**
+     * Function to be executed when this pass is computed.
+     */
+    public compute?: ComputeFunc
 
     constructor (name:string, passData:T) {
         super(name, passData);
     }
 
     /**
-     * Function to be executed when this pass is computed.
-     */
-    public compute?: (enc: GPUComputePassEncoder, passData: T) => void;
-
-    /**
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
      */
-    public setComputeFunc(passFunc:(enc: GPUComputePassEncoder, passData:T) => void) {
+    public setComputeFunc(passFunc:ComputeFunc) {
         this.compute = passFunc;
     }
 

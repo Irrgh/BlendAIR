@@ -1,58 +1,38 @@
-import { Viewport } from "../../engine/Viewport";
-import { Renderer } from '../Renderer';
+import { App } from "../../app";
+import { Pass } from "./Pass";
 
-export abstract class RenderPass {
+export class RenderPass<T> extends Pass<T> {
+    protected declare pipeline: GPURenderPipeline;
+    protected declare desc: GPURenderPassDescriptor;
+    private render: RenderFunc;
 
-
-    constructor (renderer:Renderer, input:PassResource[], output:PassResource[]) {
-        this.renderer = renderer;
-        this.inputResources = input;
-        this.outputResources = output;
+    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: GPURenderPipeline, render: RenderFunc) {
+        super(name,bindgroups, desc, pipeline);
+        this.render = render;
     }
-
-    
-    /**
-     * Represents the resources required for this shader to run. 
-     * They are excepted to be available in the shared Resources of {@link renderer}.
-     */
-    protected inputResources: PassResource[];
-
-
-    protected renderer : Renderer;
-
-    private passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor = {};
-
-
-    public getDescriptor() : GPURenderPassDescriptor | GPUComputePassDescriptor {
-        return  this.passDescriptor;
-    }
-
-    private name : string = "";
-
-    public getName():string {
-        return this.name;
-    }
-
-
-
 
     /**
-     * Represents the resources excepted to be written into shared Resources of {@link renderer}.
+     * Executes the `render` function after preparing the {@link GPURenderPassEncoder} and setting the {@link GPUBindGroup}s
+     * and {@link GPURenderPipeline} in it.
+     * @param cmd a {@link GPUCommandEncoder} to record gpu commands.
+     * @param passData arbitrary data {@link T} needed for execution.
      */
-    protected outputResources: PassResource[];
+    public execute(cmd: GPUCommandEncoder, passData: T): void {
+        // Debug
+        cmd.insertDebugMarker(`${this.name}-pass-debug`);
+        cmd.pushDebugGroup(`${this.name}-pass-execution`);
 
-    public abstract render(viewport:Viewport):void;
+        // Preparation
+        const enc = cmd.beginRenderPass(this.desc);
+        enc.setPipeline(this.pipeline);
+        this.bindgroups.forEach((bindgroup : GPUBindGroup, index:number) => {
+            enc.setBindGroup(index,bindgroup);
+        })
 
-    public getInputResources(): PassResource[] {
-        return this.inputResources;
+        // Execution
+        this.render(enc,passData);
+
+        cmd.popDebugGroup();
     }
 
-    public getOutputResources(): PassResource[] {
-        return this.outputResources;
-    }
-
-
-
-
-
-}
+} 

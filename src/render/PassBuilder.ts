@@ -3,8 +3,8 @@ import { BufferHandle, ResourceHandle, SamplerHandle, TextureHandle } from './Re
 export class PassBuilder<T> {
 
 
-    private bindgroupLayouts: Map<number,GPUBindGroupLayoutDescriptor>;
-    private bindingMap: Map<string, BindingInfo>;
+    protected bindgroupLayouts: Map<number,GPUBindGroupLayoutDescriptor>;
+    protected bindingMap: Map<string, BindingInfo>;
     protected accessMap: Map<string, ResourceAccess>;
     protected handleMap: Map<string, ResourceHandle<any>>;
     protected passData: T;

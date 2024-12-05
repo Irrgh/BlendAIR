@@ -1,5 +1,5 @@
 import { Renderer } from "../Renderer";
-import { RenderPass } from "./RenderPass";
+import { OldRenderPass } from "./OldRenderPass";
 import { Scene } from "../../engine/Scene";
 import { Viewport } from '../../engine/Viewport';
 import { App } from "../../app";
@@ -12,7 +12,7 @@ import shader from "../../../assets/shaders/main.wgsl";
 /**
  * The TrianglePass takes all TriangleMeshes of the {@link Scene.entities | Scene's entities} and renders them using
  */
-export class TrianglePass extends RenderPass {
+export class TrianglePass extends OldRenderPass {
     private drawParameters: Uint32Array = new Uint32Array();
 
     private vertexBufferLayout: GPUVertexBufferLayout = {

@@ -1,10 +1,10 @@
 import { App } from "../../app";
 import { Viewport } from "../../engine/Viewport";
 import { Renderer } from "../Renderer";
-import { RenderPass } from "./RenderPass";
+import { OldRenderPass } from "./OldRenderPass";
 import { vec3 } from 'gl-matrix';
 
-export class RaytracingPass extends RenderPass {
+export class RaytracingPass extends OldRenderPass {
 
     constructor(renderer: Renderer) {
 

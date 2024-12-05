@@ -1,11 +1,11 @@
 import { Viewport } from "../../engine/Viewport";
-import { RenderPass } from "./RenderPass";
+import { OldRenderPass } from "./OldRenderPass";
 import { Renderer } from '../Renderer';
 import { App } from "../../app";
 import fullQuadShader from "../../../assets/shaders/fullQuadShader.wgsl";
 import { vec3 } from "gl-matrix";
 
-export class CoordinatePlanePass extends RenderPass {
+export class CoordinatePlanePass extends OldRenderPass {
 
     constructor(renderer: Renderer) {
 
