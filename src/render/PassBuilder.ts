@@ -1,18 +1,21 @@
-export class PassBuilder {
+import { BufferHandle, SamplerHandle, TextureHandle } from "./ResourseHandle";
+
+export class PassBuilder<T> {
 
 
     private bindgroupLayouts: Map<number,GPUBindGroupLayoutDescriptor>;
     private bindingMap: Map<string, BindingInfo>;
-    private accessMap: Map<string, ResourceAccess>;
+    protected accessMap: Map<string, ResourceAccess>;
+    protected passData: T;
 
     public readonly name: string;
 
-    constructor(name: string) {
+    constructor(name: string, passData:T) {
 
         this.bindgroupLayouts = new Map;
         this.bindingMap = new Map();
         this.accessMap = new Map();
-
+        this.passData = passData;
         this.name = name;
     }
 
@@ -25,7 +28,7 @@ export class PassBuilder {
      * @param visiblity visibility in different parts of the shader pipeline
      * @param type type of buffer
      */
-    public bindBuffer(name: string, group: GPUIndex32, binding: number, visiblity: GPUShaderStageFlags, type: GPUBufferBindingType) {
+    public bindBuffer(name: RenderGraphBufferHandle, group: GPUIndex32, binding: number, visiblity: GPUShaderStageFlags, type: GPUBufferBindingType) : BufferHandle {
 
         const entry: GPUBindGroupLayoutEntry = {
             binding: binding,
@@ -47,6 +50,7 @@ export class PassBuilder {
             case "read-only-storage": this.accessMap.set(name, "read-only");
             case "storage": this.accessMap.set(name, "read-write");
         }
+        return new BufferHandle(name);
     }
 
     /**
@@ -54,7 +58,7 @@ export class PassBuilder {
      * @param name name of the texture inside the {@link RenderGraph}.
      * @param info declares how the texture should be bound.
      */
-    public bindTexture(name: string, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, textureLayout: TextureBindingLayout) {
+    public bindTexture(name: RenderGraphTextureHandle, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, textureLayout: TextureBindingLayout) : TextureHandle {
         
         if (textureLayout.texture && !textureLayout.storageTexture && !textureLayout.externalTexture) {
             this.accessMap.set(name, "read-only");
@@ -81,6 +85,7 @@ export class PassBuilder {
         const groupLayout = this.bindgroupLayouts.get(group)!;
         (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
         this.bindingMap.set(name, { group, binding, type: "texture" });
+        return new TextureHandle(name);
     }
 
     /**
@@ -91,7 +96,7 @@ export class PassBuilder {
      * @param visibility visibility in different parts of the shader pipeline
      * @param type type of sampler
      */
-    public bindSamplers(name: string, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, type?:GPUSamplerBindingType) {
+    public bindSampler(name: RenderGraphSamplerHandle, group: GPUIndex32, binding: number, visibility: GPUShaderStageFlags, type?:GPUSamplerBindingType) : SamplerHandle {
         
         const entry: GPUBindGroupLayoutEntry = {
             binding: binding,
@@ -108,6 +113,11 @@ export class PassBuilder {
         this.bindingMap.set(name, { group, binding, type: "sampler" });
 
         this.accessMap.set(name,"read-only");
+        return new SamplerHandle(name);
+    }
+
+    public useBuffer(name: RenderGraphBufferHandle, access: ResourceAccess) {
+        this.accessMap.set(name,access);
     }
 
     public getBindingLayouts() : Map<number,GPUBindGroupLayoutDescriptor> {
@@ -122,5 +132,8 @@ export class PassBuilder {
         return this.accessMap;
     }
 
+    public getPassData() : T {
+        return this.passData;
+    }
 
 }

@@ -1,12 +1,12 @@
 import { PassBuilder } from "./PassBuilder";
-export class RenderPassBuilder extends PassBuilder {
+export class RenderPassBuilder<T> extends PassBuilder<T> {
 
     private colorAttachments: RenderPassColorAttachment[];
     private depthStencilAttachment?: RenderPassDepthStencilAttachment;
     private pipelineDescriptor?: RenderPipelineDescriptor;
 
-    constructor(name: string) {
-        super(name);
+    constructor(name: string, passData: T) {
+        super(name,passData);
         this.colorAttachments = new Array();
     }
 
@@ -37,6 +37,15 @@ export class RenderPassBuilder extends PassBuilder {
         this.pipelineDescriptor = desc;
     }
 
+    /**
+     * Sets a callback function to execute draws and dispatches on pass traversal.
+     * @param passFunc 
+     */
+    public setPassFunc(passFunc: (enc: GPURenderPassEncoder, passData: T) => void) {
+        this.render = passFunc;
+    }
+
+
     public getColorAttachment(): RenderPassColorAttachment[] {
         return this.colorAttachments;
     }
@@ -55,15 +64,6 @@ export class RenderPassBuilder extends PassBuilder {
         return this.pipelineDescriptor;
     }
 
-
-    public render?: <PassData>(enc: GPURenderPassEncoder, passData: PassData) => {};
-
-    /**
-     * Sets a callback function to execute draws and dispatches on pass traversal.
-     * @param passFunc 
-     */
-    public setPassFunc(passFunc: <PassData>(enc: GPURenderPassEncoder, passData: PassData) => {}) {
-        this.render = passFunc;
-    }
+    public render?: (enc: GPURenderPassEncoder, passData: T) => void;
 
 }

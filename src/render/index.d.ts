@@ -21,7 +21,7 @@ type RenderGraphSamplerHandle = string
 type ResourceAccess = GPUStorageTextureAccess
 
 
-interface BindingInfo {
+type BindingInfo = {
     group: number,
     binding: number,
     type: "buffer" | "sampler" | "texture"

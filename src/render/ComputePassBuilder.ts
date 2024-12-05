@@ -1,22 +1,21 @@
 import { PassBuilder } from "./PassBuilder";
 import { PassTimestamp } from "./PassTimestamp";
 
-export class ComputePassBuilder extends PassBuilder {
+export class ComputePassBuilder<T> extends PassBuilder<T> {
     
     private pipelineDescriptor?: GPUComputePipelineDescriptor;
 
-    constructor (name:string) {
-        super(name);
+    constructor (name:string, passData:T) {
+        super(name, passData);
     }
 
-    public compute?: <PassData>(enc: GPUComputePassEncoder, passData: PassData) => {};
+    public compute?: (enc: GPUComputePassEncoder, passData: T) => void;
 
-    
     /**
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
      */
-    public setComputeFunc(passFunc:<PassData>(enc: GPUComputePassEncoder, passData:PassData) => {}) {
+    public setComputeFunc(passFunc:(enc: GPUComputePassEncoder, passData:T) => void) {
         this.compute = passFunc;
     }
     

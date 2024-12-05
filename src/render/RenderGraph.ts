@@ -11,28 +11,33 @@ import { RenderPassBuilder } from "./RenderPassBuilder";
  */
 export class RenderGraph {
 
-    private passBuilders: Map<string, PassBuilder> = new Map();
+    private passBuilders: Map<string, PassBuilder<any>> = new Map();
     private textures: Map<string, GPUTextureDescriptor> = new Map();
     private buffers: Map<string, GPUBufferDescriptor> = new Map();
+    private exports: Set<string> = new Set();
 
-    public addRenderPass<PassData>(name: string): { builder: RenderPassBuilder, data: PassData } {
+    public addRenderPass<PassData>(name: string): { builder: RenderPassBuilder<PassData>, data: PassData } {
         if (this.passBuilders.has(name)) {
             throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
         }
-        const passBuilder = new RenderPassBuilder(name);
+        const passData = {} as PassData;
+
+        const passBuilder = new RenderPassBuilder<PassData>(name,passData);
         this.passBuilders.set(name, passBuilder);
 
-        return { builder: passBuilder, data: {} as PassData };
+        return { builder: passBuilder, data: passData};
     }
 
-    public addComputePass<PassData>(name: string): { builder: ComputePassBuilder, data: PassData } {
+    public addComputePass<PassData>(name: string): { builder: ComputePassBuilder<PassData>, data: PassData } {
         if (this.passBuilders.has(name)) {
             throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
         }
-        const passBuilder = new ComputePassBuilder(name);
+        const passData = {} as PassData;
+
+        const passBuilder = new ComputePassBuilder<PassData>(name,passData);
         this.passBuilders.set(name, passBuilder);
 
-        return { builder: passBuilder, data: {} as PassData };
+        return { builder: passBuilder, data: passData};
     }
 
     public createBuffer(name: string, desc: GPUBufferDescriptor) {
@@ -49,7 +54,34 @@ export class RenderGraph {
         this.textures.set(name, desc);
     }
 
+    /**
+     * Sets whether a {@link GPUBuffer} or {@link GPUTexture} should be exported after execution of the {@link RenderGraph}.
+     * Resources that are not set to be exported might result in passes that provide them being culled.
+     * @param name name of the {@link GPUBuffer} | {@link GPUTexture} to export.
+     * @param exported 
+     */
+    public setExport(name:RenderGraphBufferHandle | RenderGraphTextureHandle, exported:boolean) {
+        if (exported) {
+            this.exports.add(name);
+        } else {
+            this.exports.delete(name);
+        }
+    }
+
+    private construct () {
+        
+        
+
+
+        
+
+
+
+    }
     
+
+
+
 
 
 }
