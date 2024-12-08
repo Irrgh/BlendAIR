@@ -3,11 +3,11 @@ import { PassTimestamp } from "./PassTimestamp";
 
 export class ComputePassBuilder<T> extends PassBuilder<T> {
     
-    private pipelineDescriptor?: GPUComputePipelineDescriptor;
+    private pipelineDescriptor?: ComputePipelineDescriptor;
     /**
      * Function to be executed when this pass is computed.
      */
-    public compute?: ComputeFunc
+    public compute?: ComputeFunc<T>;
 
     constructor (name:string, passData:T) {
         super(name, passData);
@@ -17,16 +17,16 @@ export class ComputePassBuilder<T> extends PassBuilder<T> {
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
      */
-    public setComputeFunc(passFunc:ComputeFunc) {
+    public setComputeFunc(passFunc:ComputeFunc<T>) {
         this.compute = passFunc;
     }
 
     /**
-     * Sets a {@link GPUComputePipelineDescriptor} for this pass on compilation,
+     * Sets a {@link ComputePipelineDescriptor} for this pass on compilation,
      * after resolving the {@link RenderGraphTextureHandle} in the {@link RenderGraph}.
-     * @param desc a {@link GPUComputePipelineDescriptor}
+     * @param desc a {@link ComputePipelineDescriptor}
      */
-    public setComputePipelineDescriptor(desc: GPUComputePipelineDescriptor) {
+    public setComputePipelineDescriptor(desc: ComputePipelineDescriptor) {
         this.pipelineDescriptor = desc;
     }
 
@@ -35,7 +35,7 @@ export class ComputePassBuilder<T> extends PassBuilder<T> {
      * @returns a {@link GPUComputePipelineDescriptor}.
      * @throws an {@link Error} when the `pipelineDescriptor` is not set.
      */
-    public getComputePipelineDescriptor() : GPUComputePipelineDescriptor {
+    public getComputePipelineDescriptor() : ComputePipelineDescriptor {
         if(!this.pipelineDescriptor){
             throw new Error(`Missing pipeline descriptor for compute pass [${this.name}].`);
         }

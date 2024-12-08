@@ -196,4 +196,21 @@ export class PassBuilder<T> {
         return this.passData;
     }
 
+    public getDependencies() : {write:Set<string>, read:Set<string>} {
+        const write = new Set<string>();
+        const read = new Set<string>();
+
+        this.accessMap.forEach((access, key) => {
+            switch (access) {
+                case 'write-only': write.add(key);
+                case 'read-only': read.add(key);
+                case 'read-write': read.add(key); write.add(key);
+            }
+        });
+
+        return {write,read};
+    }
+
+
+
 }

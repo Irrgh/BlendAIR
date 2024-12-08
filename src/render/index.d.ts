@@ -129,7 +129,7 @@ type DepthStencilState = Omit<GPUDepthStencilState, "format">;
 
 
 interface RenderPipelineDescriptor
-    extends GPUPipelineDescriptorBase {
+    extends Omit<GPUPipelineDescriptorBase,"layout"> {
     /**
      * Describes the vertex shader entry point of the pipeline and its input buffer layouts.
      */
@@ -153,6 +153,15 @@ interface RenderPipelineDescriptor
     fragment?: FragmentState;
 }
 
-type RenderFunc = (enc: GPURenderPassEncoder, passData: T) => void
+interface ComputePipelineDescriptor
+  extends Omit<GPUPipelineDescriptorBase,"layout"> {
+  /**
+   * Describes the compute shader entry point of the pipeline.
+   */
+  compute: GPUProgrammableStage;
+}
 
-type ComputeFunc = (enc: GPUComputePassEncoder, passData: T) => void
+
+type RenderFunc<T> = (enc: GPURenderPassEncoder, passData: T) => void
+
+type ComputeFunc<T> = (enc: GPUComputePassEncoder, passData: T) => void

@@ -7,7 +7,7 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
     /**
      * Function to be executed upon rendering this pass.
      */
-    public render?: RenderFunc
+    public render?: RenderFunc<T>;
 
 
     constructor(name: string, passData: T) {
@@ -46,7 +46,7 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
      * Sets a callback function to execute draws and dispatches on pass traversal.
      * @param passFunc 
      */
-    public setPassFunc(passFunc: RenderFunc) {
+    public setPassFunc(passFunc: RenderFunc<T>) {
         this.render = passFunc;
     }
 
