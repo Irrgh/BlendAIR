@@ -108,7 +108,6 @@
   "include": [
     "src",
     "tests",
-    "benchmarks",
     "index.d.ts"
   ],
   "exclude": [

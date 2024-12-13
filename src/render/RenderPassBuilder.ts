@@ -1,4 +1,5 @@
 import { PassBuilder } from "./PassBuilder";
+import { TextureHandle } from './ResourseHandle';
 export class RenderPassBuilder<T> extends PassBuilder<T> {
 
     private colorAttachments: RenderPassColorAttachment[];
@@ -22,6 +23,14 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
      */
     public addColorAttachment(attachment:RenderPassColorAttachment) {
         this.colorAttachments.push(attachment);
+        
+        const view : TextureHandle = attachment.view;
+        const resolve : TextureHandle | undefined = attachment.resolveTarget;
+
+        if (!this.textures.has(view.name)) {this.textures.set(view.name,view)}
+        if (resolve && !this.textures.has(resolve.name)) {this.textures.set(resolve.name,resolve)}
+        view.useRenderAttachment();
+        resolve?.useRenderAttachment();
     }
 
     /**
@@ -31,6 +40,8 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
      */
     public setDepthAttachment(attachment:RenderPassDepthStencilAttachment) {
         this.depthStencilAttachment = attachment;
+        const view : TextureHandle = attachment.view;
+
     }
 
     /**

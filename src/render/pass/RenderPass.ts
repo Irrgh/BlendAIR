@@ -4,9 +4,9 @@ import { Pass } from "./Pass";
 export class RenderPass<T> extends Pass<T> {
     protected declare pipeline: GPURenderPipeline;
     protected declare desc: GPURenderPassDescriptor;
-    private render: RenderFunc;
+    private render: RenderFunc<T>;
 
-    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: GPURenderPipeline, render: RenderFunc) {
+    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: GPURenderPipeline, render: RenderFunc<T>) {
         super(name,bindgroups, desc, pipeline);
         this.render = render;
     }

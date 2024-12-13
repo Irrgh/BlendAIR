@@ -3,9 +3,9 @@ import { Pass } from "./Pass";
 export class ComputePass<T> extends Pass<T> {
     protected declare pipeline: GPUComputePipeline;
     protected declare desc: GPUComputePassDescriptor;
-    private compute: ComputeFunc;
+    private compute: ComputeFunc<T>;
     
-    constructor(name:string, bindgroups: Map<number,GPUBindGroup>, desc: GPUComputePassDescriptor, pipeline: GPUComputePipeline, compute : ComputeFunc) {
+    constructor(name:string, bindgroups: Map<number,GPUBindGroup>, desc: GPUComputePassDescriptor, pipeline: GPUComputePipeline, compute : ComputeFunc<T>) {
         super(name,bindgroups,desc,pipeline);
         this.compute = compute;
     }

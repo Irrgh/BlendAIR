@@ -1,7 +1,7 @@
 import { App } from "../app";
 import { PassBuilder } from "./PassBuilder";
 
-export class PassTimestamp implements GPUResource {
+export class PassTimestamp implements ResourceUser {
 
     private querySet: GPUQuerySet;
     private resolveBuffer: GPUBuffer;

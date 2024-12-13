@@ -1,8 +1,9 @@
+import { App } from "../app";
 import { ComputePassBuilder } from "./ComputePassBuilder";
 import { OldRenderPass } from "./pass/OldRenderPass";
 import { PassBuilder } from "./PassBuilder";
 import { RenderPassBuilder } from "./RenderPassBuilder";
-import { BufferHandle, SamplerHandle, TextureHandle } from "./ResourseHandle";
+import { BufferHandle, SamplerHandle, TextureHandle, ResourceHandle } from './ResourseHandle';
 
 /**
  * 
@@ -14,10 +15,15 @@ export class RenderGraph {
     private passBuilders: PassBuilder<any>[];
     private passRegistry: Set<string>;
     private adjacencyLists: number[][];
+    private sortedPasses: number[];
 
     private resourceRegistry: Set<string>;
-    private textures: { handle: TextureHandle, desc: GPUTextureDescriptor }[];
-    private buffers: { handle: BufferHandle, desc: GPUBufferDescriptor }[];
+    private buffers: Map<string, BufferHandle>;
+    private textures: Map<string, TextureHandle>;
+    private samplers: Map<string, SamplerHandle>;
+
+
+
     private exports: Set<BufferHandle | TextureHandle>;
 
     constructor() {
@@ -25,13 +31,29 @@ export class RenderGraph {
         this.passRegistry = new Set();
         this.adjacencyLists = new Array();
         this.resourceRegistry = new Set();
-        this.textures = [];
-        this.buffers = [];
+        this.sortedPasses = new Array();
+
+        this.buffers = new Map();
+        this.textures = new Map();
+        this.samplers = new Map();
         this.exports = new Set();
     }
 
 
+    private ensureResourceUniqueness(name: string) {
+        if (this.resourceRegistry.has(name)) {
+            throw new Error(`Resource declaration error: [${name}] has already been defined as a resource.`);
+        }
+        this.resourceRegistry.add(name);
+    }
 
+
+    private ensurePassUniqueness(name: string) {
+        if (this.passRegistry.has(name)) {
+            throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
+        }
+        this.passRegistry.add(name);
+    }
 
     public addRenderPass<PassData>(name: string): { builder: RenderPassBuilder<PassData>, data: PassData } {
         this.ensurePassUniqueness(name);
@@ -55,17 +77,25 @@ export class RenderGraph {
 
     public createBuffer(name: string, desc: GPUBufferDescriptor): BufferHandle {
         this.ensureResourceUniqueness(name);
-        const handle = new BufferHandle(name);
-        this.buffers.push({ handle, desc });
+        const handle = new BufferHandle(name, desc);
+        this.buffers.set(name, handle)
         return handle;
     }
 
-    public createTexture(name: string, desc: GPUTextureDescriptor) {
+    public createTexture(name: string, desc: GPUTextureDescriptor): TextureHandle {
         this.ensureResourceUniqueness(name);
-        const handle = new TextureHandle(name);
-        this.textures.push({ handle, desc });
+        const handle = new TextureHandle(name, desc);
+        this.textures.set(name, handle);
         return handle;
     }
+
+    public createSampler(name: string, desc: GPUSamplerDescriptor): SamplerHandle {
+        this.ensureResourceUniqueness(name);
+        const handle = new SamplerHandle(name, desc);
+        this.samplers.set(name, handle);
+        return handle;
+    }
+
 
     /**
      * Sets whether a {@link GPUBuffer} or {@link GPUTexture} should be exported after execution of the {@link RenderGraph}.
@@ -81,22 +111,27 @@ export class RenderGraph {
         }
     }
 
-    private ensureResourceUniqueness(name: string) {
-        if (this.resourceRegistry.has(name)) {
-            throw new Error(`Resource declaration error: [${name}] has already been defined as a resource.`);
-        }
-        this.resourceRegistry.add(name);
+
+
+    public execute() {
+        this.constructAdjacencyLists();
+        this.topologicalSort();
+
+        this.sortedPasses.forEach((index: number) => {
+
+            const pass = this.passBuilders[index];
+
+
+
+
+
+
+        });
+
+
+
+
     }
-
-
-    private ensurePassUniqueness(name: string) {
-        if (this.passRegistry.has(name)) {
-            throw new Error(`Pass declaration error: [${name}] has already been defined as a pass.`);
-        }
-        this.passRegistry.add(name);
-    }
-
-
 
     private constructAdjacencyLists() {
 
@@ -146,21 +181,77 @@ export class RenderGraph {
 
     }
 
-
-    private topologicalSort(nodeIndex: number) {
-
+    /**
+     * Sorts the passes in topological order so that
+     * dependencies can be resolved.
+     */
+    private topologicalSort() {
         const visited = new Array<boolean>(this.passBuilders.length).fill(false);
         const stack: number[] = [];
 
         for (let nodeIndex = 0; nodeIndex < this.passBuilders.length; nodeIndex++) {
-            this.depthFirstSearch(nodeIndex, visited,stack);
+            this.depthFirstSearch(nodeIndex, visited, stack);
         }
 
         stack.reverse();
+        this.sortedPasses = stack;
+    }
+
+    private realizeRenderPass(pass: RenderPassBuilder<any>) {
+
+    }
+
+    private realizeComputePass(pass: ComputePassBuilder<any>) {
+
 
 
 
     }
+
+    private resolveHandles(pass: PassBuilder<any>) {
+
+        const handles = pass.getHandleMaps();
+        const accessMap = pass.getAccessMap();
+
+        handles.buffers.forEach((handle, name) => {
+            const access = accessMap.get(name);
+        });
+
+        handles.textures.forEach((handle, name) => {
+
+        });
+
+        handles.samplers.forEach((handle, name) => {
+
+        });
+
+
+
+    }
+
+
+
+    private realizeBindgroups(pass: PassBuilder<any>): Map<number, GPUBindGroup> {
+        const device = App.getRenderDevice();
+        const groups = new Map<number, GPUBindGroup>();
+
+        pass.getHandleMaps
+
+
+        pass.getBindingLayouts().forEach((desc: GPUBindGroupLayoutDescriptor, index: number) => {
+
+            device.createBindGroupLayout(desc);
+            device.createBindGroup
+
+
+        });
+
+
+
+
+        return groups;
+    }
+
 
 
 

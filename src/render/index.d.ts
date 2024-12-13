@@ -1,18 +1,30 @@
-
 type ResourceAccess = GPUStorageTextureAccess
 
 
-type BindingInfo = {
+type IDFK = {
     group: number,
     binding: number,
     type: "buffer" | "sampler" | "texture"
 }
 
-interface TextureBindingLayout {
+interface BindingInfo {
+    group:number,
+    binding: number,
+    visibility: GPUShaderStageFlags
+}
+
+
+
+interface TextureBindingInfo extends BindingInfo {
     texture?: GPUTextureBindingLayout,
     storageTexture?: GPUStorageTextureBindingLayout,
     externalTexture?: GPUExternalTextureBindingLayout,
 }
+interface SamplerBindingInfo extends BindingInfo {
+    type?:GPUSamplerBindingType
+}
+
+type GPUResource = GPUBuffer | GPUTexture | GPUSampler
 
 interface RenderPassColorAttachment {
     /**
