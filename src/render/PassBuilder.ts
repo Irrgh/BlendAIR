@@ -10,7 +10,7 @@ export class PassBuilder<T> {
 
 
     protected bindgroupLayouts: Map<number, GPUBindGroupLayoutDescriptor>;
-    protected bindingMap: Map<string, IDFK>;
+    protected bindingMap: Map<string, BindingTypeInfo>;
     protected accessMap: Map<string, ResourceAccess>;
     protected passData: T;
 
@@ -32,18 +32,6 @@ export class PassBuilder<T> {
         this.name = name;
     }
 
-    private ensureResourceUniqueness(name: string) {
-        if (this.resourcesRegistry.has(name)) {
-
-        }
-
-    }
-
-
-
-
-
-
     /**
      * Registers a {@link GPUBuffer} to be bound in the pipeline.
      * @param handle  of the buffer inside the {@link RenderGraph}.
@@ -53,28 +41,31 @@ export class PassBuilder<T> {
      * @param type type of buffer
      * @returns a updated {@link BufferHandle} to the {@link GPUBuffer}.
      */
-    public bindBuffer(handle: BufferHandle, group: GPUIndex32, binding: number, visiblity: GPUShaderStageFlags, type: GPUBufferBindingType): BufferHandle {
+    public bindBuffer(handle: BufferHandle, info: BufferBindingInfo): BufferHandle {
 
         const name = handle.name
         const entry: GPUBindGroupLayoutEntry = {
-            binding: binding,
-            visibility: visiblity,
-            buffer: { type: type }
+            binding: info.binding,
+            visibility: info.visibility,
+            buffer: info.layout
         }
 
-        if (this.bindgroupLayouts.has(group)) {
-            this.bindgroupLayouts.set(group, { entries: new Array() });
+        if (this.bindgroupLayouts.has(info.group)) {
+            this.bindgroupLayouts.set(info.group, { entries: new Array() });
         }
 
-        const groupLayout = this.bindgroupLayouts.get(group)!;
+        const groupLayout = this.bindgroupLayouts.get(info.group)!;
         (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
 
-        this.bindingMap.set(name, { group, binding, type: "texture" });
+        this.bindingMap.set(name, { group:info.group, binding:info.binding, type: "texture" });
 
-        switch (type) {
-            case "uniform": this.accessMap.set(name, "read-only");
-            case "read-only-storage": this.accessMap.set(name, "read-only");
-            case "storage": this.accessMap.set(name, "read-write");
+        let access: ResourceAccess;
+
+        switch (info.layout.type) {
+            case "uniform": access = "read-only";
+            case "read-only-storage": access = "read-only";
+            case "storage": access = "read-write";
+            default: access = "read-only";
         }
 
         const existingHandle = this.buffers.get(name);
@@ -93,15 +84,17 @@ export class PassBuilder<T> {
     public bindTexture(handle: TextureHandle, info: TextureBindingInfo): TextureHandle {
 
         const name = handle.name;
+        const {texture:t,storageTexture:s,externalTexture:e} = info;
+        let access : ResourceAccess;
 
-        if (info.texture && !info.storageTexture && !info.externalTexture) {
-            this.accessMap.set(name, "read-only");
+        if (t && !s && !e) {                            // only texture
+            access = "read-only"
             handle.useTextureBinding();
-        } else if (!info.texture && info.storageTexture && !info.externalTexture) {
-            this.accessMap.set(name, info.storageTexture.access || "write-only");
+        } else if (!t && s && !e) {                     // only storageTexture
+            access = s.access || "write-only";
             handle.useStorageBinding();
-        } else if (!info.texture && !info.storageTexture && info.externalTexture) {
-            this.accessMap.set(name, "read-only");
+        } else if (!t && !s && info.externalTexture) {  // only externalTexture
+            access = "read-only";
             handle.useTextureBinding();
         } else if (!info.texture && !info.storageTexture && !info.externalTexture) {
             throw new Error(`Texture binding error: [${name}] is missing a GPUBindingLayout like texture, storageTexture, externalTexture`);
@@ -109,11 +102,13 @@ export class PassBuilder<T> {
             throw new Error(`Texture binding error: [${name}] has too many layouts: texture, storageTexture, externalTexture are mutually exclusive.`)
         }
 
+        const storage = info.storageTexture ? {...info.storageTexture,format:handle.desc.format} : undefined;
+
         const entry: GPUBindGroupLayoutEntry = {
             binding: info.binding,
             visibility: info.visibility,
             texture: info.texture,
-            storageTexture: info.storageTexture,
+            storageTexture: storage,
             externalTexture: info.externalTexture
         }
 
@@ -121,16 +116,11 @@ export class PassBuilder<T> {
             this.bindgroupLayouts.set(info.group, { entries: new Array() });
         }
 
-        // TODO: this looks sus
         const groupLayout = this.bindgroupLayouts.get(info.group)!;
         (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
-        this.bindingMap.set(name, { group:info.group, binding:info.binding, type: "texture" });
+        this.bindingMap.set(name, { group: info.group, binding: info.binding, type: "texture" });
 
-        const existingHandle = this.textures.get(name);
-        if (existingHandle) { return existingHandle; }
-
-        this.textures.set(name, handle);
-        return handle;
+        return this.useTexture(handle,access);
     }
 
     /**
@@ -149,7 +139,7 @@ export class PassBuilder<T> {
         const entry: GPUBindGroupLayoutEntry = {
             binding: info.binding,
             visibility: info.visibility,
-            sampler: { type:info.type }
+            sampler: { type: info.type }
         }
 
         if (this.bindgroupLayouts.has(info.group)) {
@@ -158,15 +148,9 @@ export class PassBuilder<T> {
 
         const groupLayout = this.bindgroupLayouts.get(info.group)!;
         (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
-        this.bindingMap.set(name, { group:info.group, binding:info.binding, type: "sampler" });
+        this.bindingMap.set(name, { group: info.group, binding: info.binding, type: "sampler" });
 
-        this.accessMap.set(name, "read-only");
-
-        const existingHandle = this.samplers.get(name);
-        if (existingHandle) { return existingHandle; }
-
-        this.samplers.set(name, handle);
-        return handle;
+        return this.useSampler(handle);
     }
 
     /**
@@ -184,12 +168,27 @@ export class PassBuilder<T> {
         return handle;
     }
 
+    /**
+     * Registers a {@link GPUTexture} to be used in this pass without being bound.
+     * @param handle handle of the texture inside the {@link RenderGraph}.
+     * @param access a updated {@link TextureHandle} to the {@link GPUTexture}.
+     * @returns 
+     */
     public useTexture(handle: TextureHandle, access: ResourceAccess): TextureHandle {
         this.accessMap.set(handle.name, access);
 
         const existingHandle = this.textures.get(handle.name);
         if (existingHandle) { return existingHandle; }
         this.textures.set(handle.name, handle);
+        return handle;
+    }
+
+    public useSampler(handle: SamplerHandle) : SamplerHandle {
+        this.accessMap.set(handle.name, "read-only");
+
+        const existingHandle = this.samplers.get(handle.name);
+        if (existingHandle) { return existingHandle }
+        this.samplers.set(handle.name, handle);
         return handle;
     }
 
@@ -206,9 +205,9 @@ export class PassBuilder<T> {
 
     /**
      * Returns the binding information of the resources used. 
-     * @returns a Map of {@link IDFK}.
+     * @returns a Map of {@link BindingTypeInfo}.
      */
-    public getBindingMap(): Map<string, IDFK> {
+    public getBindingMap(): Map<string, BindingTypeInfo> {
         return this.bindingMap;
     }
 

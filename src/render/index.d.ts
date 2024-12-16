@@ -1,7 +1,7 @@
 type ResourceAccess = GPUStorageTextureAccess
 
 
-type IDFK = {
+type BindingTypeInfo = {
     group: number,
     binding: number,
     type: "buffer" | "sampler" | "texture"
@@ -13,6 +13,9 @@ interface BindingInfo {
     visibility: GPUShaderStageFlags
 }
 
+interface BufferBindingInfo extends BindingInfo {
+    layout: GPUBufferBindingLayout
+}
 
 
 interface TextureBindingInfo extends BindingInfo {
@@ -120,25 +123,6 @@ interface RenderPassDepthStencilAttachment {
     stencilReadOnly?: boolean;
 }
 
-/**
- * Uses {@link ColorTargetState} to resolve {@link GPUColorTargetState#format} in {@link RenderGraph}.
- */
-interface FragmentState extends GPUShaderModule {
-    targets: Iterable<ColorTargetState | null>;
-}
-
-/**
- * Mirrors {@link GPUFragmentState} except {@link GPUFragmentState#format} which is omitted
- * and will be resolved in the {@link RenderGraph} from a {@link RenderGraphTextureHandle}.
- */
-type ColorTargetState = Omit<GPUColorTargetState, "format">;
-
-/**
- * Mirrors {@link GPUDepthStencilState} except {@link GPUDepthStencilState#format} which is omitted
- * and will be resolved in the {@link RenderGraph} from a {@link RenderGraphTextureHandle}.
- */
-type DepthStencilState = Omit<GPUDepthStencilState, "format">;
-
 
 interface RenderPipelineDescriptor
     extends Omit<GPUPipelineDescriptorBase,"layout"> {
@@ -162,7 +146,7 @@ interface RenderPipelineDescriptor
      * Describes the fragment shader entry point of the pipeline and its output colors. If
      * not map/exist|provided, the [[#no-color-output]] mode is enabled.
      */
-    fragment?: FragmentState;
+    fragment?: GPUFragmentState;
 }
 
 interface ComputePipelineDescriptor
