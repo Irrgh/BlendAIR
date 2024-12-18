@@ -2,12 +2,12 @@ import { App } from "../../app";
 import { Pass } from "./Pass";
 
 export class RenderPass<T> extends Pass<T> {
-    protected declare pipeline: GPURenderPipeline;
+    protected declare pipelinePromise: Promise<GPURenderPipeline>;
     protected declare desc: GPURenderPassDescriptor;
     private render: RenderFunc<T>;
 
-    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: GPURenderPipeline, render: RenderFunc<T>) {
-        super(name,bindgroups, desc, pipeline);
+    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: Promise<GPURenderPipeline>, render: RenderFunc<T>) {
+        super(name, bindgroups, desc, pipeline);
         this.render = render;
     }
 
@@ -18,21 +18,28 @@ export class RenderPass<T> extends Pass<T> {
      * @param passData arbitrary data {@link T} needed for execution.
      */
     public execute(cmd: GPUCommandEncoder, passData: T): void {
-        // Debug
-        cmd.insertDebugMarker(`${this.name}-pass-debug`);
-        cmd.pushDebugGroup(`${this.name}-pass-execution`);
 
-        // Preparation
-        const enc = cmd.beginRenderPass(this.desc);
-        enc.setPipeline(this.pipeline);
-        this.bindgroups.forEach((bindgroup : GPUBindGroup, index:number) => {
-            enc.setBindGroup(index,bindgroup);
-        })
+        this.pipelinePromise.then((pipeline: GPURenderPipeline) => {
 
-        // Execution
-        this.render(enc,passData);
+            // Debug
+            cmd.insertDebugMarker(`${this.name}-pass-debug`);
+            cmd.pushDebugGroup(`${this.name}-pass-execution`);
 
-        cmd.popDebugGroup();
+            // Preparation
+            const enc = cmd.beginRenderPass(this.desc);
+
+            enc.setPipeline(pipeline);
+            this.bindgroups.forEach((bindgroup: GPUBindGroup, index: number) => {
+                enc.setBindGroup(index, bindgroup);
+            })
+
+            // Execution
+            this.render(enc, passData);
+
+            cmd.popDebugGroup();
+
+        });
+
     }
 
 } 

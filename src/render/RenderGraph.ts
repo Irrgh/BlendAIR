@@ -1,6 +1,8 @@
 import { App } from "../app";
 import { ComputePassBuilder } from "./ComputePassBuilder";
+import { ComputePass } from "./pass/ComputePass";
 import { OldRenderPass } from "./pass/OldRenderPass";
+import { Pass } from "./pass/Pass";
 import { PassBuilder } from "./PassBuilder";
 import { RenderPassBuilder } from "./RenderPassBuilder";
 import { BufferHandle, SamplerHandle, TextureHandle, ResourceHandle } from './ResourseHandle';
@@ -121,15 +123,7 @@ export class RenderGraph {
 
             const pass = this.passBuilders[index];
 
-
-
-
-
-
         });
-
-
-
 
     }
 
@@ -197,62 +191,104 @@ export class RenderGraph {
         this.sortedPasses = stack;
     }
 
-    private realizeRenderPass(pass: RenderPassBuilder<any>) {
-
-    }
-
-    private realizeComputePass(pass: ComputePassBuilder<any>) {
-
-
-
-
-    }
-
     private resolveHandles(pass: PassBuilder<any>) {
 
+        const device = App.getRenderDevice();
         const handles = pass.getHandleMaps();
         const accessMap = pass.getAccessMap();
 
         handles.buffers.forEach((handle, name) => {
-            const access = accessMap.get(name);
+
+            if (!this.buffers.has(name)) {
+                const buffer = device.createBuffer(handle.desc)
+                handle.setResolveValue(buffer);
+                this.buffers.set(name, handle);
+            }
         });
 
         handles.textures.forEach((handle, name) => {
-
+            if (!this.textures.has(name)) {
+                const texture = device.createTexture(handle.desc)
+                handle.setResolveValue(texture);
+                this.textures.set(name, handle);
+            }
         });
 
         handles.samplers.forEach((handle, name) => {
-
+            if (!this.samplers.has(name)) {
+                const sampler = device.createSampler(handle.desc);
+                handle.setResolveValue(sampler);
+                this.samplers.set(name, handle);
+            }
         });
-
-
 
     }
 
-
-
-    private realizeBindgroups(pass: PassBuilder<any>): Map<number, GPUBindGroup> {
+    private createBindgroups(pass: PassBuilder<any>) {
         const device = App.getRenderDevice();
         const groups = new Map<number, GPUBindGroup>();
+        const layouts = new Array<GPUBindGroupLayout | null>();
 
-        pass.getHandleMaps
+        pass.getBindingLayouts().forEach((desc: GPUBindGroupLayoutDescriptor, group: number) => {
 
+            const layout = device.createBindGroupLayout(desc);  // create GPUBindGroupLayout
+            layouts[group] = layout // TODO: this might cause issues since if empty items dont count as null
 
-        pass.getBindingLayouts().forEach((desc: GPUBindGroupLayoutDescriptor, index: number) => {
+            const bindings = pass.getGroupBindings(group);
 
-            device.createBindGroupLayout(desc);
-            device.createBindGroup
+            const entries: GPUBindGroupEntry[] = [];
 
+            bindings.forEach(async (handle: ResourceHandle<any>, binding: number) => { // create binding entries
+
+                if (!handle.isResolved()) {
+                    throw new Error(`Critical RenderGraph error: [${handle}] is not resolved.`);
+                }
+
+                let resource!: GPUBindingResource;
+
+                if (handle instanceof BufferHandle) {
+                    resource = { buffer: await handle.resolve() };
+                } else if (handle instanceof TextureHandle) {
+                    resource = (await handle.resolve()).createView();
+                } else if (handle instanceof SamplerHandle) {
+                    resource = await handle.resolve();
+                }
+
+                entries.push({ resource, binding });
+
+            });
+
+            const bindgroup = device.createBindGroup({ layout, entries }); // create GPUBindgroup
+            groups.set(group, bindgroup);
 
         });
 
-
-
-
-        return groups;
+        return { groups, layouts };
     }
 
+    private createPass<T extends any>(builder: PassBuilder<T>): Pass<T> {
+        const device = App.getRenderDevice();
+        this.resolveHandles(builder);
+        const { groups, layouts } = this.createBindgroups(builder);
 
+        if (builder instanceof ComputePassBuilder) {
+
+            const pipelineLayout = device.createPipelineLayout({
+                bindGroupLayouts: layouts
+            });
+
+            const pipeline = device.createComputePipelineAsync({
+                compute: builder.getComputePipelineDescriptor().compute,
+                layout: pipelineLayout
+            });
+
+            // TODO: prepare pass descriptors!
+
+
+
+        }
+
+    }
 
 
 

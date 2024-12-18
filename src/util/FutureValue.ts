@@ -5,6 +5,7 @@
 export class FutureValue<T> {
     private promise: Promise<T>;
     private _resolve!: (value: T) => void;
+    private resolved: boolean = false;
 
     constructor() {
         // Create a deferred Promise
@@ -13,11 +14,17 @@ export class FutureValue<T> {
         });
     }
 
+    public isResolved():boolean {
+        return this.resolved;
+    }
+
+
     /**
      * Sets the resolved value.
      * @param value {@link T}
      */
     public setResolveValue(value: T): void {
+        this.resolved = true;
         this._resolve(value); // Resolve the Promise
     }
 

@@ -8,7 +8,7 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
     /**
      * Function to be executed upon rendering this pass.
      */
-    public render?: RenderFunc<T>;
+    private render?: RenderFunc<T>;
 
 
     constructor(name: string, passData: T) {
@@ -89,5 +89,11 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
         return this.pipelineDescriptor;
     }
 
+    public getRenderFunc() : RenderFunc<T> {
+        if (!this.render) {
+            throw new Error(`Render function is not set`);
+        }
+        return this.render;
+    }
     
 }

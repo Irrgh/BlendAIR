@@ -7,7 +7,7 @@ export class ComputePassBuilder<T> extends PassBuilder<T> {
     /**
      * Function to be executed when this pass is computed.
      */
-    public compute?: ComputeFunc<T>;
+    private compute?: ComputeFunc<T>;
 
     constructor (name:string, passData:T) {
         super(name, passData);
@@ -41,6 +41,13 @@ export class ComputePassBuilder<T> extends PassBuilder<T> {
         }
         return this.pipelineDescriptor;
         
+    }
+
+    public getComputeFunc(): ComputeFunc<T> {
+        if (!this.compute) {
+            throw new Error(`Compute function is not set`);
+        }
+        return this.compute;
     }
 
 

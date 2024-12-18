@@ -1,12 +1,12 @@
 import { Pass } from "./Pass";
 
 export class ComputePass<T> extends Pass<T> {
-    protected declare pipeline: GPUComputePipeline;
+    protected declare pipelinePromise: Promise<GPUComputePipeline>;
     protected declare desc: GPUComputePassDescriptor;
     private compute: ComputeFunc<T>;
-    
-    constructor(name:string, bindgroups: Map<number,GPUBindGroup>, desc: GPUComputePassDescriptor, pipeline: GPUComputePipeline, compute : ComputeFunc<T>) {
-        super(name,bindgroups,desc,pipeline);
+
+    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPUComputePassDescriptor, pipeline: Promise<GPUComputePipeline>, compute: ComputeFunc<T>) {
+        super(name, bindgroups, desc, pipeline);
         this.compute = compute;
     }
 
@@ -17,20 +17,21 @@ export class ComputePass<T> extends Pass<T> {
      * @param passData arbitrary data {@link T} needed for execution.
      */
     public execute(cmd: GPUCommandEncoder, passData: T): void {
-        // Debug
-        cmd.insertDebugMarker(`${this.name}-pass-debug`);
-        cmd.pushDebugGroup(`${this.name}-pass-execution`);
+        this.pipelinePromise.then((pipeline: GPUComputePipeline) => {// Debug
+            cmd.insertDebugMarker(`${this.name}-pass-debug`);
+            cmd.pushDebugGroup(`${this.name}-pass-execution`);
 
-        // Preparation
-        const enc = cmd.beginComputePass(this.desc);
-        enc.setPipeline(this.pipeline);
-        this.bindgroups.forEach((bindgroup : GPUBindGroup, index:number) => {
-            enc.setBindGroup(index,bindgroup);
-        })
+            // Preparation
+            const enc = cmd.beginComputePass(this.desc);
+            enc.setPipeline(pipeline);
+            this.bindgroups.forEach((bindgroup: GPUBindGroup, index: number) => {
+                enc.setBindGroup(index, bindgroup);
+            })
 
-        // Execution
-        this.compute(enc,passData);
+            // Execution
+            this.compute(enc, passData);
 
-        cmd.popDebugGroup();
+            cmd.popDebugGroup();
+        });
     }
 }

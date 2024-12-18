@@ -2,8 +2,7 @@ type ResourceAccess = GPUStorageTextureAccess
 
 
 type BindingTypeInfo = {
-    group: number,
-    binding: number,
+    name: string;
     type: "buffer" | "sampler" | "texture"
 }
 

@@ -10,7 +10,7 @@ export class PassBuilder<T> {
 
 
     protected bindgroupLayouts: Map<number, GPUBindGroupLayoutDescriptor>;
-    protected bindingMap: Map<string, BindingTypeInfo>;
+    protected bindingMap: Map<number, Map<number,ResourceHandle<any>>>;
     protected accessMap: Map<string, ResourceAccess>;
     protected passData: T;
 
@@ -22,8 +22,6 @@ export class PassBuilder<T> {
         this.buffers = new Map();
         this.textures = new Map();
         this.samplers = new Map();
-
-
 
         this.bindgroupLayouts = new Map;
         this.bindingMap = new Map();
@@ -43,24 +41,13 @@ export class PassBuilder<T> {
      */
     public bindBuffer(handle: BufferHandle, info: BufferBindingInfo): BufferHandle {
 
-        const name = handle.name
         const entry: GPUBindGroupLayoutEntry = {
             binding: info.binding,
             visibility: info.visibility,
             buffer: info.layout
         }
 
-        if (this.bindgroupLayouts.has(info.group)) {
-            this.bindgroupLayouts.set(info.group, { entries: new Array() });
-        }
-
-        const groupLayout = this.bindgroupLayouts.get(info.group)!;
-        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
-
-        this.bindingMap.set(name, { group:info.group, binding:info.binding, type: "texture" });
-
         let access: ResourceAccess;
-
         switch (info.layout.type) {
             case "uniform": access = "read-only";
             case "read-only-storage": access = "read-only";
@@ -68,11 +55,8 @@ export class PassBuilder<T> {
             default: access = "read-only";
         }
 
-        const existingHandle = this.buffers.get(name);
-        if (existingHandle) { return existingHandle; }
-
-        this.buffers.set(name, handle);
-        return handle;
+        this.bind(info,handle,entry);
+        return this.useBuffer(handle,access);
     }
 
     /**
@@ -112,14 +96,7 @@ export class PassBuilder<T> {
             externalTexture: info.externalTexture
         }
 
-        if (this.bindgroupLayouts.has(info.group)) {
-            this.bindgroupLayouts.set(info.group, { entries: new Array() });
-        }
-
-        const groupLayout = this.bindgroupLayouts.get(info.group)!;
-        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
-        this.bindingMap.set(name, { group: info.group, binding: info.binding, type: "texture" });
-
+        this.bind(info,handle,entry);
         return this.useTexture(handle,access);
     }
 
@@ -134,22 +111,13 @@ export class PassBuilder<T> {
      */
     public bindSampler(handle: SamplerHandle, info: SamplerBindingInfo): SamplerHandle {
 
-        const name = handle.name;
-
         const entry: GPUBindGroupLayoutEntry = {
             binding: info.binding,
             visibility: info.visibility,
             sampler: { type: info.type }
         }
 
-        if (this.bindgroupLayouts.has(info.group)) {
-            this.bindgroupLayouts.set(info.group, { entries: new Array() });
-        }
-
-        const groupLayout = this.bindgroupLayouts.get(info.group)!;
-        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
-        this.bindingMap.set(name, { group: info.group, binding: info.binding, type: "sampler" });
-
+        this.bind(info,handle,entry);
         return this.useSampler(handle);
     }
 
@@ -192,6 +160,34 @@ export class PassBuilder<T> {
         return handle;
     }
 
+    /**
+     * Binds a {@link ResourceHandle} to a binding in a bindgroup and updates the bindgroup layouts.
+     * @param info 
+     * @param handle 
+     * @param entry 
+     */
+    private bind (info:BindingInfo, handle:ResourceHandle<any>, entry:GPUBindGroupLayoutEntry):void {
+        let group = this.bindingMap.get(info.group);
+        if (!group) {
+            group = new Map<number,ResourceHandle<any>>();
+            this.bindingMap.set(info.group,group);     
+        }
+        const oldHandle = group.get(info.binding);
+        if (oldHandle) {
+            throw new Error(`Handle binding overwrite: [${handle}] overwrites [${oldHandle}] at group:${info.group}, binding:${info.binding}`);
+        }
+        group.set(info.binding,handle);
+
+        
+        let groupLayout = this.bindgroupLayouts.get(info.group);
+        if (!groupLayout) {
+            groupLayout = {entries:[]};
+            this.bindgroupLayouts.set(info.group,groupLayout);
+        }
+        (groupLayout.entries as Array<GPUBindGroupLayoutEntry>).push(entry);
+    }
+
+
 
 
 
@@ -207,8 +203,12 @@ export class PassBuilder<T> {
      * Returns the binding information of the resources used. 
      * @returns a Map of {@link BindingTypeInfo}.
      */
-    public getBindingMap(): Map<string, BindingTypeInfo> {
-        return this.bindingMap;
+    public getGroupBindings(group:number): Map<number, ResourceHandle<any>> {
+        const map = this.bindingMap.get(group);
+        if (!map) {
+            throw new Error(`There is no entry resource bound in the bindgroup ${group}.`)
+        }
+        return map;
     }
 
     /**
