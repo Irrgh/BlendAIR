@@ -19,8 +19,12 @@ export class PassTimestamp implements ResourceUser {
         this.resultBuffer.destroy();
     }
 
+    public static timestampsEnabled():boolean {
+        return App.getRenderDevice().features.has("timestamp-query");
+    }
+
     public static attachTimestamps(passDescriptor : GPURenderPassDescriptor | GPUComputePassDescriptor, name:string): PassTimestamp {
-        const device = App.getWebGPU().getDevice();
+        const device = App.getRenderDevice();
 
         if (!device.features.has("timestamp-query")) {
             new Error(

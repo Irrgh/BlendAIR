@@ -1,8 +1,8 @@
 import { PassBuilder } from "./PassBuilder";
-import { TextureHandle } from './ResourseHandle';
+import { TextureHandle } from './ResourceHandle';
 export class RenderPassBuilder<T> extends PassBuilder<T> {
 
-    private colorAttachments: RenderPassColorAttachment[];
+    private colorAttachments: Array<RenderPassColorAttachment | null>;
     private depthStencilAttachment?: RenderPassDepthStencilAttachment;
     private pipelineDescriptor?: RenderPipelineDescriptor;
     /**
@@ -21,16 +21,20 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
      * after resolving the {@link RenderGraphTextureHandle}s in the {@link RenderGraph}.
      * @param attachment {@link RenderPassColorAttachment}
      */
-    public addColorAttachment(attachment:RenderPassColorAttachment) {
-        this.colorAttachments.push(attachment);
+    public addColorAttachment(attachment:RenderPassColorAttachment, location:GPUIndex32) {
+        this.colorAttachments[location] = attachment;
         
         const view : TextureHandle = attachment.view;
         const resolve : TextureHandle | undefined = attachment.resolveTarget;
 
-        if (!this.textures.has(view.name)) {this.textures.set(view.name,view)}
-        if (resolve && !this.textures.has(resolve.name)) {this.textures.set(resolve.name,resolve)}
+        this.useTexture(view,"write-only");
         view.useRenderAttachment();
-        resolve?.useRenderAttachment();
+
+        if (resolve) {
+            this.useTexture(resolve,"write-only");
+            resolve.useRenderAttachment();
+        }
+        
     }
 
     /**
@@ -65,7 +69,7 @@ export class RenderPassBuilder<T> extends PassBuilder<T> {
      * Returns the `color attachments` registered for this pass.
      * @returns a list of {@link RenderPassColorAttachment}
      */
-    public getColorAttachment(): RenderPassColorAttachment[] {
+    public getColorAttachments(): Array<RenderPassColorAttachment | null> {
         return this.colorAttachments;
     }
 

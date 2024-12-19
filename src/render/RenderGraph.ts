@@ -3,9 +3,11 @@ import { ComputePassBuilder } from "./ComputePassBuilder";
 import { ComputePass } from "./pass/ComputePass";
 import { OldRenderPass } from "./pass/OldRenderPass";
 import { Pass } from "./pass/Pass";
+import { RenderPass } from "./pass/RenderPass";
 import { PassBuilder } from "./PassBuilder";
+import { PassTimestamp } from "./PassTimestamp";
 import { RenderPassBuilder } from "./RenderPassBuilder";
-import { BufferHandle, SamplerHandle, TextureHandle, ResourceHandle } from './ResourseHandle';
+import { BufferHandle, SamplerHandle, TextureHandle, ResourceHandle } from './ResourceHandle';
 
 /**
  * 
@@ -18,6 +20,8 @@ export class RenderGraph {
     private passRegistry: Set<string>;
     private adjacencyLists: number[][];
     private sortedPasses: number[];
+    private timeStamps: Map<string,PassTimestamp>;
+    private builtPasses: Pass<any>[];
 
     private resourceRegistry: Set<string>;
     private buffers: Map<string, BufferHandle>;
@@ -34,6 +38,8 @@ export class RenderGraph {
         this.adjacencyLists = new Array();
         this.resourceRegistry = new Set();
         this.sortedPasses = new Array();
+        this.timeStamps = new Map();
+        this.builtPasses = new Array();
 
         this.buffers = new Map();
         this.textures = new Map();
@@ -115,16 +121,17 @@ export class RenderGraph {
 
 
 
-    public execute() {
+    public build() {
         this.constructAdjacencyLists();
         this.topologicalSort();
 
-        this.sortedPasses.forEach((index: number) => {
+        this.builtPasses = [];
 
-            const pass = this.passBuilders[index];
-
-        });
-
+        for (let i = 0; i < this.sortedPasses.length;i++) {
+            const builder = this.passBuilders[i];
+            this.builtPasses.push(this.createPass(builder));
+        }
+        
     }
 
     private constructAdjacencyLists() {
@@ -266,32 +273,96 @@ export class RenderGraph {
         return { groups, layouts };
     }
 
-    private createPass<T extends any>(builder: PassBuilder<T>): Pass<T> {
+    private createPass(builder: PassBuilder<any>): Pass<any> {
         const device = App.getRenderDevice();
         this.resolveHandles(builder);
         const { groups, layouts } = this.createBindgroups(builder);
+        const pipelineLayout = device.createPipelineLayout({
+            bindGroupLayouts: layouts
+        });
 
         if (builder instanceof ComputePassBuilder) {
-
-            const pipelineLayout = device.createPipelineLayout({
-                bindGroupLayouts: layouts
-            });
-
-            const pipeline = device.createComputePipelineAsync({
-                compute: builder.getComputePipelineDescriptor().compute,
-                layout: pipelineLayout
-            });
-
-            // TODO: prepare pass descriptors!
-
-
-
+            return this.createComputePass(builder as ComputePassBuilder<any>, pipelineLayout, groups);
+        } else  {
+            return this.createRenderPass(builder as RenderPassBuilder<any>, pipelineLayout, groups);
         }
 
     }
 
 
+    private createRenderPass(builder: RenderPassBuilder<any>, pipelineLayout: GPUPipelineLayout, groups: Map<number, GPUBindGroup>) {
+        const pipelineDescriptor = builder.getRenderPipelineDescriptor();
 
+        const pipeline = App.getRenderDevice().createRenderPipelineAsync({
+            ...pipelineDescriptor,
+            layout: pipelineLayout
+        });
+
+        // create view and resolveTarget for all colorAttachment
+        const colorAttachments: Array<GPURenderPassColorAttachment | null> = [];
+        builder.getColorAttachments().forEach(async (attachment, index) => {
+            if (!attachment) {
+                return null;
+            }
+            const vHandle: TextureHandle = attachment.view;
+            const rHandle: TextureHandle | null = attachment.resolveTarget;
+
+            if (!vHandle.isResolved()) {
+                throw new Error(`Critical render graph error: ${vHandle} is not resolved.`);
+            }
+
+            if (!rHandle?.isResolved() && rHandle) {
+                throw new Error(`Critical render graph error: ${rHandle} is not resolved.`);
+            }
+
+            const view = (await vHandle.resolve()).createView();
+            const resolveTarget = (await rHandle?.resolve())?.createView();
+
+            colorAttachments[index] = { ...attachment, view, resolveTarget };
+        });
+
+
+        // create views for the depthStencilAttachment
+        let depthStencilAttachment: GPURenderPassDepthStencilAttachment | undefined;
+
+        const d = builder.getDepthStencilAttachment();
+        const dHandle: TextureHandle | undefined = d?.view;
+        if (dHandle) {
+            if (!dHandle.isResolved()) {
+                throw new Error(`Critical render graph error: ${dHandle} is not resolved.`);
+            }
+            dHandle.resolve().then(texture => {
+                depthStencilAttachment = { ...d, view: texture.createView() };
+            });
+        }
+
+        const desc: GPURenderPassDescriptor = {
+            colorAttachments,
+            depthStencilAttachment,
+            label: `${builder.name}-pass`
+        };
+        if (PassTimestamp.timestampsEnabled()) {
+            const timestamp = PassTimestamp.attachTimestamps(desc, builder.name);
+            this.timeStamps.set(builder.name, timestamp);
+        }
+
+        return new RenderPass(builder.name, groups, desc, pipeline, builder.getRenderFunc());
+    }
+
+    private createComputePass(builder: ComputePassBuilder<any>, pipelineLayout: GPUPipelineLayout, groups: Map<number, GPUBindGroup>) {
+        const pipeline = App.getRenderDevice().createComputePipelineAsync({
+            compute: builder.getComputePipelineDescriptor().compute,
+            layout: pipelineLayout
+        });
+
+        const desc: GPUComputePassDescriptor = { label: `${builder.name}-pass` };
+        if (PassTimestamp.timestampsEnabled()) {
+            const timestamp = PassTimestamp.attachTimestamps(desc, builder.name);
+            this.timeStamps.set(builder.name, timestamp);
+        }
+
+        return new ComputePass(builder.name, groups, desc, pipeline, builder.getComputeFunc());
+    }
 }
 
 

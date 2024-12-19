@@ -1,8 +1,6 @@
-import { BufferHandle, ResourceHandle, SamplerHandle, TextureHandle } from './ResourseHandle';
+import { BufferHandle, ResourceHandle, SamplerHandle, TextureHandle } from './ResourceHandle';
 
-export class PassBuilder<T> {
-
-    protected resourcesRegistry: Set<string>;
+export abstract class PassBuilder<T> {
 
     protected textures: Map<string, TextureHandle>;
     protected buffers: Map<string, BufferHandle>;
@@ -17,8 +15,6 @@ export class PassBuilder<T> {
     public readonly name: string;
 
     constructor(name: string, passData: T) {
-
-        this.resourcesRegistry = new Set();
         this.buffers = new Map();
         this.textures = new Map();
         this.samplers = new Map();
