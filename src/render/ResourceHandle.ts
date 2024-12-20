@@ -15,10 +15,22 @@ export class ResourceHandle<T extends GPUResource> extends FutureValue<T> {
 export class BufferHandle extends ResourceHandle<GPUBuffer> {
     public readonly desc: GPUBufferDescriptor;
 
-    constructor (name:string,desc:GPUBufferDescriptor) {
+    constructor (name:string,desc:GPUBufferDescriptor)
+    constructor (name:string, buffer:GPUBuffer)
+
+    constructor (name:string, arg: GPUBufferDescriptor | GPUBuffer) {
         super(name);
-        this.desc = desc;
+        if (arg instanceof GPUBuffer) {
+            this.desc = {size:arg.size,usage:arg.usage};
+            this.setResolveValue(arg);
+        } else {
+            this.desc = arg
+        }
     }
+
+
+    
+
     
     public useIndirect():void {
         this.desc.usage |= GPUBufferUsage.INDIRECT;
@@ -48,9 +60,26 @@ export class BufferHandle extends ResourceHandle<GPUBuffer> {
 export class TextureHandle extends ResourceHandle<GPUTexture> {
     public readonly desc: GPUTextureDescriptor;
 
-    constructor (name:string,desc:GPUTextureDescriptor) {
+    constructor (name:string,desc:GPUTextureDescriptor)
+    constructor (name:string,buffer:GPUTexture)
+
+
+    constructor (name:string,arg:GPUTextureDescriptor | GPUTexture) {
         super(name);
-        this.desc = desc;
+        if (arg instanceof GPUTexture) {
+            this.desc = {
+                size : {width:arg.width,height:arg.height,depthOrArrayLayers:arg.depthOrArrayLayers},
+                format : arg.format,
+                usage : arg.usage,
+                mipLevelCount : arg.mipLevelCount,
+                sampleCount:arg.sampleCount,
+                dimension:arg.dimension,
+            }
+            this.setResolveValue(arg);
+
+        } else {
+            this.desc = arg
+        }
     }
 
     public useTextureBinding():void {

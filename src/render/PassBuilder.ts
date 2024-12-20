@@ -77,9 +77,9 @@ export abstract class PassBuilder<T> {
             access = "read-only";
             handle.useTextureBinding();
         } else if (!info.texture && !info.storageTexture && !info.externalTexture) {
-            throw new Error(`Texture binding error: [${name}] is missing a GPUBindingLayout like texture, storageTexture, externalTexture`);
+            throw new Error(`Texture binding error in pass [${this.name}]: [${name}] is missing a GPUBindingLayout like texture, storageTexture, externalTexture`);
         } else {
-            throw new Error(`Texture binding error: [${name}] has too many layouts: texture, storageTexture, externalTexture are mutually exclusive.`)
+            throw new Error(`Texture binding error in pass [${this.name}]: [${name}] has too many layouts: texture, storageTexture, externalTexture are mutually exclusive.`)
         }
 
         const storage = info.storageTexture ? {...info.storageTexture,format:handle.desc.format} : undefined;

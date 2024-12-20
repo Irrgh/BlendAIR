@@ -6,8 +6,8 @@ export class RenderPass<T> extends Pass<T> {
     protected declare desc: GPURenderPassDescriptor;
     private render: RenderFunc<T>;
 
-    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: Promise<GPURenderPipeline>, render: RenderFunc<T>) {
-        super(name, bindgroups, desc, pipeline);
+    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPURenderPassDescriptor, pipeline: Promise<GPURenderPipeline>, passData:T, render: RenderFunc<T>) {
+        super(name, bindgroups, desc, pipeline,passData);
         this.render = render;
     }
 
@@ -17,9 +17,9 @@ export class RenderPass<T> extends Pass<T> {
      * @param cmd a {@link GPUCommandEncoder} to record gpu commands.
      * @param passData arbitrary data {@link T} needed for execution.
      */
-    public execute(cmd: GPUCommandEncoder, passData: T): void {
+    public execute(cmd: GPUCommandEncoder): Promise<void> {
 
-        this.pipelinePromise.then((pipeline: GPURenderPipeline) => {
+        return this.pipelinePromise.then((pipeline: GPURenderPipeline) => {
 
             // Debug
             cmd.insertDebugMarker(`${this.name}-pass-debug`);
@@ -34,7 +34,8 @@ export class RenderPass<T> extends Pass<T> {
             })
 
             // Execution
-            this.render(enc, passData);
+            this.render(enc, this.passData);
+            enc.end()
 
             cmd.popDebugGroup();
 

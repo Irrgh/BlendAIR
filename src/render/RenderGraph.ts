@@ -19,9 +19,9 @@ export class RenderGraph {
     private passBuilders: PassBuilder<any>[];
     private passRegistry: Set<string>;
     private adjacencyLists: number[][];
-    private sortedPasses: number[];
-    private timeStamps: Map<string,PassTimestamp>;
-    private builtPasses: Pass<any>[];
+    public sortedPasses: number[];
+    public timeStamps: Map<string, PassTimestamp>;
+    public builtPasses: Pass<any>[];
 
     private resourceRegistry: Set<string>;
     private buffers: Map<string, BufferHandle>;
@@ -30,9 +30,11 @@ export class RenderGraph {
 
 
 
-    private exports: Set<BufferHandle | TextureHandle>;
+    public exports: Map<string,BufferHandle | TextureHandle>;
+    public readonly name: string;
 
-    constructor() {
+    constructor(name: string) {
+        this.name = name;
         this.passBuilders = new Array();
         this.passRegistry = new Set();
         this.adjacencyLists = new Array();
@@ -44,7 +46,7 @@ export class RenderGraph {
         this.buffers = new Map();
         this.textures = new Map();
         this.samplers = new Map();
-        this.exports = new Set();
+        this.exports = new Map();
     }
 
 
@@ -113,10 +115,24 @@ export class RenderGraph {
      */
     public setExport(handle: BufferHandle | TextureHandle, exported: boolean) {
         if (exported) {
-            this.exports.add(handle);
+            this.exports.set(handle.name,handle);
         } else {
-            this.exports.delete(handle);
+            this.exports.delete(handle.name);
         }
+    }
+
+    public async run() {
+
+        const device = App.getRenderDevice();
+        const cmd = device.createCommandEncoder({ label: this.name })
+
+
+        // Await all passes to ensure they complete before submission
+        for (const pass of this.builtPasses) {
+            await pass.execute(cmd); // Wait for each pass to finish
+        }
+
+        device.queue.submit([cmd.finish()]);
     }
 
 
@@ -127,11 +143,11 @@ export class RenderGraph {
 
         this.builtPasses = [];
 
-        for (let i = 0; i < this.sortedPasses.length;i++) {
+        for (let i = 0; i < this.sortedPasses.length; i++) {
             const builder = this.passBuilders[i];
             this.builtPasses.push(this.createPass(builder));
         }
-        
+
     }
 
     private constructAdjacencyLists() {
@@ -283,7 +299,7 @@ export class RenderGraph {
 
         if (builder instanceof ComputePassBuilder) {
             return this.createComputePass(builder as ComputePassBuilder<any>, pipelineLayout, groups);
-        } else  {
+        } else {
             return this.createRenderPass(builder as RenderPassBuilder<any>, pipelineLayout, groups);
         }
 
@@ -346,7 +362,7 @@ export class RenderGraph {
             this.timeStamps.set(builder.name, timestamp);
         }
 
-        return new RenderPass(builder.name, groups, desc, pipeline, builder.getRenderFunc());
+        return new RenderPass(builder.name, groups, desc, pipeline, builder.getPassData(), builder.getRenderFunc());
     }
 
     private createComputePass(builder: ComputePassBuilder<any>, pipelineLayout: GPUPipelineLayout, groups: Map<number, GPUBindGroup>) {
@@ -361,7 +377,7 @@ export class RenderGraph {
             this.timeStamps.set(builder.name, timestamp);
         }
 
-        return new ComputePass(builder.name, groups, desc, pipeline, builder.getComputeFunc());
+        return new ComputePass(builder.name, groups, desc, pipeline, builder.getPassData(), builder.getComputeFunc());
     }
 }
 

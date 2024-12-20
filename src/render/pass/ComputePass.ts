@@ -5,8 +5,8 @@ export class ComputePass<T> extends Pass<T> {
     protected declare desc: GPUComputePassDescriptor;
     private compute: ComputeFunc<T>;
 
-    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPUComputePassDescriptor, pipeline: Promise<GPUComputePipeline>, compute: ComputeFunc<T>) {
-        super(name, bindgroups, desc, pipeline);
+    constructor(name: string, bindgroups: Map<number, GPUBindGroup>, desc: GPUComputePassDescriptor, pipeline: Promise<GPUComputePipeline>,passData:T, compute: ComputeFunc<T>) {
+        super(name, bindgroups, desc, pipeline,passData);
         this.compute = compute;
     }
 
@@ -16,7 +16,7 @@ export class ComputePass<T> extends Pass<T> {
      * @param cmd a {@link GPUCommandEncoder} to record gpu commands.
      * @param passData arbitrary data {@link T} needed for execution.
      */
-    public execute(cmd: GPUCommandEncoder, passData: T): void {
+    public execute(cmd: GPUCommandEncoder): void {
         this.pipelinePromise.then((pipeline: GPUComputePipeline) => {// Debug
             cmd.insertDebugMarker(`${this.name}-pass-debug`);
             cmd.pushDebugGroup(`${this.name}-pass-execution`);
@@ -29,7 +29,8 @@ export class ComputePass<T> extends Pass<T> {
             })
 
             // Execution
-            this.compute(enc, passData);
+            this.compute(enc, this.passData);
+            enc.end();
 
             cmd.popDebugGroup();
         });
