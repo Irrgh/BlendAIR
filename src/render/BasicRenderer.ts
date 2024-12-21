@@ -79,7 +79,7 @@ export class BasicRenderer extends Renderer {
             @fragment
             fn fragment_pre (input : VertexOutput) -> @location(0) vec4<f32> {
 
-                let distance : f32 = distance(input.uv, vec2f(0.5,0.5)) * 20f;
+                let distance : f32 = distance(input.uv, vec2f(0.5,0.5)) * 50f;
                 let h = sin(distance);
 
                 return vec4<f32>(h,h,h,1);
@@ -180,10 +180,7 @@ export class BasicRenderer extends Renderer {
 
 
             builder.setPassFunc((enc, data) => {
-
-                console.error(enc);
                 enc.draw(6, 1);
-
             });
 
 

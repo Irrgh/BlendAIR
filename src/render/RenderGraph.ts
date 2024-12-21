@@ -30,7 +30,7 @@ export class RenderGraph {
 
 
 
-    public exports: Map<string,BufferHandle | TextureHandle>;
+    public exports: Map<string, BufferHandle | TextureHandle>;
     public readonly name: string;
 
     constructor(name: string) {
@@ -115,7 +115,7 @@ export class RenderGraph {
      */
     public setExport(handle: BufferHandle | TextureHandle, exported: boolean) {
         if (exported) {
-            this.exports.set(handle.name,handle);
+            this.exports.set(handle.name, handle);
         } else {
             this.exports.delete(handle.name);
         }
@@ -214,31 +214,40 @@ export class RenderGraph {
         this.sortedPasses = stack;
     }
 
-    private resolveHandles(pass: PassBuilder<any>) {
+    private resolveHandles(builder: PassBuilder<any>) {
 
         const device = App.getRenderDevice();
-        const handles = pass.getHandleMaps();
-        const accessMap = pass.getAccessMap();
+        const handles = builder.getHandleMaps();
+        const accessMap = builder.getAccessMap();
 
         handles.buffers.forEach((handle, name) => {
+            const bHandle = this.buffers.get(name);
 
-            if (!this.buffers.has(name)) {
+            if (!bHandle) { this.buffers.set(name, handle) }
+
+            if (!bHandle!.isResolved()) {
                 const buffer = device.createBuffer(handle.desc)
                 handle.setResolveValue(buffer);
-                this.buffers.set(name, handle);
             }
         });
 
         handles.textures.forEach((handle, name) => {
-            if (!this.textures.has(name)) {
+            const tHandle = this.textures.get(name);
+
+            if (!tHandle) { this.textures.set(name, handle) }
+
+            if (!tHandle!.isResolved()) {
                 const texture = device.createTexture(handle.desc)
                 handle.setResolveValue(texture);
-                this.textures.set(name, handle);
             }
         });
 
         handles.samplers.forEach((handle, name) => {
-            if (!this.samplers.has(name)) {
+            const sHandle = this.samplers.get(name);
+
+            if (!sHandle) { this.samplers.set(name, handle) }
+
+            if (!sHandle!.isResolved()) {
                 const sampler = device.createSampler(handle.desc);
                 handle.setResolveValue(sampler);
                 this.samplers.set(name, handle);
@@ -247,21 +256,21 @@ export class RenderGraph {
 
     }
 
-    private createBindgroups(pass: PassBuilder<any>) {
+    private createBindgroups(builder: PassBuilder<any>) {
         const device = App.getRenderDevice();
         const groups = new Map<number, GPUBindGroup>();
         const layouts = new Array<GPUBindGroupLayout | null>();
 
-        pass.getBindingLayouts().forEach((desc: GPUBindGroupLayoutDescriptor, group: number) => {
+        builder.getBindingLayouts().forEach((desc: GPUBindGroupLayoutDescriptor, group: number) => {
 
             const layout = device.createBindGroupLayout(desc);  // create GPUBindGroupLayout
             layouts[group] = layout // TODO: this might cause issues since if empty items dont count as null
 
-            const bindings = pass.getGroupBindings(group);
+            const bindings = builder.getGroupBindings(group);
 
             const entries: GPUBindGroupEntry[] = [];
 
-            bindings.forEach(async (handle: ResourceHandle<any>, binding: number) => { // create binding entries
+            bindings.forEach((handle: ResourceHandle<any>, binding: number) => { // create binding entries
 
                 if (!handle.isResolved()) {
                     throw new Error(`Critical RenderGraph error: [${handle}] is not resolved.`);
@@ -270,18 +279,18 @@ export class RenderGraph {
                 let resource!: GPUBindingResource;
 
                 if (handle instanceof BufferHandle) {
-                    resource = { buffer: await handle.resolve() };
+                    resource = { buffer: handle.getValue() };
                 } else if (handle instanceof TextureHandle) {
-                    resource = (await handle.resolve()).createView();
+                    resource = handle.getValue().createView();
                 } else if (handle instanceof SamplerHandle) {
-                    resource = await handle.resolve();
+                    resource = handle.getValue()
                 }
 
                 entries.push({ resource, binding });
 
             });
 
-            const bindgroup = device.createBindGroup({ layout, entries }); // create GPUBindgroup
+            const bindgroup = device.createBindGroup({ layout, entries, label:`${builder.name}-${group}` }); // create GPUBindgroup
             groups.set(group, bindgroup);
 
         });

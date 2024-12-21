@@ -6,6 +6,7 @@ export class FutureValue<T> {
     private promise: Promise<T>;
     private _resolve!: (value: T) => void;
     private resolved: boolean = false;
+    private value: T | null = null;
 
     constructor() {
         // Create a deferred Promise
@@ -25,6 +26,7 @@ export class FutureValue<T> {
      */
     public setResolveValue(value: T): void {
         this.resolved = true;
+        this.value = value;
         this._resolve(value); // Resolve the Promise
     }
 
@@ -32,7 +34,16 @@ export class FutureValue<T> {
      * Returns a Promise that is pending until the resolve value is set.
      * @returns a `Promise<T>`
      */
-    public resolve(): Promise<T> {
+    public async resolve(): Promise<T> {
         return this.promise;
     }
+
+    public getValue() : T {
+        if (!this.resolved) {
+            throw new Error(`This value is not resolved yet.`);
+        }
+        return this.value!;
+    }
+
+
 }
