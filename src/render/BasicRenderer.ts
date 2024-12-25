@@ -21,14 +21,14 @@ export class BasicRenderer extends Renderer {
 
 
         const dummyTexture = this.renderGraph.createTexture("dummy", {
-            size: { width: 800, height: 800 },
+            size: { width: 64, height: 64 },
             format: "rgba8unorm",
             usage: 0
         })
 
 
         const outputTexture = this.renderGraph.createTexture("out", {
-            size: { width: 800, height: 800 },
+            size: { width: 600, height: 600 },
             format: "rgba8unorm",
             usage: GPUTextureUsage.STORAGE_BINDING,
         });
@@ -82,7 +82,7 @@ export class BasicRenderer extends Renderer {
                 let distance : f32 = distance(input.uv, vec2f(0.5,0.5)) * 50f;
                 let h = sin(distance);
 
-                return vec4<f32>(h,h,h,1);
+                return vec4<f32>(h,h,h,h);
             }
 
 

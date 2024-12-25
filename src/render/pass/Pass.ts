@@ -13,5 +13,5 @@ export abstract class Pass<T> {
         this.passData = passData;
     }
 
-    public abstract execute (cmd : GPUCommandEncoder) : void;
+    public abstract execute (cmd : GPUCommandEncoder) : Promise<void>;
 }

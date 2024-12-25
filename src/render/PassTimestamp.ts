@@ -19,11 +19,11 @@ export class PassTimestamp implements ResourceUser {
         this.resultBuffer.destroy();
     }
 
-    public static timestampsEnabled():boolean {
+    public static timestampsEnabled(): boolean {
         return App.getRenderDevice().features.has("timestamp-query");
     }
 
-    public static attachTimestamps(passDescriptor : GPURenderPassDescriptor | GPUComputePassDescriptor, name:string): PassTimestamp {
+    public static attachTimestamps(passDescriptor: GPURenderPassDescriptor | GPUComputePassDescriptor, name: string): PassTimestamp {
         const device = App.getRenderDevice();
 
         if (!device.features.has("timestamp-query")) {
@@ -65,22 +65,28 @@ export class PassTimestamp implements ResourceUser {
 
     public prepareResolve(enc: GPUCommandEncoder): void {
         enc.resolveQuerySet(this.querySet, 0, 2, this.resolveBuffer, 0);
-        enc.copyBufferToBuffer(this.resolveBuffer, 0, this.resultBuffer, 0, this.resolveBuffer.size);
+        if (this.resultBuffer.mapState === "unmapped") {
+            enc.copyBufferToBuffer(this.resolveBuffer, 0, this.resultBuffer, 0, this.resolveBuffer.size);
+        }
     }
 
-    public resolve(): Promise<bigint> {
+    public resolve(): Promise<number> {
 
-        return this.resultBuffer.mapAsync(GPUMapMode.READ).then(() => {
-            const timestamps: BigInt64Array = new BigInt64Array(this.resultBuffer.getMappedRange());
-            const difference: bigint = timestamps[1] - timestamps[0];
-            this.resultBuffer.unmap();  // makes buffer available to gpu again
+        if (this.resultBuffer.mapState === "unmapped") {
 
-            return Promise.resolve(difference);
-        }).catch(err => {
-            return Promise.reject(err); 
-        });
+            return this.resultBuffer.mapAsync(GPUMapMode.READ).then(() => {
+                const timestamps: BigInt64Array = new BigInt64Array(this.resultBuffer.getMappedRange());
+                const difference: number = Number(timestamps[1] - timestamps[0]);
+                this.resultBuffer.unmap();  // makes buffer available to gpu again
+
+                return difference;
+            });
+
+
+        }
+        return Promise.reject("buffer is already mapped");
+
+
     }
-
-
 
 }

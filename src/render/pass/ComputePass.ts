@@ -16,8 +16,8 @@ export class ComputePass<T> extends Pass<T> {
      * @param cmd a {@link GPUCommandEncoder} to record gpu commands.
      * @param passData arbitrary data {@link T} needed for execution.
      */
-    public execute(cmd: GPUCommandEncoder): void {
-        this.pipelinePromise.then((pipeline: GPUComputePipeline) => {// Debug
+    public execute(cmd: GPUCommandEncoder): Promise<void> {
+        return this.pipelinePromise.then((pipeline: GPUComputePipeline) => {// Debug
             cmd.insertDebugMarker(`${this.name}-pass-debug`);
             cmd.pushDebugGroup(`${this.name}-pass-execution`);
 

@@ -132,7 +132,16 @@ export class RenderGraph {
             await pass.execute(cmd); // Wait for each pass to finish
         }
 
+        this.timeStamps.forEach(ts => ts.prepareResolve(cmd));
+
         device.queue.submit([cmd.finish()]);
+        this.timeStamps.forEach((ts,name) => {
+            ts.resolve().then(time => {
+                console.log(`${name} took ${time / 1000} μs`)
+            }).catch(err => {
+                console.error(err);
+            });
+        });
     }
 
 
