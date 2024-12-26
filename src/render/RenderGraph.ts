@@ -1,7 +1,6 @@
 import { App } from "../app";
 import { ComputePassBuilder } from "./ComputePassBuilder";
 import { ComputePass } from "./pass/ComputePass";
-import { OldRenderPass } from "./pass/OldRenderPass";
 import { Pass } from "./pass/Pass";
 import { RenderPass } from "./pass/RenderPass";
 import { PassBuilder } from "./PassBuilder";
@@ -9,11 +8,7 @@ import { PassTimestamp } from "./PassTimestamp";
 import { RenderPassBuilder } from "./RenderPassBuilder";
 import { BufferHandle, SamplerHandle, TextureHandle, ResourceHandle } from './ResourceHandle';
 
-/**
- * 
- * When rendering multiple different {@link OldRenderPass} in a {@link Renderer} there are always some dependencies between the used resources
- * used in the different passes. To avoid an conflicts {@link OldRenderPass} as an interface also defines input and output resources.
- */
+
 export class RenderGraph {
 
     private passBuilders: PassBuilder<any>[];

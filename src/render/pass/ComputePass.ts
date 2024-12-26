@@ -18,19 +18,24 @@ export class ComputePass<T> extends Pass<T> {
      */
     public execute(cmd: GPUCommandEncoder): Promise<void> {
         return this.pipelinePromise.then((pipeline: GPUComputePipeline) => {// Debug
-            cmd.insertDebugMarker(`${this.name}-pass-debug`);
-            cmd.pushDebugGroup(`${this.name}-pass-execution`);
+            // Debug
+            cmd.insertDebugMarker(`[${this.name}]-debug`);
+            cmd.pushDebugGroup(`[${this.name}]-execution`);
 
             // Preparation
             const enc = cmd.beginComputePass(this.desc);
+            enc.pushDebugGroup(`[${this.name}]-preparation`);
+
             enc.setPipeline(pipeline);
             this.bindgroups.forEach((bindgroup: GPUBindGroup, index: number) => {
                 enc.setBindGroup(index, bindgroup);
             })
 
+            enc.popDebugGroup();
+            
             // Execution
             this.compute(enc, this.passData);
-            enc.end();
+            enc.end()
 
             cmd.popDebugGroup();
         });

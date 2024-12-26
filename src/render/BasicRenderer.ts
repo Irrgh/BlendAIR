@@ -1,9 +1,5 @@
 import { Renderer } from "./Renderer";
 import { Viewport } from '../engine/Viewport';
-import { TrianglePass } from "./pass/TrianglePass";
-import { OldRenderPass } from "./pass/OldRenderPass";
-import { SelectionOutlinePass } from './pass/SelectionOutlinePass';
-import { CoordinatePlanePass } from './pass/CoordinatePlanePass';
 import { RenderGraph } from "./RenderGraph";
 import { TextureHandle } from "./ResourceHandle";
 import { App } from "../app";

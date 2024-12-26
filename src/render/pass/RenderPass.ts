@@ -22,23 +22,26 @@ export class RenderPass<T> extends Pass<T> {
         return this.pipelinePromise.then((pipeline: GPURenderPipeline) => {
 
             // Debug
-            cmd.insertDebugMarker(`${this.name}-pass-debug`);
-            cmd.pushDebugGroup(`${this.name}-pass-execution`);
+            cmd.insertDebugMarker(`[${this.name}]-debug`);
+            cmd.pushDebugGroup(`[${this.name}]-execution`);
 
             // Preparation
             const enc = cmd.beginRenderPass(this.desc);
+            enc.pushDebugGroup(`[${this.name}]-preparation`);
 
             enc.setPipeline(pipeline);
             this.bindgroups.forEach((bindgroup: GPUBindGroup, index: number) => {
                 enc.setBindGroup(index, bindgroup);
             })
 
+            enc.popDebugGroup();
+            
             // Execution
             this.render(enc, this.passData);
-            enc.end()
+            enc.end();
 
             cmd.popDebugGroup();
-
+            
         });
 
     }
