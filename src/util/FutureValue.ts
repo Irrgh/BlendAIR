@@ -5,14 +5,18 @@
 export class FutureValue<T> {
     private promise: Promise<T>;
     private _resolve!: (value: T) => void;
+    private _reject!: (reason?: any) => void;
     private resolved: boolean = false;
-    private value: T | null = null;
+    protected value: T | null = null;
 
     constructor() {
         // Create a deferred Promise
-        this.promise = new Promise<T>((resolve) => {
+        this.promise = new Promise<T>((resolve,reject) => {
             this._resolve = resolve; // Capture the resolve function
+            this._reject = reject;
         });
+        // catching error with this.
+        this.promise.catch(_ => console.warn(this,`Future value was reset before value could be resolved.`));
     }
 
     public isResolved():boolean {
@@ -45,5 +49,19 @@ export class FutureValue<T> {
         return this.value!;
     }
 
+    /**
+     * Resets the state of the {@link FutureValue}.
+     */
+    public reset():void {
+        this.resolved = false;
+        this.value = null;
+        this._reject();
+        this.promise = new Promise<T>((resolve,reject) => {
+            this._resolve = resolve; // Capture a new resolve function
+            this._reject = reject;
+        });
+        // catching error with this.
+        this.promise.catch(_ => console.warn(this,`Future value was reset before value could be resolved.`));
+    }
 
 }

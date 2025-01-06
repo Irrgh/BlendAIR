@@ -1,6 +1,5 @@
 import { FutureValue } from "../util/FutureValue";
 
-
 export class ResourceHandle<T extends GPUResource> extends FutureValue<T> {
     public readonly name : string;
     constructor (name: string) {
@@ -28,10 +27,11 @@ export class BufferHandle extends ResourceHandle<GPUBuffer> {
         }
     }
 
-
-    
-
-    
+    public reset () { 
+        this.value?.destroy();
+        super.reset();
+    }
+     
     public useIndirect():void {
         this.desc.usage |= GPUBufferUsage.INDIRECT;
     }
@@ -82,6 +82,11 @@ export class TextureHandle extends ResourceHandle<GPUTexture> {
         }
     }
 
+    public reset () {
+        this.value?.destroy();
+        this.reset();
+    }
+
     public useTextureBinding():void {
         this.desc.usage |= GPUTextureUsage.TEXTURE_BINDING;
     }
@@ -105,7 +110,6 @@ export class SamplerHandle extends ResourceHandle<GPUSampler> {
     constructor (name:string,desc:GPUSamplerDescriptor) {
         super(name);
         this.desc = desc;
-        
     }
 }
 

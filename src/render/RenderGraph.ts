@@ -222,7 +222,6 @@ export class RenderGraph {
 
         const device = App.getRenderDevice();
         const handles = builder.getHandleMaps();
-        const accessMap = builder.getAccessMap();
 
         handles.buffers.forEach((handle, name) => {
             const bHandle = this.buffers.get(name);
