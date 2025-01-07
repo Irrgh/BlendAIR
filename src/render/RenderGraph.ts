@@ -1,4 +1,5 @@
 import { App } from "../app";
+import { Util } from "../util/Util";
 import { ComputePassBuilder } from "./ComputePassBuilder";
 import { ComputePass } from "./pass/ComputePass";
 import { Pass } from "./pass/Pass";
@@ -23,9 +24,10 @@ export class RenderGraph {
     private textures: Map<string, TextureHandle>;
     private samplers: Map<string, SamplerHandle>;
 
-
-
-    public exports: Map<string, BufferHandle | TextureHandle>;
+    /**
+     * Names of resources to export.
+     */
+    private exports: Set<string>;
     public readonly name: string;
 
     constructor(name: string) {
@@ -41,7 +43,7 @@ export class RenderGraph {
         this.buffers = new Map();
         this.textures = new Map();
         this.samplers = new Map();
-        this.exports = new Map();
+        this.exports = new Set();
     }
 
 
@@ -80,16 +82,30 @@ export class RenderGraph {
         return { builder: passBuilder, data: passData };
     }
 
-    public createBuffer(name: string, desc: GPUBufferDescriptor): BufferHandle {
+    /**
+     * Creates a {@link BufferHandle} that manages a {@link GPUBuffer}.
+     * @param name name of the buffer.
+     * @param desc additional information needed for describing a {@link GPUBuffer}.
+     * @param source optional data source for the initializing the texture.
+     * @returns a {@link BufferHandle} managing the buffer.
+     */
+    public createBuffer(name: string, desc: GPUBufferDescriptor, source?: () => ArrayBuffer): BufferHandle {
         this.ensureResourceUniqueness(name);
-        const handle = new BufferHandle(name, desc);
+        const handle = new BufferHandle(name, desc, source);
         this.buffers.set(name, handle)
         return handle;
     }
 
-    public createTexture(name: string, desc: GPUTextureDescriptor): TextureHandle {
+    /**
+     * Creates a {@link TextureHandle} that manages a {@link GPUTexture}.
+     * @param name name of the texture.
+     * @param desc additional information needed for describing a {@link GPUTexture}.
+     * @param source optional data source for initializing the texture.
+     * @returns a {@link TextureHandle} managing the texture.
+     */
+    public createTexture(name: string, desc: GPUTextureDescriptor, source?: () => ArrayBuffer): TextureHandle {
         this.ensureResourceUniqueness(name);
-        const handle = new TextureHandle(name, desc);
+        const handle = new TextureHandle(name, desc, source);
         this.textures.set(name, handle);
         return handle;
     }
@@ -106,14 +122,9 @@ export class RenderGraph {
      * Sets whether a {@link GPUBuffer} or {@link GPUTexture} should be exported after execution of the {@link RenderGraph}.
      * Resources that are not set to be exported might result in passes that provide them being culled.
      * @param handle name of the {@link GPUBuffer} | {@link GPUTexture} to export.
-     * @param exported 
      */
-    public setExport(handle: BufferHandle | TextureHandle, exported: boolean) {
-        if (exported) {
-            this.exports.set(handle.name, handle);
-        } else {
-            this.exports.delete(handle.name);
-        }
+    public setExport(handle: BufferHandle | TextureHandle): void {
+        this.exports.add(handle.name);
     }
 
     public async run() {
@@ -130,7 +141,7 @@ export class RenderGraph {
         this.timeStamps.forEach(ts => ts.prepareResolve(cmd));
 
         device.queue.submit([cmd.finish()]);
-        this.timeStamps.forEach((ts,name) => {
+        this.timeStamps.forEach((ts, name) => {
             ts.resolve().then(time => {
                 console.log(`${name} took ${time / 1000} μs`)
             }).catch(err => {
@@ -228,9 +239,14 @@ export class RenderGraph {
 
             if (!bHandle) { this.buffers.set(name, handle) }
 
-            if (!bHandle!.isResolved()) {
+            if (!handle.isResolved()) {
                 const buffer = device.createBuffer(handle.desc)
                 handle.setResolveValue(buffer);
+            }
+
+            if (handle.source) {
+                const data = handle.source();
+                device.queue.writeBuffer(handle.getValue(), 0, data);
             }
         });
 
@@ -239,9 +255,37 @@ export class RenderGraph {
 
             if (!tHandle) { this.textures.set(name, handle) }
 
-            if (!tHandle!.isResolved()) {
+            if (!handle.isResolved()) {
                 const texture = device.createTexture(handle.desc)
                 handle.setResolveValue(texture);
+            }
+
+            if (handle.source) {
+                const data = handle.source();
+                const size = handle.desc.size;
+                const format = handle.desc.format;
+                let width: number, height: number;
+
+                if (Array.isArray(size)) {
+                    width = size[0];
+                    height = size[1];
+                } else {
+                    width = (size as GPUExtent3DDictStrict).width;
+                    height = (size as GPUExtent3DDictStrict).height || 0;
+                }
+
+                const bytesPerPixel = Util.bytesPerTexel[format];
+
+                if (!bytesPerPixel) {
+                    throw new Error(`GPUTexture format [${format}] has no defined bytesPerPixel!`);
+                }
+
+                const rowBytes = Math.ceil(bytesPerPixel * width / 256) * 256;
+
+                device.queue.writeTexture({ texture: handle.getValue() }, data, {
+                    bytesPerRow: rowBytes,
+                    rowsPerImage: height,
+                }, size);
             }
         });
 
@@ -250,10 +294,9 @@ export class RenderGraph {
 
             if (!sHandle) { this.samplers.set(name, handle) }
 
-            if (!sHandle!.isResolved()) {
+            if (!handle.isResolved()) {
                 const sampler = device.createSampler(handle.desc);
                 handle.setResolveValue(sampler);
-                this.samplers.set(name, handle);
             }
         });
 
@@ -293,7 +336,7 @@ export class RenderGraph {
 
             });
 
-            const bindgroup = device.createBindGroup({ layout, entries, label:`${builder.name}-${group}` }); // create GPUBindgroup
+            const bindgroup = device.createBindGroup({ layout, entries, label: `${builder.name}-${group}` }); // create GPUBindgroup
             groups.set(group, bindgroup);
 
         });

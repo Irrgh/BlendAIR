@@ -6,6 +6,8 @@ import { App } from "../app";
 
 export class BasicRenderer extends Renderer {
 
+    private out : TextureHandle;
+
     constructor(viewport: Viewport) {
         super("basic", viewport);
         this.passes = [];
@@ -28,6 +30,7 @@ export class BasicRenderer extends Renderer {
             format: "rgba8unorm",
             usage: GPUTextureUsage.STORAGE_BINDING,
         });
+        this.out = outputTexture;
 
         const testSampler = this.renderGraph.createSampler("test", {});
 
@@ -182,7 +185,7 @@ export class BasicRenderer extends Renderer {
 
         }
 
-        this.renderGraph.setExport(outputTexture, true);
+        this.renderGraph.setExport(outputTexture);
         this.renderGraph.build();
     }
 
@@ -195,8 +198,7 @@ export class BasicRenderer extends Renderer {
 
         console.log(this.renderGraph);
 
-        const out = this.renderGraph.exports.get("out") as TextureHandle;
-        const outView = out.resolve().then(texture => {
+        this.out.resolve().then(texture => {
             const shader = /* wgsl */`
                 let coords : vec2<i32> = vec2<i32>(i32(input.uv.x * f32(res.x)),i32(input.uv.y * f32(res.y)));
                 let color = textureLoad(texture,coords);
