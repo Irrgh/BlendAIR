@@ -1,20 +1,11 @@
 import { Scene } from "./Scene";
-import { WebGPU } from "./WebGPU";
-import shaderMain from "../../assets/shaders/main.wgsl";
-import { MeshInstance } from "../entity/MeshInstance";
-import { mat4 } from "gl-matrix";
-import { TriangleMesh } from "./TriangleMesh";
 import { Camera } from "../entity/Camera";
 import { Resizable } from "../gui/Resizable";
 import { Util } from "../util/Util";
-import { Navigator } from "./Navigator";
-import { DebugOverlay } from "../gui/DebugOverlay";
-import { Entity } from "../entity/Entity";
 import { Renderer } from '../render/Renderer';
 import { BasicRenderer } from "../render/BasicRenderer";
 import { App } from "../app";
 import fullQuadShader from "../../assets/shaders/fullQuadShader.wgsl";
-import { RealisticRenderer } from "../render/RealisticRenderer";
 import { InputStateMachine } from "../input/InputStateMachine";
 
 
@@ -72,7 +63,14 @@ export class Viewport implements Resizable {
         const aspect = this.width / this.height;
 
         this.camera = new Camera();
-        this.camera.setPerspectiveProjection(Util.degreeToRadians(90), aspect, 0.1, 100);
+        this.camera.setPerspectiveProjection(
+            {
+                aspect,
+                fovy: Util.degreeToRadians(90),
+                near: 0.1,
+                far: 100
+            }
+        );
         this.camera.setPosition(0, 0, 0); /** @todo please change this  */
 
 
@@ -103,7 +101,12 @@ export class Viewport implements Resizable {
             const aspect = width / height;
 
             
-            this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1, 100);
+            this.camera.setPerspectiveProjection({
+                aspect,
+                fovy: Util.degreeToRadians(90),
+                near: 0.1,
+                far: 100
+            });
             this.renderer.render();
         }
         // should probably resize all render related textures like depth, albedo, normal, uv and then redraw
@@ -221,21 +224,19 @@ export class Viewport implements Resizable {
         }
 
 
-        const commandEncoder = device.createCommandEncoder();
-        const renderPassEncoder = commandEncoder.beginRenderPass(passDescriptor)
+        const cmd = device.createCommandEncoder();
+        cmd.pushDebugGroup(`[canvas]-draw`);
+        const enc = cmd.beginRenderPass(passDescriptor)
+        
 
+        enc.setPipeline(renderPipeline);
+        enc.setBindGroup(0, bindgroup);
+        enc.draw(6, 1, 0, 0);
+        
+        enc.end();
+        cmd.popDebugGroup();
 
-
-
-        renderPassEncoder.pushDebugGroup("render to canvas");
-        renderPassEncoder.setPipeline(renderPipeline);
-        renderPassEncoder.setBindGroup(0, bindgroup);
-        renderPassEncoder.draw(6, 1, 0, 0);
-        renderPassEncoder.popDebugGroup();
-        renderPassEncoder.end();
-
-
-        device.queue.submit([commandEncoder.finish()]);
+        device.queue.submit([cmd.finish()]);
 
 
 

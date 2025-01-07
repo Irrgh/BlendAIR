@@ -1,5 +1,6 @@
 import { mat4, vec3, vec4 } from "gl-matrix";
 import { Entity } from "./Entity";
+import { Util } from "../util/Util";
 
 /**
  * Represent a camera entity
@@ -10,8 +11,14 @@ export class Camera extends Entity {
         super();
         this.projectionMatrix = mat4.create();
         this.viewMatrix = mat4.create();
-        this.projection = "perspective";
-        this.setPerspectiveProjection(1.5708, 16 / 9, 0.1, 100);
+
+        this.projection = {
+            fovy: Util.degreeToRadians(90),
+            aspect: 16 / 9,
+            near: 0.1,
+            far: 100
+        };
+        this.setPerspectiveProjection(this.projection);
     }
     /**
      * Represents the camera projection needed for rendering.
@@ -25,34 +32,41 @@ export class Camera extends Entity {
 
     private projection: Projection;
 
-
     /**
-     * Sets the projection matrix for orthographic projection.
-     * @param {number} cx center of x-coordinate 
-     * @param {number} cy center of y-coordinate
-     * @param {number} near near clipping plane
-     * @param {number} far far clipping plane
+     * Sets the projection of this camera to orthographic.
+     * @param o {@link Orthographic} projection parameters.
      */
-    public setOrthographicProjection(cx: number, cy: number, near: number, far: number): void {
-        this.projection = "orthographic";
+    public setOrthographicProjection(o:Orthographic): void {
+        this.projection = o;
         mat4.identity(this.projectionMatrix);
-        mat4.ortho(this.projectionMatrix, -cx / 2, cx / 2, -cy / 2, cy / 2, near, far);
+
+        const left = (o.scale * o.aspect) / -2;
+        const right = (o.scale * o.aspect) / 2;
+        const top = (o.scale / o.aspect) / -2;
+        const bottom = (o.scale / o.aspect) / 2;
+
+        mat4.ortho(this.projectionMatrix, left, right, top, bottom, o.near, o.far);
     }
 
-
-
     /**
-     * Sets the projection matrix for perspective projection.
-     * @param {number} fovy vertical field of view in radians
-     * @param {number} aspect aspect ratio in x / y
-     * @param {number} near near clipping plane
-     * @param {number} far far clipping plane
+     * Sets the projection of this camera to perspective.
+     * @param p {@link Perspective} projection parameters.
      */
-    public setPerspectiveProjection(fovy: number, aspect: number, near: number, far: number): void {
-        this.projection = "perspective";
+    public setPerspectiveProjection(p:Perspective): void {
+        this.projection = p;
         mat4.identity(this.projectionMatrix);
-        mat4.perspective(this.projectionMatrix, fovy, aspect, near, far);
+
+        mat4.perspective(this.projectionMatrix, p.fovy, p.aspect, p.near, p.far);
     }
+
+    public resizeCamera(width:number,height:number) {
+
+        
+
+
+
+    }
+
 
     /**
      * Returns the projection matrix of the camera.
@@ -89,7 +103,7 @@ export class Camera extends Entity {
      * Returns the normalized device coordinates of an Entity as seen from the camera.
      * @param entity 
      */
-    public getNdcCoords(pos:vec3): vec4 {
+    public getNdcCoords(pos: vec3): vec4 {
         const proj = this.getProjectionMatrix();
         const view = this.getViewMatrix();
 
@@ -105,8 +119,8 @@ export class Camera extends Entity {
 
     public getWorldCoordsFromNdc(ndc: vec4): vec4 {
 
-        const invProj = mat4.invert(mat4.create(),this.getProjectionMatrix());
-        const invView = mat4.invert(mat4.create(),this.getViewMatrix());
+        const invProj = mat4.invert(mat4.create(), this.getProjectionMatrix());
+        const invView = mat4.invert(mat4.create(), this.getViewMatrix());
 
         const eyeCoords = vec4.create();
         vec4.transformMat4(eyeCoords, ndc, invProj);

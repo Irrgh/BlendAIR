@@ -58,9 +58,6 @@ declare type RenderTypes
     | "final"
 
 
-declare type Projection
-    = "perspective"
-    | "orthographic"
 
 declare type ChildLayout
     = "horizontal"
