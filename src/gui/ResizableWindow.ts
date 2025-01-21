@@ -209,17 +209,17 @@ export class ResizableWindow {
 
                 // called when movement is properly ended
                 const dragFinish = (event: MouseEvent) => {
-                    console.log("finish");
                     this.activeResizerIndex = undefined;
                     window.removeEventListener("mousemove", dragStart);
                     window.removeEventListener("mouseup", dragFinish);
+                    window.removeEventListener("keydown", dragCancel);
                 }
 
                 // called when movement is canceled
                 const dragCancel = (event: KeyboardEvent) => {
 
                     if (event.key === "Escape") {
-                        console.log("cancel");
+                        this.moveResizer(startPos.x,startPos.y);
                         this.activeResizerIndex = undefined;
                         window.removeEventListener("mousemove", dragStart);
                         window.removeEventListener("mouseup", dragFinish);
