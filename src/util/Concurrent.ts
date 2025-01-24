@@ -91,7 +91,12 @@ function createResolvePaths(module: any): Map<string, PropertyMethod> {
 
 
 
-
+/**
+ * Runs a function on a Worker.
+ * The function needs to be `self contained`, meaning no required imports that are within the function scope.
+ * @param func function to run concurrently.
+ * @returns a {@link R} 
+ */
 export const createConcurrent = <A extends any[], R>(
     func: (...args: A) => R
 ): (...args: A) => Promise<R> => {
