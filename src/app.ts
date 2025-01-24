@@ -1,12 +1,11 @@
 import { WebGPU } from "./engine/WebGPU";
 import { Scene } from "./engine/Scene";
 import { Viewport } from './engine/Viewport';
-import { TriangleMesh } from "./engine/TriangleMesh";
+import { TriangleMesh } from './engine/TriangleMesh';
 import { MeshInstance } from "./entity/MeshInstance";
 import { quat, vec3 } from "gl-matrix";
 import { ResizableWindow } from './gui/ResizableWindow';
 import { ViewportWindow } from "./gui/ViewportWindow";
-import { Entity } from "./entity/Entity";
 import { TimelineWindow } from "./gui/TimelineWindow";
 import { AnimationSheet } from "./engine/AnimationSheet";
 import { Bvh } from "./engine/Bvh";
@@ -18,7 +17,7 @@ export class App {
 
     private constructor() {
 
-        
+
         this.currentScene = new Scene();
         this.loadedScenes = [this.currentScene];
     }
@@ -44,7 +43,7 @@ export class App {
         return App.getInstance().webgpu;
     }
 
-    public static getScene():Scene {
+    public static getScene(): Scene {
         return App.getInstance().currentScene;
     }
 
@@ -67,7 +66,7 @@ export class App {
         const left = root.addChild(0, "vertical", 1200);
         const child1 = left.addChild(0, "horizontal");
         const child2 = left.addChild(0, "horizontal", 700);
-        
+
         child1.setContent(new TimelineWindow());
         child2.setContent(new ViewportWindow());
 
@@ -82,23 +81,23 @@ export class App {
         const mesh: TriangleMesh = TriangleMesh.parseFromObj(model);
         const mesh2: TriangleMesh = TriangleMesh.parseFromObj(model1);
         const donut: TriangleMesh = TriangleMesh.parseFromObj(model2);
-        const shard : TriangleMesh = TriangleMesh.parseFromObj(model3);
-        const tree : TriangleMesh = TriangleMesh.parseFromObj(model4);
+        const shard: TriangleMesh = TriangleMesh.parseFromObj(model3);
+        const tree: TriangleMesh = TriangleMesh.parseFromObj(model4);
 
 
         console.log(tree);
 
 
-        const shardPlease : MeshInstance = new MeshInstance(shard);
+        const shardPlease: MeshInstance = new MeshInstance(shard);
 
         const shardAnimation = new AnimationSheet([
             {
                 frame: 0,
-                value: [0,0,0]
+                value: [0, 0, 0]
             },
             {
-                frame:250,
-                value: [0,0,3]
+                frame: 250,
+                value: [0, 0, 3]
             }
         ]);
         shardAnimation.setInterpolation("bezier");
@@ -114,15 +113,15 @@ export class App {
             let anim = new AnimationSheet([
                 {
                     frame: 0,
-                    value: vec3.random(vec3.create(),10)
+                    value: vec3.random(vec3.create(), 10)
                 },
                 {
                     frame: 125,
-                    value: vec3.random(vec3.create(),10)
+                    value: vec3.random(vec3.create(), 10)
                 },
                 {
                     frame: 250,
-                    value: vec3.random(vec3.create(),10)
+                    value: vec3.random(vec3.create(), 10)
                 },
             ])
 
@@ -146,18 +145,18 @@ export class App {
             this.currentScene.addEntity(entity);
 
         }
-    
+
 
         console.time("bvh");
         const bvh = new Bvh(shard);
         console.timeEnd("bvh");
-        const ray = new Ray(vec3.normalize(vec3.create(),[-1,-1,-1]),[2,2,2]);
+        const ray = new Ray(vec3.normalize(vec3.create(), [-1, -1, -1]), [2, 2, 2]);
         console.log(bvh.intersectionBvh(ray))
 
 
 
 
-        
+
 
 
 
