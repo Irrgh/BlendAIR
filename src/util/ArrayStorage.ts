@@ -1,3 +1,5 @@
+import { TriangleMesh } from "../engine/TriangleMesh";
+
 const initialLength = 1024; // 2^10
 const doublingThreshold = 33554432; // 2^25 (~134 MB for a Float32Array)
 const fixedExpansionLength = 33554432; // 2^25 (~134 MB for a Float32Array)
@@ -6,7 +8,7 @@ const fixedExpansionLength = 33554432; // 2^25 (~134 MB for a Float32Array)
 /**
  * Union of all TypedArrays since the actual interface is hidden.
  */
-type TypedArray = 
+export type TypedArray = 
     | Uint8Array
     | Int8Array
     | Uint16Array
@@ -50,7 +52,7 @@ export class ArrayStorage<T extends TypedArray> {
         this.array = newArray;
     }
 
-    public push(...values: (number|bigint)[]):number {
+    public push(...values: (number| bigint)[]):number {
         values.forEach(value => {
             const bufferSize = this.array.length;
             if (this.length === 0) {
@@ -66,6 +68,41 @@ export class ArrayStorage<T extends TypedArray> {
         });
         return this.length;
     }
+
+    public pushArray (array:T) {
+        
+        const requiredCapacity = this.array.length + array.length;
+
+        let length = this.length;
+
+        while (length < requiredCapacity) {
+            if (length === 0){
+                length = 1024;
+            } else if (length < doublingThreshold) {
+                length * 2;
+            } else {
+                length + fixedExpansionLength;
+            }
+        }
+
+        this.resize(length);
+
+        if (this.array instanceof BigInt64Array || this.array instanceof BigUint64Array) {
+            this.array.set(array as ArrayLike<bigint>,length);
+        } else {
+            this.array.set(array as ArrayLike<number>,length);
+        }
+        this.length += array.length
+        return this.length
+    }
+
+    public reset() {
+        this.length = 0;
+        this.array = new this.cons(0);
+    }
+
+
+
 
     public get(index: number): number | bigint {
         return this.array[index];
