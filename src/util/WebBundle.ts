@@ -10,8 +10,6 @@ const fetchFromServerPlugin = (baseUrl: string) => ({
 
         // Intercept import paths
         build.onResolve({ filter: /.*/ }, (args: any) => {
-            console.warn(args.path);
-
             return { namespace: "http-fetch", path: `${baseUrl}/../${args.path}.ts` };
         });
 

@@ -185,7 +185,7 @@ export const createConcurrentModule = async <M extends any, R>(
     const worker = await new Promise<Worker>((resolve, reject) => {
         const worker = new Worker(workerURL, { type: "module" });
 
-        const init = (event: MessageEvent) => {
+        const init = (event: MessageEvent) => {             // resolves msg send by worker upon creation.
             worker.removeEventListener("message", init);
             if (event.data.error) {
                 reject(new Error(event.data.error));
@@ -194,12 +194,12 @@ export const createConcurrentModule = async <M extends any, R>(
             }
         }
 
-        worker.addEventListener("message", init)
+        worker.addEventListener("message", init);
     });
 
     
 
-    const terminate = async (handler:ProxyHandler<any>) => {   
+    const terminate = (handler:ProxyHandler<any>) => {   
         worker.terminate();
         URL.revokeObjectURL(bundleURL);
         URL.revokeObjectURL(workerURL);
@@ -214,31 +214,31 @@ export const createConcurrentModule = async <M extends any, R>(
 
     const resolvePaths = createResolvePaths(module);
 
-    const messageHandler = (): Promise<any> =>
+    const messageHandler = (id:string): Promise<any> =>
         new Promise((resolve, reject) => {
             const onMessage = (event: MessageEvent) => {
-                worker.removeEventListener("message", onMessage);
-
-                if (event.data.error) {
-                    reject(new Error(event.data.error));
-                } else {
-                    resolve(event.data.result);
+                if (event.data.id === id) {
+                    worker.removeEventListener("message", onMessage);
+                    if (event.data.error) {
+                        reject(new Error(event.data.error));
+                    } else {
+                        resolve(event.data.result);
+                    }
                 }
-
             };
 
             // Ensure the listener is added before `postMessage` is called
             worker.addEventListener("message", onMessage);
         });
 
-    const handler: ProxyHandler<any> = {
+    const proxyHandler: ProxyHandler<any> = {
 
         apply(target: any, thisArg: any, argumentsList: any[]) {
 
             const prop = target();
 
             if (prop === "terminate") {
-                return terminate(handler);
+                return terminate(proxyHandler);
             }
 
             const type = resolvePaths.get(prop);
@@ -251,7 +251,7 @@ export const createConcurrentModule = async <M extends any, R>(
             }
 
             const id = window.crypto.randomUUID()
-            const responsePromise = messageHandler();
+            const responsePromise = messageHandler(id);
             worker.postMessage({ id, prop, type: "call", args: argumentsList });
             return responsePromise;
         },
@@ -272,17 +272,17 @@ export const createConcurrentModule = async <M extends any, R>(
 
             if (type === "get") {
                 const id = window.crypto.randomUUID()
-                const responsePromise = messageHandler();
+                const responsePromise = messageHandler(id);
                 worker.postMessage({ id, prop: path, type: "get" });
                 return responsePromise;
             }
 
             // New Proxy for nested properties
-            return new Proxy(newTarget, handler);
+            return new Proxy(newTarget, proxyHandler);
         }
     }
 
-    return new Proxy(() => {}, handler);
+    return new Proxy(() => {}, proxyHandler);
 
 }
 
