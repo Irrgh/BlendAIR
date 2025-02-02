@@ -147,6 +147,8 @@ export const createConcurrentModule = async <M extends any, R>(
     const bundleURL = URL.createObjectURL(bundleBlob);
 
     const workerCode = `
+        //# sourceURL=/concurrent<${filePath.slice(filePath.lastIndexOf("/")+1,filePath.length)}>
+
         import('${bundleURL}').then((module) => {
             // Attach all module exports to self
             Object.entries(module).forEach(([key, value]) => {

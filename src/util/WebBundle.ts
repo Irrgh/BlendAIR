@@ -61,6 +61,9 @@ export async function bundleCode(filePath: string): Promise<string> {
             platform: 'browser', // Target the browser
             plugins: [fetchFromServerPlugin(filePath)],
             write: false, // Don't write to disk
+            banner: {
+                js:`//# sourceURL=${filePath.slice(filePath.lastIndexOf("/"),filePath.length)}`
+            }
         });
 
         // Return the bundled code as a Blob
