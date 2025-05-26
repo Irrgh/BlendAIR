@@ -39,7 +39,10 @@ export class WebGPU {
         const canTimestamp = adapter.features.has("timestamp-query");
         const device = await adapter.requestDevice(
             {
-                requiredFeatures: canTimestamp ? ["timestamp-query"] : []
+                requiredFeatures: canTimestamp ? ["timestamp-query"] : [],
+                requiredLimits: {
+                    maxBufferSize:2147483648
+                }
             }
         );
 

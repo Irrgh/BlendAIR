@@ -35,7 +35,7 @@ export class TriangleMesh {
 
 
 
-    private constructor(vbo: Float32Array, ebo: Uint32Array) {
+    constructor(vbo: Float32Array, ebo: Uint32Array) {
         this.vertexBuffer = vbo;
         this.elementBuffer = ebo;
         this.instancedBy = new Set<MeshInstance>;
@@ -156,6 +156,6 @@ export class TriangleMesh {
         return this.elementBuffer;
     }
 
-
+    
 
 }

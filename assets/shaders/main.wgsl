@@ -31,7 +31,7 @@ struct VertexOut {
 
     
 @vertex
-fn vertex_main(input : VertexIn) -> VertexOut {
+fn vertex_main(input : VertexIn, @builtin(vertex_index) vert : u32) -> VertexOut {
 
     let objectId = objectIndex[input.instanceId];
 
@@ -39,10 +39,11 @@ fn vertex_main(input : VertexIn) -> VertexOut {
     var modelTransform: mat4x4<f32> = modelTransforms[objectId];
     var output: VertexOut;
     output.position = camera.proj * camera.view * modelTransform * vec4<f32>(input.position, 1.0f);
-    output.fragPosition = output.position.xyz;
-    output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
+    output.fragPosition = input.position;
+    //output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
+    output.normal.x = f32(vert);
     output.uv = input.uv;
-    output.objectId = objectId+1u;
+    output.objectId = vert;
     return output;
 }
 
@@ -63,13 +64,27 @@ fn fragment_object(fragData: VertexOut) -> @location(0) u32 {
 
 
 
-
+fn edgeFactor(bary: vec3f) -> f32 {
+  let d = fwidth(bary);
+  let a3 = smoothstep(vec3f(0.0), d * 2.0, bary);
+  return min(min(a3.x, a3.y), a3.z);
+}
     
 @fragment
 fn fragment_main(fragData: VertexOut) -> FragmentOut {
     let normal = normalize(fragData.normal);
 
-    let color = vec3<f32>(1.0,1.0,1.0) * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
+    var color : vec3f;
+
+
+    color = abs(normalize(dpdx(fragData.fragPosition) + dpdy(fragData.fragPosition)));
+
+
+    let x : f32 = ((f32(fragData.objectId + 5) % 16) / 16 * 0.7) + 0.3;
+    let y : f32 = ((f32(fragData.objectId + 4) % 11) / 11 * 0.7) + 0.3;
+    let z : f32 = ((f32(fragData.objectId + 7) % 13) / 13 * 0.7) + 0.3;
+    color = vec3f(x,y,z);
+
 
     var output : FragmentOut;
     output.color = vec4<f32>(color,1.0);

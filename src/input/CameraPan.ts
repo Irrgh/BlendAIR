@@ -37,7 +37,7 @@ export class CameraPan extends State {
         const up = camera.getUp();
         const right = camera.getRight();
 
-        vec3.scale(up, up, event.movementY * this.cameraPos.r);
+        vec3.scale(up, up, -event.movementY * this.cameraPos.r);
         vec3.scale(right, right, event.movementX * this.cameraPos.r);
 
         const uv = vec3.add(vec3.create(),up,right);

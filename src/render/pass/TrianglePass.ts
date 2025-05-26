@@ -28,7 +28,7 @@ export class TrianglePass extends RenderPass {
     };
 
 
-
+    private outdated = true;
 
 
 
@@ -207,7 +207,11 @@ export class TrianglePass extends RenderPass {
     public render(viewport: Viewport): void {
 
 
-        this.createMeshBuffer(viewport);
+        if (App.getInstance().outdated) {
+            this.createMeshBuffer(viewport);
+            App.getInstance().outdated = false;
+            console.log(viewport.scene);
+        }
         
 
         const device: GPUDevice = App.getRenderDevice();
@@ -345,7 +349,6 @@ export class TrianglePass extends RenderPass {
         renderPass.setIndexBuffer(indexBuffer, "uint32");
 
         for (let i = 0; i < this.drawParameters.length; i += 5) {
-
             renderPass.drawIndexed(
                 this.drawParameters[i],
                 this.drawParameters[i + 1],

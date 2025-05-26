@@ -158,7 +158,7 @@ export class SelectionOutlinePass extends RenderPass {
             let objectId : u32 = chooseObjectIndex(u32(1.5),input.uv,delta);
             let selected = isSelected(objectId);
 
-            let fresnel = fresnel(normal.xyz,view,1);
+            let fresnel = fresnel(normal.xyz,view,0.3);
             var outline = gradient * fresnel;
 
 
@@ -174,6 +174,7 @@ export class SelectionOutlinePass extends RenderPass {
                 }
             }
 
+            //out.color = vec4f(outline,outline,outline,1.0);
             out.selection = vec4<f32>(outline,outline,outline,1.0);
         
             return out;
