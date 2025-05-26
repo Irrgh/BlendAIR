@@ -128,7 +128,7 @@ export class App {
         }
 
 
-        const buf: ArrayBuffer = await (await fetch("../assets/models/test.bin")).arrayBuffer();
+        const buf: ArrayBuffer = await (await fetch("../assets/models/90x90_0.05.bin")).arrayBuffer();
 
         const md0 = makeMesh(buf);
 
