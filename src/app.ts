@@ -83,6 +83,8 @@ export class App {
             const h_off = 4*7
             const v_size = 3 * 4 * vertices
             const f_size = 3 * 4 * faces
+            console.log(`${vertices} vertices, ${faces} faces, ${buf.byteLength} bytes`);
+
 
             const arr = new Float32Array(buf.slice(h_off,h_off+v_size));
             const el = new Uint32Array(buf.slice(h_off+v_size,h_off+v_size+f_size));
@@ -128,14 +130,14 @@ export class App {
         }
 
 
-        const buf: ArrayBuffer = await (await fetch("../assets/models/90x90_0.05.bin")).arrayBuffer();
+        const buf: ArrayBuffer = await (await fetch("../assets/models/200x200_0.05.bin")).arrayBuffer();
 
         const md0 = makeMesh(buf);
 
         const ed0 = new MeshInstance(md0);
 
         
-        ed0.setScale(0.1,0.1,0.0);
+        ed0.setScale(.25,.25,0);
         
         ed0.setPosition(0,0,0.1);
 
