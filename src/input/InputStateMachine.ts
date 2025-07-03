@@ -41,9 +41,9 @@ export class InputStateMachine {
         this.cameraCentroid = vec3.create();
         this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward());   
         this.cameraPosition.phi -= Math.PI / 2;
-        this.cameraPosition.r = 15.0
-        this.viewport.camera.setPosition(0,0,15);
-        this.viewport.camera.setFacing([0,0,-1]);
+        //this.cameraPosition.r = 15.0
+        //this.viewport.camera.setPosition(0,0,15);
+        //this.viewport.camera.setFacing([0,0,-1]);
     };
 
 

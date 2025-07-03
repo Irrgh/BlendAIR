@@ -12,6 +12,8 @@ import { AnimationSheet } from "./engine/AnimationSheet";
 import { Bvh } from "./engine/Bvh";
 import { Ray } from "./engine/Ray";
 import { Util } from "./util/Util";
+import { create_tm_mesh, tm_mesh } from "./engine/TMILoader";
+import { TMIBvh } from "./engine/TMIBvh";
 
 export class App {
     private static instance: App;
@@ -130,14 +132,14 @@ export class App {
         }
 
 
-        const buf: ArrayBuffer = await (await fetch("../assets/models/200x200_0.05.bin")).arrayBuffer();
+        const buf: ArrayBuffer = await (await fetch("../assets/models/200x200_0.01.bin")).arrayBuffer();
 
         const md0 = makeMesh(buf);
 
         const ed0 = new MeshInstance(md0);
 
         
-        ed0.setScale(.25,.25,0);
+        ed0.setScale(.25,.25,.25);
         
         ed0.setPosition(0,0,0.1);
 
@@ -145,8 +147,11 @@ export class App {
         
         console.log(md0);
         
+        const tmi_mesh : tm_mesh = create_tm_mesh(buf);
+        const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);
         
-        
+        console.log(tmi_bvh);
+
 
         this.outdated = true;
 

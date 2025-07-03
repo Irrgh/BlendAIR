@@ -80,10 +80,10 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
     color = abs(normalize(dpdx(fragData.fragPosition) + dpdy(fragData.fragPosition)));
 
 
-    let x : f32 = ((f32(fragData.objectId + 5) % 16) / 16 * 0.7) + 0.3;
-    let y : f32 = ((f32(fragData.objectId + 4) % 11) / 11 * 0.7) + 0.3;
-    let z : f32 = ((f32(fragData.objectId + 7) % 13) / 13 * 0.7) + 0.3;
-    color = vec3f(x,y,z);
+    //let x : f32 = ((f32(fragData.objectId + 5) % 16) / 16 * 0.7) + 0.3;
+    //let y : f32 = ((f32(fragData.objectId + 4) % 11) / 11 * 0.7) + 0.3;
+    //let z : f32 = ((f32(fragData.objectId + 7) % 13) / 13 * 0.7) + 0.3;
+    //color = vec3f(x,y,z);
 
 
     var output : FragmentOut;
