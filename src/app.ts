@@ -14,6 +14,7 @@ import { Ray } from "./engine/Ray";
 import { Util } from "./util/Util";
 import { create_tm_mesh, tm_mesh } from "./engine/TMILoader";
 import { TMIBvh } from "./engine/TMIBvh";
+import { TMIComputePass } from "./render/pass/TMIComputePass";
 
 export class App {
     private static instance: App;
@@ -149,8 +150,24 @@ export class App {
         
         const tmi_mesh : tm_mesh = create_tm_mesh(buf);
         const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);
-        
-        console.log(tmi_bvh);
+        const tmi_pass : TMIComputePass = new TMIComputePass(tmi_bvh);
+
+        const sites = new Float32Array(10_000_000*2);
+
+        for (let i = 0; i < sites.length/2;i++) {
+
+            sites[i*2] = Math.random()*120-60;
+            sites[i*2+1] = Math.random()*120-60;
+        }
+
+
+        console.log(App.getRenderDevice().adapterInfo);
+
+        console.time("gpu sampling");
+        const res = await tmi_pass.sample(sites);
+        console.timeEnd("gpu sampling");
+
+        console.log(res);
 
 
         this.outdated = true;

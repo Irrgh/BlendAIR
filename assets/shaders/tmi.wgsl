@@ -1,6 +1,6 @@
 const dir : vec3<f32> = vec3<f32>(0.0,0.0,-1.0);
-const inv_dir : vec3<f32> = vec3<f32>(1e38,1e38,0.0);
-const eps : f32 = 1e-4;
+const inv_dir : vec3<f32> = vec3<f32>(1e38,1e38,-1.0);
+const eps : f32 = 1e-5;
 const max_depth : u32 = 32;
 
 struct bvh_node {
@@ -52,7 +52,6 @@ fn aabb_intersection(nmin : vec3<f32>, nmax : vec3<f32>, org : vec3<f32>) -> vec
 
 fn triangle_intersection(index : u32, org : vec3<f32>) -> f32 {
 
-    var tmin : f32 = -1.0;
     let indices = tris[index].indices;
 
     let v0 : vec3<f32> = vertices[indices.x];
