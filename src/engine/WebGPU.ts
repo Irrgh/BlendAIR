@@ -34,8 +34,6 @@ export class WebGPU {
             powerPreference:"high-performance"
         });
 
-        console.log(adapter);
-
         if (!adapter) {
             return Promise.reject(new Error("No appropriate GPUAdapter found."));
         }

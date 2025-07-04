@@ -22,8 +22,12 @@ export class TMIComputePass {
     private max_z_uniform_buffer!: GPUBuffer;
     private in_storage_buffer!: GPUBuffer;
     private out_storage_buffer!: GPUBuffer;
+    private chunk_uniform_buffer! :GPUBuffer;
 
-    private read_staging_buffer!: GPUBuffer;
+    private num_staging_buffers: number = 8;
+    private read_staging_buffers!: Array<Promise<GPUBuffer>>;
+    private next_staging_buffer: number = 0;
+
 
     private bindgroupLayout: GPUBindGroupLayout;
     private bindgroup!: GPUBindGroup;
@@ -36,8 +40,8 @@ export class TMIComputePass {
 
 
     private max_z!: number;
-    private chunk_size = 65536*8;
-    
+    private chunk_size = 65536 * 16;
+
 
 
 
@@ -64,10 +68,17 @@ export class TMIComputePass {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
         });
 
-        this.read_staging_buffer = this.device.createBuffer({
-            size: this.chunk_size * 4,
-            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-        });
+        this.read_staging_buffers = new Array(this.num_staging_buffers);
+
+        for (let i = 0; i < this.num_staging_buffers; i++) {
+            this.read_staging_buffers[i] = new Promise((resolve) => {
+                let buf = this.device.createBuffer({
+                    size: this.chunk_size * 4,
+                    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+                });
+                resolve(buf);
+            });
+        }
 
         this.device.queue.writeBuffer(this.max_z_uniform_buffer, 0, new Float32Array([this.max_z]));
 
@@ -75,7 +86,7 @@ export class TMIComputePass {
             entries: [
                 {
                     binding: 0,
-                    visibility:GPUShaderStage.COMPUTE,
+                    visibility: GPUShaderStage.COMPUTE,
                     buffer: { type: "read-only-storage" }
                 }, {
                     binding: 1,
@@ -107,30 +118,30 @@ export class TMIComputePass {
             layout: this.bindgroupLayout,
             entries: [
                 {
-                    binding:0,
-                    resource: {buffer:this.in_storage_buffer}
-                },{
-                    binding:1,
-                    resource:{buffer:this.out_storage_buffer}
-                },{
-                    binding:2,
-                    resource:{buffer:this.node_storage_buffer}
+                    binding: 0,
+                    resource: { buffer: this.in_storage_buffer }
                 }, {
-                    binding:3,
-                    resource:{buffer:this.tri_storage_buffer}
+                    binding: 1,
+                    resource: { buffer: this.out_storage_buffer }
                 }, {
-                    binding:4,
-                    resource:{buffer:this.vert_storage_buffer}
+                    binding: 2,
+                    resource: { buffer: this.node_storage_buffer }
                 }, {
-                    binding:5,
-                    resource:{buffer:this.max_z_uniform_buffer}
+                    binding: 3,
+                    resource: { buffer: this.tri_storage_buffer }
+                }, {
+                    binding: 4,
+                    resource: { buffer: this.vert_storage_buffer }
+                }, {
+                    binding: 5,
+                    resource: { buffer: this.max_z_uniform_buffer }
                 }
             ]
         });
 
         this.shader = this.device.createShaderModule({
             code: shader_code
-        }) 
+        })
 
 
         this.pipelineLayout = this.device.createPipelineLayout({
@@ -241,9 +252,9 @@ export class TMIComputePass {
         for (let i = 0; i < num_chunks; i++) {
 
             const byte_offset = this.in_storage_buffer.size;
-            const bytes_to_write = Math.min(Math.max(sites.byteLength - byte_offset * i, 0),byte_offset);
+            const bytes_to_write = Math.min(Math.max(sites.byteLength - byte_offset * i, 0), byte_offset);
 
-            this.device.queue.writeBuffer(this.in_storage_buffer, 0, sites.buffer,byte_offset*i, bytes_to_write);
+            this.device.queue.writeBuffer(this.in_storage_buffer, 0, sites.buffer, byte_offset * i, bytes_to_write);
 
             const enc = this.device.createCommandEncoder();
             const pass = enc.beginComputePass();
@@ -254,24 +265,31 @@ export class TMIComputePass {
             pass.dispatchWorkgroups(Math.ceil(this.chunk_size / 256));
             pass.end();
 
-            enc.copyBufferToBuffer(this.out_storage_buffer, 0, this.read_staging_buffer, 0, bytes_to_write/2);
+            const next_buf = this.next_staging_buffer;
 
+            let staging_buffer = await this.read_staging_buffers[this.next_staging_buffer];
+            console.time(`buffer ${next_buf} was in use for`);
+
+            enc.copyBufferToBuffer(this.out_storage_buffer, 0, staging_buffer, 0, bytes_to_write / 2);
             this.device.queue.submit([enc.finish()]);
-            console.time("mapping buffer");
-            await this.read_staging_buffer.mapAsync(GPUMapMode.READ);
-            console.timeEnd("mapping buffer");
-
-            const res_chunk = new Float32Array(this.read_staging_buffer.getMappedRange(0,bytes_to_write/2));
-            output.set(res_chunk, i * this.chunk_size);
-            this.read_staging_buffer.unmap();
             
-        }
 
+            const chunk_idx = i;
+
+            this.read_staging_buffers[this.next_staging_buffer] = new Promise((resolve) => {
+                staging_buffer.mapAsync(GPUMapMode.READ).then(() => {
+                    const res_chunk = new Float32Array(staging_buffer.getMappedRange(0, bytes_to_write / 2));
+                    output.set(res_chunk, chunk_idx * this.chunk_size);
+                    staging_buffer.unmap();
+                    console.timeEnd(`buffer ${next_buf} was in use for`);
+                    resolve(staging_buffer);
+                });
+            
+            });
+            this.next_staging_buffer = (this.next_staging_buffer+1) % this.num_staging_buffers;
+
+        }
+        await Promise.all(this.read_staging_buffers);
         return output;
     }
-
-
-
-
-
 }
