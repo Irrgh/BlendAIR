@@ -150,7 +150,7 @@ export class App {
         
         const tmi_mesh : tm_mesh = create_tm_mesh(buf);
         const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);
-        const tmi_pass : TMIComputePass = new TMIComputePass(tmi_bvh);
+        const tmi_pass : TMIComputePass = new TMIComputePass(tmi_bvh,10_000_000);
 
         const sites = new Float32Array(10_000_000*2);
 

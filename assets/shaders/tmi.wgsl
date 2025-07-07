@@ -92,16 +92,27 @@ fn triangle_intersection(index : u32, org : vec3<f32>) -> f32 {
 @group(0) @binding(3) var<storage,read> tris : array<triangle>;
 @group(0) @binding(4) var<storage,read> vertices : array<vec3<f32>>;
 @group(0) @binding(5) var<uniform> max_z : f32;
+@group(0) @binding(6) var<uniform> thread_num : u32;
+@group(0) @binding(7) var<storage,read_write> offset : u32;
+
+@compute @workgroup_size(1,1,1)
+fn offset_increment(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x == 0u) {
+        offset += thread_num;
+    }
+}
 
 
-@compute @workgroup_size(256,1,1)
+@compute @workgroup_size(32,1,1)
 fn intersection (@builtin(global_invocation_id) global_id: vec3<u32>) {
 
-    if (!(global_id.x < arrayLength(&in_samples))) {
+    let id : u32 = global_id.x + offset;
+  
+    if (id >= arrayLength(&in_samples)) {
         return;
     }
 
-    let org : vec3<f32> = vec3<f32>(in_samples[global_id.x],max_z);
+    let org : vec3<f32> = vec3<f32>(in_samples[id],max_z);
     var i_stack : array<u32,max_depth> = array<u32,max_depth>(
         0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
         0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
@@ -126,14 +137,14 @@ fn intersection (@builtin(global_invocation_id) global_id: vec3<u32>) {
         d_stack[0] = root_intersection.x;   // entry point into aabb is closest
         // root index is already here because initialisation.
     } else {
-        out_samples[global_id.x] = -1e30;
+        out_samples[id] = -1e30;
         return;
     }
 
     while (stack_idx >= 0) {
 
         if (tmin <= d_stack[stack_idx]) {
-            out_samples[global_id.x] = tmin;
+            out_samples[id] = tmin;
             return;
         }
 
@@ -183,5 +194,5 @@ fn intersection (@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
         stack_idx--;
     }
-    out_samples[global_id.x] = tmin;
+    out_samples[id] = tmin;
 }

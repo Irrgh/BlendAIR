@@ -8,6 +8,12 @@ const node_byte_size = 32;
 const in_byte_size = 8;
 const out_byte_size = 4;
 
+const workgroup_size = 32;
+const chunk_size = 65535 * workgroup_size;
+
+
+
+
 export class TMIComputePass {
 
     private triBuffer!: DataView;
@@ -22,12 +28,9 @@ export class TMIComputePass {
     private max_z_uniform_buffer!: GPUBuffer;
     private in_storage_buffer!: GPUBuffer;
     private out_storage_buffer!: GPUBuffer;
-    private chunk_uniform_buffer! :GPUBuffer;
-
-    private num_staging_buffers: number = 8;
-    private read_staging_buffers!: Array<Promise<GPUBuffer>>;
-    private next_staging_buffer: number = 0;
-
+    private staging_buffer! : GPUBuffer;
+    private thread_num_uniform_buffer: GPUBuffer;
+    private offset_storage_buffer: GPUBuffer;
 
     private bindgroupLayout: GPUBindGroupLayout;
     private bindgroup!: GPUBindGroup;
@@ -36,18 +39,18 @@ export class TMIComputePass {
 
     private pipelineLayout: GPUPipelineLayout;
     private pipeline: GPUComputePipeline;
-
-
+    private pipeline2: GPUComputePipeline;
 
     private max_z!: number;
-    private chunk_size = 65536 * 16;
+    
 
 
 
 
 
 
-    constructor(bvh: TMIBvh) {
+
+    constructor(bvh: TMIBvh, max_size:number) {
 
         this.device = App.getRenderDevice();
         this.submitBVH(bvh);
@@ -58,27 +61,31 @@ export class TMIComputePass {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
+        this.thread_num_uniform_buffer = this.device.createBuffer({
+            size: 4,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+        });
+
+        this.offset_storage_buffer = this.device.createBuffer({
+            size: 4,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
+        });
+
         this.in_storage_buffer = this.device.createBuffer({
-            size: this.chunk_size * 8,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+            size: max_size*in_byte_size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
         });
 
         this.out_storage_buffer = this.device.createBuffer({
-            size: this.chunk_size * 4,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+            size: max_size*out_byte_size,
+            usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
         });
 
-        this.read_staging_buffers = new Array(this.num_staging_buffers);
+        this.staging_buffer = this.device.createBuffer({
+            size: max_size*out_byte_size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
 
-        for (let i = 0; i < this.num_staging_buffers; i++) {
-            this.read_staging_buffers[i] = new Promise((resolve) => {
-                let buf = this.device.createBuffer({
-                    size: this.chunk_size * 4,
-                    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-                });
-                resolve(buf);
-            });
-        }
 
         this.device.queue.writeBuffer(this.max_z_uniform_buffer, 0, new Float32Array([this.max_z]));
 
@@ -108,11 +115,17 @@ export class TMIComputePass {
                     binding: 5,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: { type: "uniform" }
+                }, {
+                    binding: 6,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type: "uniform" }
+                }, {
+                    binding: 7,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type: "storage" }
                 }
             ]
         });
-
-
 
         this.bindgroup = this.device.createBindGroup({
             layout: this.bindgroupLayout,
@@ -135,6 +148,12 @@ export class TMIComputePass {
                 }, {
                     binding: 5,
                     resource: { buffer: this.max_z_uniform_buffer }
+                }, {
+                    binding: 6,
+                    resource: { buffer: this.thread_num_uniform_buffer }
+                }, {
+                    binding: 7,
+                    resource: { buffer: this.offset_storage_buffer }
                 }
             ]
         });
@@ -157,7 +176,13 @@ export class TMIComputePass {
             layout: this.pipelineLayout
         })
 
-
+        this.pipeline2 = this.device.createComputePipeline({
+            compute: {
+                module:this.shader,
+                entryPoint:"offset_increment"
+            },
+            layout:this.pipelineLayout
+        });
 
 
     }
@@ -247,49 +272,46 @@ export class TMIComputePass {
         const output = new Float32Array(sites.length / 2);
 
         const samples = sites.length / 2;
-        const num_chunks = Math.ceil(samples / this.chunk_size);
+        const num_chunks = Math.ceil(samples / chunk_size);
 
-        for (let i = 0; i < num_chunks; i++) {
+        this.device.queue.writeBuffer(this.in_storage_buffer, 0, sites);
 
-            const byte_offset = this.in_storage_buffer.size;
-            const bytes_to_write = Math.min(Math.max(sites.byteLength - byte_offset * i, 0), byte_offset);
+        let offset = 0;
+        const workgroups_per_dispatch = Math.ceil(chunk_size / workgroup_size);
+        const threads_per_dispatch = workgroups_per_dispatch * workgroup_size;
 
-            this.device.queue.writeBuffer(this.in_storage_buffer, 0, sites.buffer, byte_offset * i, bytes_to_write);
+        this.device.queue.writeBuffer(this.offset_storage_buffer,0,new Uint32Array([0]));
+        this.device.queue.writeBuffer(this.thread_num_uniform_buffer,0,new Uint32Array([threads_per_dispatch]));
 
-            const enc = this.device.createCommandEncoder();
-            const pass = enc.beginComputePass();
+        this.device.queue.writeBuffer(this.thread_num_uniform_buffer, 0, new Uint32Array([threads_per_dispatch]));
+
+        const enc = this.device.createCommandEncoder();
+        const pass = enc.beginComputePass();
+
+        while (offset < samples) {
 
             pass.setBindGroup(0, this.bindgroup);
             pass.setPipeline(this.pipeline);
+            pass.dispatchWorkgroups(workgroups_per_dispatch);
 
-            pass.dispatchWorkgroups(Math.ceil(this.chunk_size / 256));
-            pass.end();
-
-            const next_buf = this.next_staging_buffer;
-
-            let staging_buffer = await this.read_staging_buffers[this.next_staging_buffer];
-            console.time(`buffer ${next_buf} was in use for`);
-
-            enc.copyBufferToBuffer(this.out_storage_buffer, 0, staging_buffer, 0, bytes_to_write / 2);
-            this.device.queue.submit([enc.finish()]);
-            
-
-            const chunk_idx = i;
-
-            this.read_staging_buffers[this.next_staging_buffer] = new Promise((resolve) => {
-                staging_buffer.mapAsync(GPUMapMode.READ).then(() => {
-                    const res_chunk = new Float32Array(staging_buffer.getMappedRange(0, bytes_to_write / 2));
-                    output.set(res_chunk, chunk_idx * this.chunk_size);
-                    staging_buffer.unmap();
-                    console.timeEnd(`buffer ${next_buf} was in use for`);
-                    resolve(staging_buffer);
-                });
-            
-            });
-            this.next_staging_buffer = (this.next_staging_buffer+1) % this.num_staging_buffers;
+            pass.setPipeline(this.pipeline2);
+            pass.dispatchWorkgroups(1);
+            offset += threads_per_dispatch;
 
         }
-        await Promise.all(this.read_staging_buffers);
+
+        pass.end();
+
+        enc.copyBufferToBuffer(this.out_storage_buffer, 0, this.staging_buffer, 0, this.out_storage_buffer.size);
+        this.device.queue.submit([enc.finish()]);
+
+        await this.staging_buffer.mapAsync(GPUMapMode.READ);
+
+        const res = new Float32Array(this.staging_buffer.getMappedRange());
+        output.set(res);
+        this.staging_buffer.unmap();
+        
+
         return output;
     }
 }
