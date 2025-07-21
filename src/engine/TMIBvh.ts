@@ -170,8 +170,8 @@ export class TMIBvh {
 
         const dim : vec3 = vec3.sub([0,0,0],n.max,n.min);
         let axis : number = 0;
-        if (dim[1] > dim[0]) axis = 1
-        if (dim[2] > dim[axis]) axis = 3
+        if (dim[1] > dim[0]) axis = 1;
+        if (dim[2] > dim[axis]) axis = 2;
         const splitPos = n.min[axis] + dim[axis] * 0.5;
 
         let i = n.first_pc;

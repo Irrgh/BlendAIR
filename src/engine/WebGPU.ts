@@ -43,7 +43,8 @@ export class WebGPU {
             {
                 requiredFeatures: canTimestamp ? ["timestamp-query"] : [],
                 requiredLimits: {
-                    maxBufferSize:2147483648
+                    maxBufferSize:2147483648,
+                    maxStorageBufferBindingSize:2147483644
                 }
             }
         );
