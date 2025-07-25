@@ -285,11 +285,11 @@ export class TMIComputePass {
 
         this.device.queue.writeBuffer(this.thread_num_uniform_buffer, 0, new Uint32Array([threads_per_dispatch]));
 
-        const enc = this.device.createCommandEncoder();
-        const pass = enc.beginComputePass();
+        
 
         while (offset < samples) {
-
+            const enc = this.device.createCommandEncoder();
+            const pass = enc.beginComputePass();
             pass.setBindGroup(0, this.bindgroup);
             pass.setPipeline(this.pipeline);
             pass.dispatchWorkgroups(workgroups_per_dispatch);
@@ -297,11 +297,12 @@ export class TMIComputePass {
             pass.setPipeline(this.pipeline2);
             pass.dispatchWorkgroups(1);
             offset += threads_per_dispatch;
-
+            pass.end();
+            this.device.queue.submit([enc.finish()]);
         }
 
-        pass.end();
-
+        
+        const enc = this.device.createCommandEncoder();
         enc.copyBufferToBuffer(this.out_storage_buffer, 0, this.staging_buffer, 0, this.out_storage_buffer.size);
         this.device.queue.submit([enc.finish()]);
 

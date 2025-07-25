@@ -168,9 +168,6 @@ export class App {
         console.timeEnd("gpu sampling");
 
         console.log(res);
-        console.log(res.slice(0,100));
-        
-
 
         this.outdated = true;
 
