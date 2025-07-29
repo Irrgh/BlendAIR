@@ -257,8 +257,6 @@ export class SelectionOutlinePass extends RenderPass {
         const sampler = device.createSampler({
             addressModeU: "clamp-to-edge",
             addressModeV: "clamp-to-edge",
-            magFilter: "linear",
-            minFilter: "linear"
         });
 
 
@@ -298,7 +296,9 @@ export class SelectionOutlinePass extends RenderPass {
                 }, {
                     binding: 6,
                     visibility: GPUShaderStage.FRAGMENT,
-                    sampler: {}
+                    sampler: {
+                        type:"non-filtering"
+                    }
                 }
 
             ]

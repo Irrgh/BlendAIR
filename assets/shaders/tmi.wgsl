@@ -1,5 +1,5 @@
 const dir : vec3<f32> = vec3<f32>(0.0,0.0,-1.0);
-const inv_dir : vec3<f32> = vec3<f32>(1e38,1e38,-1.0);
+const inv_dir : vec3<f32> = vec3<f32>(1e35,1e35,-1.0);
 const eps : f32 = 1e-5;
 const max_depth : u32 = 32;
 

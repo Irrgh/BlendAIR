@@ -279,17 +279,40 @@ export class TMIComputePass {
         let offset = 0;
         const workgroups_per_dispatch = Math.ceil(chunk_size / workgroup_size);
         const threads_per_dispatch = workgroups_per_dispatch * workgroup_size;
+        const dispatchCount = Math.ceil(samples / threads_per_dispatch);
 
         this.device.queue.writeBuffer(this.offset_storage_buffer,0,new Uint32Array([0]));
         this.device.queue.writeBuffer(this.thread_num_uniform_buffer,0,new Uint32Array([threads_per_dispatch]));
 
         this.device.queue.writeBuffer(this.thread_num_uniform_buffer, 0, new Uint32Array([threads_per_dispatch]));
 
-        
+        const querys = this.device.createQuerySet({
+            type: "timestamp",
+            count: dispatchCount*2
+        });
+
+        const timeResolveBuffer = this.device.createBuffer({
+            size: 8*dispatchCount*2,
+            usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC
+        });
+
+        const timeStagingBuffer = this.device.createBuffer({
+            size:8*dispatchCount*2,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+
+
+        let dispatch = 0;
 
         while (offset < samples) {
             const enc = this.device.createCommandEncoder();
-            const pass = enc.beginComputePass();
+            const pass = enc.beginComputePass({
+                timestampWrites: {
+                    querySet: querys,
+                    beginningOfPassWriteIndex:dispatch*2,
+                    endOfPassWriteIndex:dispatch*2+1,
+                }
+            });
             pass.setBindGroup(0, this.bindgroup);
             pass.setPipeline(this.pipeline);
             pass.dispatchWorkgroups(workgroups_per_dispatch);
@@ -299,12 +322,33 @@ export class TMIComputePass {
             offset += threads_per_dispatch;
             pass.end();
             this.device.queue.submit([enc.finish()]);
+            dispatch++;
         }
 
         
         const enc = this.device.createCommandEncoder();
+        enc.resolveQuerySet(querys,0,dispatchCount*2,timeResolveBuffer,0);
+        enc.copyBufferToBuffer(timeResolveBuffer,0,timeStagingBuffer,0,dispatchCount*2*8);
         enc.copyBufferToBuffer(this.out_storage_buffer, 0, this.staging_buffer, 0, this.out_storage_buffer.size);
+        
+
         this.device.queue.submit([enc.finish()]);
+
+        await timeStagingBuffer.mapAsync(GPUMapMode.READ);
+
+        const timeStamps = new BigInt64Array(timeStagingBuffer.getMappedRange());
+        let sum : bigint = 0n;
+        for (let i = 0; i < dispatchCount; i++) {
+
+            const span : bigint = timeStamps[i*2+1] - timeStamps[i*2];
+            sum += span;
+            console.log(`chunk ${i} took: ${Number(span) / 1_000_000} ms`)
+
+        }
+        console.log(`compute took: ${Number(sum) / 1_000_000} ms in total`);
+        timeStagingBuffer.unmap();
+
+
 
         await this.staging_buffer.mapAsync(GPUMapMode.READ);
 
