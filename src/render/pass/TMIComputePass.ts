@@ -2,7 +2,7 @@ import { App } from "../../app";
 import { TMIBvh } from "../../engine/TMIBvh";
 import shader_code from "../../../assets/shaders/tmi.wgsl";
 
-const tri_byte_size = 32;
+const tri_byte_size = 16;
 const vert_byte_size = 16;
 const node_byte_size = 32;
 const in_byte_size = 8;
@@ -230,11 +230,6 @@ export class TMIComputePass {
             this.triBuffer.setInt32(offset + 0, tri.indices[0], true);
             this.triBuffer.setInt32(offset + 4, tri.indices[1], true);
             this.triBuffer.setInt32(offset + 8, tri.indices[2], true);
-
-            this.triBuffer.setFloat32(offset + 16, tri.center[0], true);
-            this.triBuffer.setFloat32(offset + 20, tri.center[1], true);
-            this.triBuffer.setFloat32(offset + 24, tri.center[2], true);
-
         }
 
 

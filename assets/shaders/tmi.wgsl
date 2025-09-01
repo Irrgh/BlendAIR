@@ -13,7 +13,6 @@ struct bvh_node {
 
 struct triangle {
     indices : vec3<u32>,
-    centroid: vec3<f32>
 }
 
 fn is_leaf(node : bvh_node) -> bool {

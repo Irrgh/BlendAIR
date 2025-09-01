@@ -69,13 +69,13 @@ export class App {
 
         const root = ResizableWindow.initializeRootWindow("horizontal");
         const right = root.addChild(0, "horizontal");
-        const left = root.addChild(0, "vertical", 1500);
-        const child1 = left.addChild(0, "horizontal");
-        const child2 = left.addChild(0, "horizontal", 700);
+        //const left = root.addChild(0, "vertical", 1500);
+        //const child1 = left.addChild(0, "horizontal");
+        //const child2 = left.addChild(0, "horizontal", 700);
 
-        child1.setContent(new TimelineWindow());
-        child2.setContent(new ViewportWindow());
-
+        //child1.setContent(new TimelineWindow());
+        //child2.setContent(new ViewportWindow());
+        right.setContent(new ViewportWindow());
 
 
 
@@ -101,7 +101,7 @@ export class App {
             }
 
             for (let i = 0; i < el.length; i++) {
-                el[i] = el[i] - 1
+                el[i] = el[i]
             } 
 
 
@@ -133,16 +133,16 @@ export class App {
         }
 
 
-        const buf: ArrayBuffer = await (await fetch("../assets/models/200x200_0.01.bin")).arrayBuffer();
+        const buf: ArrayBuffer = await (await fetch("../assets/models/test_output.bin")).arrayBuffer();
 
         const md0 = makeMesh(buf);
 
         const ed0 = new MeshInstance(md0);
 
         
-        ed0.setScale(.25,.25,.25);
+        ed0.setScale(1/10,1/10,1/20);
         
-        ed0.setPosition(0,0,0.1);
+        ed0.setPosition(-1,-1,0.1);
 
         this.currentScene.addEntity(ed0);
         
@@ -163,11 +163,10 @@ export class App {
 
         console.log(App.getRenderDevice().adapterInfo);
 
-        console.time("gpu sampling");
-        const res = await tmi_pass.sample(sites);
-        console.timeEnd("gpu sampling");
-
-        console.log(res);
+        //console.time("gpu sampling");
+        //const res = await tmi_pass.sample(sites);
+        //console.timeEnd("gpu sampling")
+        //console.log(res);
 
         this.outdated = true;
 
