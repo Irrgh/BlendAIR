@@ -255,9 +255,9 @@ export class TMIComputePass {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
 
-        this.device.queue.writeBuffer(this.vert_storage_buffer, 0, this.vertBuffer);
-        this.device.queue.writeBuffer(this.node_storage_buffer, 0, this.nodeBuffer);
-        this.device.queue.writeBuffer(this.tri_storage_buffer, 0, this.triBuffer);
+        this.device.queue.writeBuffer(this.vert_storage_buffer, 0, this.vertBuffer.buffer);
+        this.device.queue.writeBuffer(this.node_storage_buffer, 0, this.nodeBuffer.buffer);
+        this.device.queue.writeBuffer(this.tri_storage_buffer, 0, this.triBuffer.buffer);
 
     }
 
@@ -269,7 +269,7 @@ export class TMIComputePass {
         const samples = sites.length / 2;
         const num_chunks = Math.ceil(samples / chunk_size);
 
-        this.device.queue.writeBuffer(this.in_storage_buffer, 0, sites);
+        this.device.queue.writeBuffer(this.in_storage_buffer, 0, sites.buffer);
 
         let offset = 0;
         const workgroups_per_dispatch = Math.ceil(chunk_size / workgroup_size);
