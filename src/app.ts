@@ -59,27 +59,7 @@ export class App {
     public webgpu!: WebGPU;
     public outdated: boolean = true;
 
-
-
-    initialize = async () => {
-
-        this.webgpu = await WebGPU.init();
-        this.currentScene = new Scene();
-
-
-        const root = ResizableWindow.initializeRootWindow("horizontal");
-        const right = root.addChild(0, "horizontal");
-        //const left = root.addChild(0, "vertical", 1500);
-        //const child1 = left.addChild(0, "horizontal");
-        //const child2 = left.addChild(0, "horizontal", 700);
-
-        //child1.setContent(new TimelineWindow());
-        //child2.setContent(new ViewportWindow());
-        right.setContent(new ViewportWindow());
-
-
-
-        function makeMesh(buf:ArrayBuffer): TriangleMesh {
+    makeMesh(buf:ArrayBuffer): TriangleMesh {
             const vertices = new Uint32Array(buf.slice(0,4))[0]; 
             const faces = new Uint32Array(buf.slice(4,8))[0];
 
@@ -130,36 +110,35 @@ export class App {
             console.log(a);
 
             return new TriangleMesh(paddedArr, el);
-        }
+    }
+
+    initialize = async () => {
+
+        this.webgpu = await WebGPU.init();
+        this.currentScene = new Scene();
 
 
-        const buf: ArrayBuffer = await (await fetch("../assets/models/test_output.bin")).arrayBuffer();
+        const root = ResizableWindow.initializeRootWindow("horizontal");
+        const right = root.addChild(0, "horizontal");
+        right.setContent(new ViewportWindow());
 
-        const md0 = makeMesh(buf);
 
-        const ed0 = new MeshInstance(md0);
-
+        //const buf: ArrayBuffer = await (await fetch("../assets/models/c5h10_wpt_100.bin")).arrayBuffer();
+//
+        //const md0 = this.makeMesh(buf);
+//
+        //const ed0 = new MeshInstance(md0);
+//
+        //
+        //ed0.setScale(1/10,1/10,1/80);
+        //
+        //ed0.setPosition(-1,-1,0.1);
+//
+        //this.currentScene.addEntity(ed0);
+        //
+        //console.log(md0);
         
-        ed0.setScale(1/10,1/10,1/20);
         
-        ed0.setPosition(-1,-1,0.1);
-
-        this.currentScene.addEntity(ed0);
-        
-        console.log(md0);
-        
-        const tmi_mesh : tm_mesh = create_tm_mesh(buf);
-        const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);
-        const tmi_pass : TMIComputePass = new TMIComputePass(tmi_bvh,10_000_000);
-
-        const sites = new Float32Array(10_000_000*2);
-
-        for (let i = 0; i < sites.length/2;i++) {
-
-            sites[i*2] = Math.random()*120-60;
-            sites[i*2+1] = Math.random()*120-60;
-        }
-
 
         console.log(App.getRenderDevice().adapterInfo);
 

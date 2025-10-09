@@ -33,17 +33,17 @@ struct VertexOut {
 @vertex
 fn vertex_main(input : VertexIn, @builtin(vertex_index) vert : u32) -> VertexOut {
 
-    let objectId = objectIndex[input.instanceId];
+    let objectId : u32 = objectIndex[input.instanceId];
 
 
     var modelTransform: mat4x4<f32> = modelTransforms[objectId];
     var output: VertexOut;
     output.position = camera.proj * camera.view * modelTransform * vec4<f32>(input.position, 1.0f);
     output.fragPosition = input.position;
-    //output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
-    output.normal.x = f32(vert);
+    output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
+    //output.normal.x = f32(vert);
     output.uv = input.uv;
-    output.objectId = vert;
+    output.objectId = objectId + 1u;
     return output;
 }
 
@@ -79,10 +79,11 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
 
     color = abs(normalize(dpdx(fragData.fragPosition) + dpdy(fragData.fragPosition)));
 
+    color = color * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
 
-    //let x : f32 = ((f32(fragData.objectId + 5) % 16) / 16 * 0.7) + 0.3;
-    //let y : f32 = ((f32(fragData.objectId + 4) % 11) / 11 * 0.7) + 0.3;
-    //let z : f32 = ((f32(fragData.objectId + 7) % 13) / 13 * 0.7) + 0.3;
+    //let x : f32 = ((f32(fragData.objectId + 5u) % 16.0) / 16.0 * 0.7) + 0.3;
+    //let y : f32 = ((f32(fragData.objectId + 4u) % 11.0) / 11.0 * 0.7) + 0.3;
+    //let z : f32 = ((f32(fragData.objectId + 7u) % 13.0) / 13.0 * 0.7) + 0.3;
     //color = vec3f(x,y,z);
 
 

@@ -193,10 +193,10 @@ export class TrianglePass extends RenderPass {
 
         const device = App.getRenderDevice();
 
-        device.queue.writeBuffer(vertexBuffer, 0, vertexArray);
-        device.queue.writeBuffer(indexBuffer, 0, indexArray);
-        device.queue.writeBuffer(transformBuffer, 0, transformArray);
-        device.queue.writeBuffer(objectIndexBuffer, 0, idArray);
+        device.queue.writeBuffer(vertexBuffer, 0, vertexArray.buffer);
+        device.queue.writeBuffer(indexBuffer, 0, indexArray.buffer);
+        device.queue.writeBuffer(transformBuffer, 0, transformArray.buffer);
+        device.queue.writeBuffer(objectIndexBuffer, 0, idArray.buffer);
         this.drawParameters = drawParameters;
 
     }
@@ -207,7 +207,7 @@ export class TrianglePass extends RenderPass {
     public render(viewport: Viewport): void {
 
 
-        if (App.getInstance().outdated) {
+        if (true) {
             this.createMeshBuffer(viewport);
             App.getInstance().outdated = false;
             console.log(viewport.scene);

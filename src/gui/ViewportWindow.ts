@@ -15,7 +15,7 @@ export class ViewportWindow extends ContentWindow {
         const canvas = document.createElement("canvas");
 
         const app: App = App.getInstance();
-        const viewport = new Viewport(canvas,App.getScene());
+        const viewport = new Viewport(canvas, App.getScene());
 
 
         super(canvas);
@@ -37,10 +37,11 @@ export class ViewportWindow extends ContentWindow {
             console.time("import parsing");
             const mesh = TriangleMesh.parseFromObj(model);
             console.timeEnd("import parsing");
-            
+
             const scene = App.getScene()
-            const entity : MeshInstance = new MeshInstance(mesh);
+            const entity: MeshInstance = new MeshInstance(mesh);
             scene.addEntity(entity);
+            App.getInstance().outdated = true;
             requestAnimationFrame(this.viewport.render);
 
         });
@@ -52,15 +53,15 @@ export class ViewportWindow extends ContentWindow {
 
 
         const button = document.createElement("abbr");
-        button.title = "This is mainly meant as a debug tool to check wgsl shaders since the vscode wgsl language server extensions are very cryptic in there descriptions"
+        button.title = "This is mainly meant as a debug tool to check wgsl shaders since the vscode wgsl language server extensions are very cryptic in their descriptions"
         button.innerText = "Check shader";
         button.classList.add("window-header-element");
-        button.addEventListener("click",  async () => {
+        button.addEventListener("click", async () => {
             const fileHandle = (await window.showOpenFilePicker())[0];
             const file = await fileHandle.getFile();
 
 
-            const shader = await(file).text();
+            const shader = await (file).text();
 
             const shaderModule = app.webgpu.getDevice().createShaderModule({
                 code: shader
@@ -74,9 +75,43 @@ export class ViewportWindow extends ContentWindow {
         });
         this.headerElement.append(button);
 
-        canvas.addEventListener("drop",(ev) => {
+        canvas.addEventListener("drop", async (ev) => {
             ev.preventDefault();
-            console.log(ev);
+
+            console.log(ev.dataTransfer?.files);
+
+            if (!ev.dataTransfer?.files) {
+                return;
+            }
+
+            const len = ev.dataTransfer.files.length;
+            const files = Array.from(ev.dataTransfer.files);
+
+            for (let i = 0; i < len; i++) {
+
+                const file = files[i];
+
+                console.log(file?.name);
+
+                if (file && file.name.endsWith(".obj")) {
+
+                    const model = await file.text();
+
+                    console.log("parsing starts now");
+
+                    console.time("import parsing");
+                    const mesh = TriangleMesh.parseFromObj(model);
+                    console.timeEnd("import parsing");
+
+                    const scene = App.getScene()
+                    const entity: MeshInstance = new MeshInstance(mesh);
+                    scene.addEntity(entity);
+                    requestAnimationFrame(this.viewport.render);
+
+                }
+
+            }
+
         })
 
         canvas.ondragover = (ev) => {

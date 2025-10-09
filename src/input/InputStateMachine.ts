@@ -261,7 +261,7 @@ export class InputStateMachine {
             if (objectIndex !== 0) { // ENV hit
 
 
-                const entity = Array.from(scene.entities)[objectIndex - 1][1];    // 0 is ENV hence id 0 could not be index 0
+                const entity = Array.from(scene.entities)[objectIndex-1][1];    // 0 is ENV hence id 0 could not be index 0
 
                 scene.primarySelection = entity;
                 scene.selections.add(entity);
