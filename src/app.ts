@@ -80,35 +80,6 @@ export class App {
                 }
             }
 
-            for (let i = 0; i < el.length; i++) {
-                el[i] = el[i]
-            } 
-
-
-            for (let i = 0; i < el.length/3; i++) {
-                let [a, b, c] = el.slice(i * 3, i * 3 + 3);
-                let p0: vec3 = arr.slice(a * 3, a * 3 + 3);
-                let p1: vec3 = arr.slice(b * 3, b * 3 + 3);
-                let p2: vec3 = arr.slice(c * 3, c * 3 + 3);
-                let v10 = vec3.normalize(vec3.create(),vec3.sub(vec3.create(), p1, p0));
-                let v20 = vec3.normalize(vec3.create(),vec3.sub(vec3.create(), p2, p0));
-                let cross = vec3.cross(vec3.create(), v10, v20);
-                paddedArr[a * 8 + 3] = cross[0];
-                paddedArr[a * 8 + 4] = cross[1];
-                paddedArr[a * 8 + 5] = cross[2];
-            }
-
-            const a : any[] = [];
-            const s : Set<number> = new Set();
-            for (var i = 0; i < el.length;i++) {
-                if (el[i] >= arr.length/3) {
-                    a.push({val:el[i], idx:i});
-                    
-                }
-                s.add(el[i]);
-            }
-            console.log(a);
-
             return new TriangleMesh(paddedArr, el);
     }
 
@@ -123,22 +94,52 @@ export class App {
         right.setContent(new ViewportWindow());
 
 
-        //const buf: ArrayBuffer = await (await fetch("../assets/models/c5h10_wpt_100.bin")).arrayBuffer();
-//
-        //const md0 = this.makeMesh(buf);
-//
-        //const ed0 = new MeshInstance(md0);
-//
-        //
-        //ed0.setScale(1/10,1/10,1/80);
-        //
-        //ed0.setPosition(-1,-1,0.1);
-//
-        //this.currentScene.addEntity(ed0);
-        //
-        //console.log(md0);
+        const eptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_ept_100.bin")).arrayBuffer();
+        const wptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_wpt_100.bin")).arrayBuffer();
+        const sptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_spt_100.bin")).arrayBuffer();
+        const dptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_dpt_100.bin")).arrayBuffer();
+
+        const eptMesh = this.makeMesh(eptBin);
+        const wptMesh = this.makeMesh(wptBin);
+        const sptMesh = this.makeMesh(sptBin);
+        const dptMesh = this.makeMesh(dptBin);
+
+        const ept = new MeshInstance(eptMesh);
+        const wpt = new MeshInstance(wptMesh);
+        const spt = new MeshInstance(sptMesh);
+        const dpt = new MeshInstance(dptMesh);
         
+        ept.setScale(1/40,1/40,1/80);
+        ept.setPosition(2,2,0);
+
+        wpt.setScale(1/40,1/40,1/160);
+        wpt.setPosition(-7,2,0);
+
+        spt.setScale(1/40,1/40,5/3);
+        spt.setPosition(2,-8.75,0);
+
+        dpt.setScale(1/40,1/40,4/5);
+        dpt.setPosition(-7,-8.75,0);
+
+        this.currentScene.addEntity(ept);
+        this.currentScene.addEntity(wpt);
+        this.currentScene.addEntity(spt);
+        this.currentScene.addEntity(dpt);
+
+        console.log(eptMesh);
         
+        //const tmi_mesh : tm_mesh = create_tm_mesh(eptBin);
+        //const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);
+        //const tmi_pass : TMIComputePass = new TMIComputePass(tmi_bvh,10_000_000);
+
+        //const sites = new Float32Array(10_000_000*2);
+
+        //for (let i = 0; i < sites.length/2;i++) {
+
+        //    sites[i*2] = Math.random()*120-60;
+        //    sites[i*2+1] = Math.random()*120-60;
+        //}
+
 
         console.log(App.getRenderDevice().adapterInfo);
 

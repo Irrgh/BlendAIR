@@ -22,6 +22,7 @@ struct VertexOut {
       @location(1) normal: vec3<f32>,
       @location(2) uv: vec2<f32>,
       @location(3) @interpolate(flat) objectId: u32,
+      @location(4) @interpolate(flat) vertId: u32,
 }
 
 
@@ -44,6 +45,7 @@ fn vertex_main(input : VertexIn, @builtin(vertex_index) vert : u32) -> VertexOut
     //output.normal.x = f32(vert);
     output.uv = input.uv;
     output.objectId = objectId + 1u;
+    output.vertId = vert;
     return output;
 }
 
@@ -76,15 +78,16 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
 
     var color : vec3f;
 
+    let id : u32 = fragData.vertId;
 
     color = abs(normalize(dpdx(fragData.fragPosition) + dpdy(fragData.fragPosition)));
 
     color = color * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
 
-    //let x : f32 = ((f32(fragData.objectId + 5u) % 16.0) / 16.0 * 0.7) + 0.3;
-    //let y : f32 = ((f32(fragData.objectId + 4u) % 11.0) / 11.0 * 0.7) + 0.3;
-    //let z : f32 = ((f32(fragData.objectId + 7u) % 13.0) / 13.0 * 0.7) + 0.3;
-    //color = vec3f(x,y,z);
+    let x : f32 = ((f32(id + 5) % 16) / 16 * 0.7) + 0.3;
+    let y : f32 = ((f32(id + 4) % 11) / 11 * 0.7) + 0.3;
+    let z : f32 = ((f32(id + 7) % 13) / 13 * 0.7) + 0.3;
+    color = vec3f(x,y,z);
 
 
     var output : FragmentOut;

@@ -207,7 +207,7 @@ export class TrianglePass extends RenderPass {
     public render(viewport: Viewport): void {
 
 
-        if (true) {
+        if (App.getInstance().outdated) {
             this.createMeshBuffer(viewport);
             App.getInstance().outdated = false;
             console.log(viewport.scene);
