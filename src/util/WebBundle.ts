@@ -1,7 +1,7 @@
 import esbuild from "esbuild-wasm";
 
 const init = esbuild.initialize({
-    wasmURL: 'https://unpkg.com/esbuild-wasm/esbuild.wasm', // Load the WASM binary
+    wasmURL: 'https://unpkg.com/esbuild-wasm@0.24.2/esbuild.wasm', // Load the WASM binary
 });
 
 const fetchFromServerPlugin = (baseUrl: string) => ({

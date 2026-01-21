@@ -10,6 +10,8 @@ import { TimelineWindow } from "./gui/TimelineWindow";
 import { AnimationSheet } from "./engine/AnimationSheet";
 import { Bvh } from "./engine/Bvh";
 import { Ray } from "./engine/Ray";
+import { createConcurrentModule } from "./util/Concurrent";
+import * as tm from "./engine/TriangleMesh";
 
 export class App {
     private static instance: App;
@@ -145,6 +147,16 @@ export class App {
             this.currentScene.addEntity(entity);
 
         }
+
+        const cm = await createConcurrentModule(tm,"/src/engine/TriangleMesh.ts");
+
+        (window as any).cm = cm;
+        (window as any).t4 = model4;
+
+        const eee = await cm.TriangleMesh.parseFromObj(model4);
+
+        console.log(eee);
+
 
 
         console.time("bvh");
