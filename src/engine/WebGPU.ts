@@ -42,10 +42,10 @@ export class WebGPU {
         const device = await adapter.requestDevice(
             {
                 requiredFeatures: canTimestamp ? ["timestamp-query"] : [],
-                requiredLimits: {
-                    maxBufferSize:2147483648,
-                    maxStorageBufferBindingSize:2147483644
-                }
+                //requiredLimits: {
+                //    maxBufferSize:2147483648,
+                //    maxStorageBufferBindingSize:2147483644
+                //}
             }
         );
 

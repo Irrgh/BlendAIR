@@ -17,6 +17,12 @@ import fullQuadShader from "../../assets/shaders/fullQuadShader.wgsl";
 import { RealisticRenderer } from "../render/RealisticRenderer";
 import { InputStateMachine } from "../input/InputStateMachine";
 
+type WebGLContext = {
+    gl: WebGLRenderingContext;
+    prog: WebGLProgram;
+}
+
+
 
 export class Viewport implements Resizable {
 
@@ -24,11 +30,13 @@ export class Viewport implements Resizable {
     /**
      * Rendering Canvas 
      */
-    canvas: HTMLCanvasElement
+    canvas: HTMLCanvasElement;
+
+    webgpuCanvas?: OffscreenCanvas;
 
     canvasFormat: GPUTextureFormat;
 
-    context: GPUCanvasContext;
+    webgpuContext: GPUCanvasContext;
 
 
     /**
@@ -39,7 +47,7 @@ export class Viewport implements Resizable {
     /**
      * {@link Camera} Object used for rendering.
      */
-    camera: Camera;
+    public camera: Camera;
 
 
     public redrawNext: boolean = false;
@@ -51,17 +59,32 @@ export class Viewport implements Resizable {
     width: number;
     height: number;
 
-    private navigator : InputStateMachine;
+    private navigator?: InputStateMachine;
+    private ctx?: WebGLRenderingContext;
+    private supportXR: boolean;
+    private xrReady : boolean = false;
+    private prog?: WebGLProgram;
 
+    private eyesTextures? : WebGLTexture[];
 
-
-    constructor(canvas: HTMLCanvasElement, scene: Scene) {
+    constructor(canvas: HTMLCanvasElement, scene: Scene, supportXR: boolean = false) {
         this.canvas = canvas;
         this.scene = scene;
         this.scene.viewports.add(this);
         this.canvasFormat = "rgba8unorm";
-        this.context = <GPUCanvasContext>canvas.getContext("webgpu");
-        this.context.configure({
+        this.supportXR = supportXR;
+
+        if (supportXR) {
+            this.webgpuCanvas = new OffscreenCanvas(canvas.width, canvas.height);
+            this.webgpuContext = <GPUCanvasContext>this.webgpuCanvas.getContext("webgpu");
+            this.ctx = canvas.getContext("webgl", { alpha: false }) as WebGLRenderingContext;
+            this.prog = this.initWebGL();
+        } else {
+            this.webgpuContext = <GPUCanvasContext>canvas.getContext("webgpu");
+        }
+
+        //this.context = <GPUCanvasContext>canvas.getContext("webgpu");
+        this.webgpuContext.configure({
             device: App.getRenderDevice(),
             format: this.canvasFormat,
             alphaMode: "premultiplied",
@@ -75,34 +98,32 @@ export class Viewport implements Resizable {
         this.camera.setPerspectiveProjection(Util.degreeToRadians(90), aspect, 0.1, 100);
         this.camera.setPosition(0, 0, 0); /** @todo please change this  */
 
-
-        this.navigator = new InputStateMachine(this);
-
-
-
-
         this.renderer = new BasicRenderer(this);
         this.renderer.render();
     }
-
-
 
     getRenderer(): Renderer {
         return this.renderer;
     }
 
 
-    resize(width: number, height: number): void {
+    public resize(width: number, height: number): void {
 
         if (width != this.width || height != this.height) {
             this.canvas.width = width;
             this.canvas.height = height;
+
+            if (this.webgpuCanvas) {
+                this.webgpuCanvas.width = width;
+                this.webgpuCanvas.height = height;
+            }
+
+
             this.width = width;
             this.height = height;
 
             const aspect = width / height;
 
-            
             this.camera.setPerspectiveProjection(Math.PI / 2, aspect, 0.1, 100);
             this.renderer.render();
         }
@@ -112,12 +133,90 @@ export class Viewport implements Resizable {
 
 
 
+    public async xrReadyContext(): Promise<WebGLRenderingContext> {
+        if (!this.supportXR) {
+            throw new Error("XR not supported");
+        }
 
+        if (this.xrReady) {
+            await this.ctx!.makeXRCompatible();
+            this.xrReady = true;
+        }
+        
+        return this.ctx!;
+    }
 
+    private initWebGL(): WebGLProgram {
+        const gl = this.ctx!;
 
+        const vsSource = `
+                attribute vec2 a_position;
+                varying vec2 v_uv;
+                void main() {
+                    v_uv = (a_position + 1.0) * 0.5;
+                    gl_Position = vec4(a_position, 0.0, 1.0);
+                }`;
 
+        const fsSource = `
+                precision mediump float;
+                varying vec2 v_uv;
+                uniform sampler2D u_tex;
+                void main() {
+                    gl_FragColor = texture2D(u_tex, vec2(v_uv.x, 1.0 - v_uv.y));
+                }`;
 
+        const vs = gl.createShader(gl.VERTEX_SHADER)!;
+        gl.shaderSource(vs, vsSource);
+        gl.compileShader(vs);
 
+        const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
+        gl.shaderSource(fs, fsSource);
+        gl.compileShader(fs);
+
+        const prog = gl.createProgram()!;
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
+
+        const pos = gl.createBuffer()!;
+        gl.bindBuffer(gl.ARRAY_BUFFER, pos);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+            gl.STATIC_DRAW
+        );
+
+        const loc = gl.getAttribLocation(prog, "a_position");
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        return prog;
+    }
+
+    public resizeForXR(vps : XRViewport[]) : void {
+        if (!this.xrReady) throw new Error("viewport is not ready for xr");
+
+        let width : number = 0;
+        let height : number = 0;
+
+        vps.forEach(vp => {
+           width = Math.max(width,vp.width + vp.x);
+           height = Math.max(height, vp.height + vp.y);
+        });
+
+        if (width != this.width || height != this.height) {
+            this.canvas.width = width;
+            this.canvas.height = height;
+
+            if (this.webgpuCanvas) {
+                this.webgpuCanvas.width = width;
+                this.webgpuCanvas.height = height;
+            } 
+        }
+
+       
+
+    }
 
 
 
@@ -139,11 +238,52 @@ export class Viewport implements Resizable {
         return App.getRenderDevice().createShaderModule({ code: frag });
     }
 
+    public async drawTexture(texture: GPUTexture, sampleType: GPUTextureFormat, fragment: string) {
+
+        // draws to webgpu canvas
+        this.webgpuDrawTexture(fragment, sampleType, texture);
+
+
+        if (this.ctx && this.webgpuCanvas) {
+            const bitmap = await createImageBitmap(this.webgpuCanvas);
+            const gl = this.ctx;
+            const prog = this.prog!;
+
+            const tex = gl.createTexture()!;
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+
+            // Bind sampler
+            const samplerLoc = gl.getUniformLocation(prog, "u_tex");
+            gl.uniform1i(samplerLoc, 0);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+
+
+            // 4. Draw
+            //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            //gl.clearColor(1, 0, 1, 1);
+            //gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+
+    }
 
 
 
-    public drawTexture(texture: GPUTexture, sampleType: GPUTextureFormat, fragment: string) {
+    /**
+     * Redraws the scene
+     */
+    public render = () => {
+        this.renderer.render();
+    }
 
+
+    private webgpuDrawTexture(fragment: string, sampleType: GPUTextureFormat, texture: GPUTexture) {
         const device = App.getRenderDevice();
 
         const shaderModule = this.createTextureConversionShader(fragment, sampleType);
@@ -164,12 +304,12 @@ export class Viewport implements Resizable {
                     }
                 }
             ]
-        })
+        });
 
         const resolutionBuffer = device.createBuffer({
             size: 8,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC
-        })
+        });
 
         device.queue.writeBuffer(resolutionBuffer, 0, new Uint32Array([this.width, this.height]));
 
@@ -184,7 +324,7 @@ export class Viewport implements Resizable {
                     resource: texture.createView()
                 }
             ]
-        })
+        });
 
         const pipelineLayout: GPUPipelineLayout = device.createPipelineLayout({
             bindGroupLayouts: [bindgroupLayout]
@@ -212,23 +352,20 @@ export class Viewport implements Resizable {
         const passDescriptor: GPURenderPassDescriptor = {
             colorAttachments: [
                 {
-                    view: this.context.getCurrentTexture().createView(),
+                    view: this.webgpuContext.getCurrentTexture().createView(),
                     storeOp: "store",
                     loadOp: "clear"
                 }
             ],
             label: "render texture to viewport"
-        }
+        };
 
-        App.getInstance().webgpu.attachTimestamps(passDescriptor)
+        App.getInstance().webgpu.attachTimestamps(passDescriptor);
 
         const commandEncoder = device.createCommandEncoder();
-        const renderPassEncoder = commandEncoder.beginRenderPass(passDescriptor)
+        const renderPassEncoder = commandEncoder.beginRenderPass(passDescriptor);
 
-
-
-
-        renderPassEncoder.pushDebugGroup("render to canvas");
+        renderPassEncoder.pushDebugGroup("presenting to canvas");
         renderPassEncoder.setPipeline(renderPipeline);
         renderPassEncoder.setBindGroup(0, bindgroup);
         renderPassEncoder.draw(6, 1, 0, 0);
@@ -240,20 +377,6 @@ export class Viewport implements Resizable {
         device.queue.submit([commandEncoder.finish()]);
 
         App.getWebGPU().resolveTimestamp(passDescriptor).then(result => {
-            //console.log(`Canvas Render took: ${result / 1000} µs`);
-        })
-
-
+        });
     }
-
-
-
-    /**
-     * Redraws the scene
-     */
-    public render = () => {
-        this.renderer.render();
-
-    }
-
 }

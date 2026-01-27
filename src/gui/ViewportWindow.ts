@@ -2,23 +2,34 @@ import { ContentWindow } from "./ContentWindow";
 import { ResizableWindow } from "./ResizableWindow";
 import { Viewport } from '../engine/Viewport';
 import { App } from '../app';
-import { BlenderNavigator } from "../engine/BlenderNavigator";
-import { quat } from "gl-matrix";
 import { MeshInstance } from "../entity/MeshInstance";
 import { TriangleMesh } from "../engine/TriangleMesh";
+import { InputStateMachine } from '../input/InputStateMachine';
+import { Controller } from "../engine/Controller";
+import { XrController } from "../engine/XrController";
 
 export class ViewportWindow extends ContentWindow {
+
+    controller : Controller
 
 
     constructor() {
 
+        
         const canvas = document.createElement("canvas");
+        super(canvas);
 
         const app: App = App.getInstance();
-        const viewport = new Viewport(canvas, App.getScene());
+
+        this.controller = new InputStateMachine();
+
+        const viewport = new Viewport(canvas, App.getScene(),true);
+
+        this.controller.manage(viewport);
 
 
-        super(canvas);
+        //const session : WebXRSession = new WebXRSession(viewport,"immersive-vr");
+        
 
         this.viewport = viewport;
         this.canvas = canvas;
@@ -48,10 +59,6 @@ export class ViewportWindow extends ContentWindow {
 
         this.headerElement.append(importButton);
 
-
-
-
-
         const button = document.createElement("abbr");
         button.title = "This is mainly meant as a debug tool to check wgsl shaders since the vscode wgsl language server extensions are very cryptic in their descriptions"
         button.innerText = "Check shader";
@@ -73,7 +80,22 @@ export class ViewportWindow extends ContentWindow {
 
 
         });
+
         this.headerElement.append(button);
+
+        const btn = document.createElement("button");
+        btn.innerText = "enter vr"
+        btn.classList.add("window-header-element");
+        btn.addEventListener("click", () => {
+            const xrController = new XrController("immersive-vr",{
+                requiredFeatures: ["local-floor"]
+            });
+            xrController.manage(viewport);
+
+
+        });
+
+        this.headerElement.append(btn);
 
         canvas.addEventListener("drop", async (ev) => {
             ev.preventDefault();
@@ -118,41 +140,13 @@ export class ViewportWindow extends ContentWindow {
             ev.preventDefault();
         }
 
-
-
-
-
-
-
-
-
     }
 
     private canvas: HTMLCanvasElement;
     private viewport: Viewport;
 
-
-
-
-
-
-
     resize(width: number, height: number): void {
-
         this.viewport.resize(width, height - ResizableWindow.MINIMUM_DIMENSIONS);
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
 
 }

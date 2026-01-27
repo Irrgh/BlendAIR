@@ -9,17 +9,20 @@ import { Util } from "../util/Util";
 import { CameraPan } from "./CameraPan";
 import { CameraOrbit } from "./CameraOrbit";
 import { App } from "../app";
+import { Controller } from "../engine/Controller";
 
-export class InputStateMachine {
-    private viewport: Viewport;
+export class InputStateMachine implements Controller {
+    private viewport?: Viewport;
 
+    constructor() { }
 
-    constructor(viewport: Viewport) {
+    public manage(viewport: Viewport): Promise<void> {
+        if (viewport) this.detach();
+
         this.viewport = viewport;
-        this.cursorPos = vec2.create();
 
         this.viewport.canvas.addEventListener("pointerenter", () => {
-            this.viewport.canvas.focus();
+            this.viewport?.canvas.focus();
         });
 
         this.viewport.canvas.addEventListener("keydown", this.keyDown);
@@ -29,7 +32,7 @@ export class InputStateMachine {
         this.viewport.canvas.addEventListener("pointerdown", this.pointerDown);
         this.viewport.canvas.addEventListener("pointerup", this.pointerUp);
 
-        document.addEventListener("pointerlockchange",(event) => {
+        document.addEventListener("pointerlockchange", (event) => {
             if (!document.pointerLockElement) {
                 const state = this.stateStack.pop();
                 state?.abort();
@@ -39,17 +42,20 @@ export class InputStateMachine {
 
 
         this.cameraCentroid = vec3.create();
-        this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward());   
+        this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward());
         this.cameraPosition.phi -= Math.PI / 2;
-        //this.cameraPosition.r = 15.0
-        //this.viewport.camera.setPosition(0,0,15);
-        //this.viewport.camera.setFacing([0,0,-1]);
-    };
+
+        return Promise.resolve();
+    }
+
+    public detach(): Promise<void> {
+        return Promise.resolve();
+    }
 
 
-    private cursorPos: vec2;
-    private cameraCentroid: vec3;
-    private cameraPosition: SphericalCoordinate;
+    private cursorPos: vec2 = vec2.create();
+    private cameraCentroid: vec3 = vec3.create();
+    private cameraPosition: SphericalCoordinate = { r: 1.0, phi: 0.0, theta: 0.0 };
 
 
 
@@ -62,24 +68,18 @@ export class InputStateMachine {
 
 
     public keyDown = (event: KeyboardEvent) => {
+        if (!this.viewport) return;
         event.preventDefault();
 
         const state = this.stateStack.pop();        // peeking into the stack
         if (state) {
             this.stateStack.push(state);
-
             switch (event.code) {
-
                 case "Escape":
                     state.abort();
                     this.stateStack.pop();
                     break;
-
-
             }
-
-
-
         } else {
 
             if (this.viewport.scene.selections.size !== 0) {
@@ -105,7 +105,7 @@ export class InputStateMachine {
     }
 
     public pointerDown = (event: MouseEvent) => {
-
+        if (!this.viewport) return;
         const state = this.stateStack.pop();
         if (state) {
             this.stateStack.push(state);
@@ -151,7 +151,7 @@ export class InputStateMachine {
     }
 
     public pointerMove = (event: PointerEvent) => {
-
+        if (!this.viewport) return;
         event.preventDefault();
 
         const rect = this.viewport.canvas.getBoundingClientRect();
@@ -169,7 +169,6 @@ export class InputStateMachine {
     }
 
     private pointerUp = (event: PointerEvent) => {
-
         const state = this.stateStack.pop();
         if (state) {
             this.stateStack.push(state);
@@ -194,7 +193,7 @@ export class InputStateMachine {
 
 
     private cameraZoom = (event: WheelEvent) => {
-
+        if (!this.viewport) return;
         this.cameraPosition.r += Math.max(Math.log(this.cameraPosition.r), 0.1) * event.deltaY * 0.001 * (KeyListener.combinationPressed("ShiftLeft") ? 0.1 : 1);
 
         const camera = this.viewport.camera;
@@ -209,7 +208,7 @@ export class InputStateMachine {
 
 
     private select(event: MouseEvent) {
-
+        if (!this.viewport) return;
         const objectIndexTexture: GPUTexture = this.viewport.getRenderer().getTexture("object-index");
         const device = App.getRenderDevice();
 
@@ -241,7 +240,7 @@ export class InputStateMachine {
 
             const data = new Uint32Array(readableBuffer.getMappedRange());
 
-            const rect = this.viewport.canvas.getBoundingClientRect();
+            const rect = this.viewport!.canvas.getBoundingClientRect();
             const x = Math.floor(event.clientX - rect.left);
             const y = Math.floor(event.clientY - rect.top);
 
@@ -250,7 +249,7 @@ export class InputStateMachine {
 
             const objectIndex = data[index];
 
-            const scene = this.viewport.scene;
+            const scene = this.viewport!.scene;
 
             if (!KeyListener.combinationPressed("ShiftLeft")) {
 
@@ -261,7 +260,7 @@ export class InputStateMachine {
             if (objectIndex !== 0) { // ENV hit
 
 
-                const entity = Array.from(scene.entities)[objectIndex-1][1];    // 0 is ENV hence id 0 could not be index 0
+                const entity = Array.from(scene.entities)[objectIndex - 1][1];    // 0 is ENV hence id 0 could not be index 0
 
                 scene.primarySelection = entity;
                 scene.selections.add(entity);
@@ -269,7 +268,7 @@ export class InputStateMachine {
 
             readableBuffer.destroy();
 
-            requestAnimationFrame(this.viewport.render);
+            requestAnimationFrame(this.viewport!.render);
         });
 
 

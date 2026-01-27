@@ -1,4 +1,4 @@
-import { mat4, vec3, vec4 } from "gl-matrix";
+import { mat4, quat, vec3, vec4 } from "gl-matrix";
 import { Entity } from "./Entity";
 
 /**
@@ -89,7 +89,7 @@ export class Camera extends Entity {
      * Returns the normalized device coordinates of an Entity as seen from the camera.
      * @param entity 
      */
-    public getNdcCoords(pos:vec3): vec4 {
+    public getNdcCoords(pos: vec3): vec4 {
         const proj = this.getProjectionMatrix();
         const view = this.getViewMatrix();
 
@@ -105,8 +105,8 @@ export class Camera extends Entity {
 
     public getWorldCoordsFromNdc(ndc: vec4): vec4 {
 
-        const invProj = mat4.invert(mat4.create(),this.getProjectionMatrix());
-        const invView = mat4.invert(mat4.create(),this.getViewMatrix());
+        const invProj = mat4.invert(mat4.create(), this.getProjectionMatrix());
+        const invView = mat4.invert(mat4.create(), this.getViewMatrix());
 
         const eyeCoords = vec4.create();
         vec4.transformMat4(eyeCoords, ndc, invProj);

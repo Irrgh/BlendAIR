@@ -88,45 +88,54 @@ export class App {
         this.webgpu = await WebGPU.init();
         this.currentScene = new Scene();
 
-
         const root = ResizableWindow.initializeRootWindow("horizontal");
         const right = root.addChild(0, "horizontal");
         right.setContent(new ViewportWindow());
 
 
-        const eptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_ept_100.bin")).arrayBuffer();
-        const wptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_wpt_100.bin")).arrayBuffer();
-        const sptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_spt_100.bin")).arrayBuffer();
-        const dptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_dpt_100.bin")).arrayBuffer();
+        //const eptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_ept_100.bin")).arrayBuffer();
+        //const wptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_wpt_100.bin")).arrayBuffer();
+        //const sptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_spt_100.bin")).arrayBuffer();
+        //const dptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_dpt_100.bin")).arrayBuffer();
+//
+        //const eptMesh = this.makeMesh(eptBin);
+        //const wptMesh = this.makeMesh(wptBin);
+        //const sptMesh = this.makeMesh(sptBin);
+        //const dptMesh = this.makeMesh(dptBin);
+//
+        //const ept = new MeshInstance(eptMesh);
+        //const wpt = new MeshInstance(wptMesh);
+        //const spt = new MeshInstance(sptMesh);
+        //const dpt = new MeshInstance(dptMesh);
+        //
+        //ept.setScale(1/40,1/40,1/80);
+        //ept.setPosition(2,2,0);
+//
+        //wpt.setScale(1/40,1/40,1/160);
+        //wpt.setPosition(-7,2,0);
+//
+        //spt.setScale(1/40,1/40,5/3);
+        //spt.setPosition(2,-8.75,0);
+//
+        //dpt.setScale(1/40,1/40,4/5);
+        //dpt.setPosition(-7,-8.75,0);
+//
+        //this.currentScene.addEntity(ept);
+        //this.currentScene.addEntity(wpt);
+        //this.currentScene.addEntity(spt);
+        //this.currentScene.addEntity(dpt);
 
-        const eptMesh = this.makeMesh(eptBin);
-        const wptMesh = this.makeMesh(wptBin);
-        const sptMesh = this.makeMesh(sptBin);
-        const dptMesh = this.makeMesh(dptBin);
+        const cubemodel : string = await (await fetch("../assets/models/tree.obj")).text();
+        const cube = TriangleMesh.parseFromObj(cubemodel);
 
-        const ept = new MeshInstance(eptMesh);
-        const wpt = new MeshInstance(wptMesh);
-        const spt = new MeshInstance(sptMesh);
-        const dpt = new MeshInstance(dptMesh);
-        
-        ept.setScale(1/40,1/40,1/80);
-        ept.setPosition(2,2,0);
+        const cent = new MeshInstance(cube);
+        //cent.setScale(0.1,0.1,0.1);
 
-        wpt.setScale(1/40,1/40,1/160);
-        wpt.setPosition(-7,2,0);
+        this.currentScene.addEntity(cent);
 
-        spt.setScale(1/40,1/40,5/3);
-        spt.setPosition(2,-8.75,0);
 
-        dpt.setScale(1/40,1/40,4/5);
-        dpt.setPosition(-7,-8.75,0);
 
-        this.currentScene.addEntity(ept);
-        this.currentScene.addEntity(wpt);
-        this.currentScene.addEntity(spt);
-        this.currentScene.addEntity(dpt);
-
-        console.log(eptMesh);
+        //console.log(eptMesh);
         
         //const tmi_mesh : tm_mesh = create_tm_mesh(eptBin);
         //const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);

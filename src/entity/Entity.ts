@@ -109,6 +109,10 @@ export abstract class Entity {
         quat.setAxisAngle(this.rotation, vec3.fromValues(0, 0, 1), radians);
     }
 
+    public setRotation(q : quat): void {
+        quat.copy(this.rotation,q);
+    }
+
 
     /**
      * Calculates the right facing vector. 
