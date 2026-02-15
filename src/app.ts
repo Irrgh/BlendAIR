@@ -19,7 +19,6 @@ import { TMIComputePass } from "./render/pass/TMIComputePass";
 export class App {
     private static instance: App;
 
-
     private constructor() {
 
 
@@ -125,13 +124,22 @@ export class App {
         //this.currentScene.addEntity(spt);
         //this.currentScene.addEntity(dpt);
 
-        const cubemodel : string = await (await fetch("../assets/models/tree.obj")).text();
+        const cubemodel : string = await (await fetch("../assets/models/cube.obj")).text();
         const cube = TriangleMesh.parseFromObj(cubemodel);
-
         const cent = new MeshInstance(cube);
-        //cent.setScale(0.1,0.1,0.1);
+        cent.setScale(0.2,0.2,0.2);
 
         this.currentScene.addEntity(cent);
+
+
+        const treemodel : string = await (await fetch("../assets/models/tree.obj")).text();
+        const tree = TriangleMesh.parseFromObj(treemodel);
+
+        const tent = new MeshInstance(tree);
+        tent.setPosition(-2,-2,0);
+        //cent.setScale(0.1,0.1,0.1);
+
+        this.currentScene.addEntity(tent);
 
 
 

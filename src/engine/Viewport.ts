@@ -62,10 +62,10 @@ export class Viewport implements Resizable {
     private navigator?: InputStateMachine;
     private ctx?: WebGLRenderingContext;
     private supportXR: boolean;
-    private xrReady : boolean = false;
+    private xrReady: boolean = false;
     private prog?: WebGLProgram;
 
-    private eyesTextures? : WebGLTexture[];
+    private blitTexture?: WebGLTexture;
 
     constructor(canvas: HTMLCanvasElement, scene: Scene, supportXR: boolean = false) {
         this.canvas = canvas;
@@ -79,6 +79,15 @@ export class Viewport implements Resizable {
             this.webgpuContext = <GPUCanvasContext>this.webgpuCanvas.getContext("webgpu");
             this.ctx = canvas.getContext("webgl", { alpha: false }) as WebGLRenderingContext;
             this.prog = this.initWebGL();
+
+            const gl = this.ctx!;
+            this.blitTexture = gl.createTexture()!;
+            gl.bindTexture(gl.TEXTURE_2D, this.blitTexture!);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
         } else {
             this.webgpuContext = <GPUCanvasContext>canvas.getContext("webgpu");
         }
@@ -138,11 +147,11 @@ export class Viewport implements Resizable {
             throw new Error("XR not supported");
         }
 
-        if (this.xrReady) {
+        if (!this.xrReady) {
             await this.ctx!.makeXRCompatible();
             this.xrReady = true;
         }
-        
+
         return this.ctx!;
     }
 
@@ -193,28 +202,30 @@ export class Viewport implements Resizable {
         return prog;
     }
 
-    public resizeForXR(vps : XRViewport[]) : void {
+    public resizeForXR(vps: XRViewport[]): void {
         if (!this.xrReady) throw new Error("viewport is not ready for xr");
 
-        let width : number = 0;
-        let height : number = 0;
+        let width: number = 0;
+        let height: number = 0;
 
         vps.forEach(vp => {
-           width = Math.max(width,vp.width + vp.x);
-           height = Math.max(height, vp.height + vp.y);
+            width = Math.max(width, vp.width);
+            height = Math.max(height, vp.height);
         });
 
         if (width != this.width || height != this.height) {
-            this.canvas.width = width;
-            this.canvas.height = height;
+            //this.canvas.width = width;
+            //this.canvas.height = height;
 
             if (this.webgpuCanvas) {
-                this.webgpuCanvas.width = width;
-                this.webgpuCanvas.height = height;
-            } 
+                this.width = width;
+                this.height = height;
+                this.webgpuCanvas!.width = width;
+                this.webgpuCanvas!.height = height;
+            }
         }
 
-       
+
 
     }
 
@@ -245,29 +256,17 @@ export class Viewport implements Resizable {
 
 
         if (this.ctx && this.webgpuCanvas) {
-            const bitmap = await createImageBitmap(this.webgpuCanvas);
             const gl = this.ctx;
             const prog = this.prog!;
 
-            const tex = gl.createTexture()!;
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+            gl.bindTexture(gl.TEXTURE_2D, this.blitTexture!);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.webgpuCanvas);
 
-            // Bind sampler
             const samplerLoc = gl.getUniformLocation(prog, "u_tex");
             gl.uniform1i(samplerLoc, 0);
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.bindTexture(gl.TEXTURE_2D, this.blitTexture!);
 
-
-            // 4. Draw
-            //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            //gl.clearColor(1, 0, 1, 1);
-            //gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         }
 

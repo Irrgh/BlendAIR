@@ -122,7 +122,7 @@ export class TrianglePass extends RenderPass {
             const instance = instances.get(mesh);
             const id = scene.getId(object);
 
-            transformArray.set(object.getWorldTransform(), (id*16));
+            transformArray.set(object.getWorldTransform(), (id * 16));
 
             if (!instance) {
                 vertexSize += mesh.getVertexBuffer().length;
@@ -207,12 +207,12 @@ export class TrianglePass extends RenderPass {
     public render(viewport: Viewport): void {
 
 
-        if (App.getInstance().outdated) {
-            this.createMeshBuffer(viewport);
-            App.getInstance().outdated = false;
-            console.log(viewport.scene);
-        }
-        
+        //if (App.getInstance().outdated) {
+        this.createMeshBuffer(viewport);
+        //App.getInstance().outdated = false;
+        //console.log(viewport.scene);
+        //}
+
 
         const device: GPUDevice = App.getRenderDevice();
 
@@ -320,7 +320,7 @@ export class TrianglePass extends RenderPass {
                         format: "rgba8unorm",
                     }, {
                         format: "rgba8unorm"
-                    },  {
+                    }, {
                         format: "r32uint"
                     }
                 ],
@@ -333,10 +333,10 @@ export class TrianglePass extends RenderPass {
             label: "triangle mesh rendering"
         });
 
-        
+
         App.getWebGPU().attachTimestamps(renderPassDescriptor);
 
-        const commandEncoder: GPUCommandEncoder = device.createCommandEncoder({label:"trianglePass"});
+        const commandEncoder: GPUCommandEncoder = device.createCommandEncoder({ label: "trianglePass" });
 
         const renderPass: GPURenderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
@@ -363,7 +363,7 @@ export class TrianglePass extends RenderPass {
 
 
 
-        App.getWebGPU().prepareTimestampsResolution(renderPassDescriptor,commandEncoder);
+        App.getWebGPU().prepareTimestampsResolution(renderPassDescriptor, commandEncoder);
 
         device.queue.submit([commandEncoder.finish()]);
 

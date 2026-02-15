@@ -88,6 +88,7 @@ export abstract class Entity {
         vec3.set(this.getScale(),x,y,z);
     }
 
+   
     public setPosition(x: number, y: number, z: number) {
         vec3.set(this.getPosition(), x, y, z);
     }
