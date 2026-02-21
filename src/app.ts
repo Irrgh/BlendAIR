@@ -58,28 +58,10 @@ export class App {
     public webgpu!: WebGPU;
     public outdated: boolean = true;
 
-    makeMesh(buf:ArrayBuffer): TriangleMesh {
-            const vertices = new Uint32Array(buf.slice(0,4))[0]; 
-            const faces = new Uint32Array(buf.slice(4,8))[0];
-
-            const h_off = 4*7
-            const v_size = 3 * 4 * vertices
-            const f_size = 3 * 4 * faces
-            console.log(`${vertices} vertices, ${faces} faces, ${buf.byteLength} bytes`);
-
-
-            const arr = new Float32Array(buf.slice(h_off,h_off+v_size));
-            const el = new Uint32Array(buf.slice(h_off+v_size,h_off+v_size+f_size));
-            
-            const paddedArr = new Float32Array((arr.length / 3) * 8);
-            let idx = 0;
-            for (let i = 0; i < paddedArr.length; i++) {
-                if (i % 8 < 3) {
-                    paddedArr[i] = arr[idx++];
-                }
-            }
-
-            return new TriangleMesh(paddedArr, el);
+    loadModel = async (path: string) => {
+        const raw: string = await (await fetch(path)).text();
+        const mesh = TriangleMesh.parseFromObj(raw);
+        return mesh;
     }
 
     initialize = async () => {
@@ -91,60 +73,46 @@ export class App {
         const right = root.addChild(0, "horizontal");
         right.setContent(new ViewportWindow());
 
-
-        //const eptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_ept_100.bin")).arrayBuffer();
-        //const wptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_wpt_100.bin")).arrayBuffer();
-        //const sptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_spt_100.bin")).arrayBuffer();
-        //const dptBin: ArrayBuffer = await (await fetch("../assets/models/c5h10_dpt_100.bin")).arrayBuffer();
-//
-        //const eptMesh = this.makeMesh(eptBin);
-        //const wptMesh = this.makeMesh(wptBin);
-        //const sptMesh = this.makeMesh(sptBin);
-        //const dptMesh = this.makeMesh(dptBin);
-//
-        //const ept = new MeshInstance(eptMesh);
-        //const wpt = new MeshInstance(wptMesh);
-        //const spt = new MeshInstance(sptMesh);
-        //const dpt = new MeshInstance(dptMesh);
-        //
-        //ept.setScale(1/40,1/40,1/80);
-        //ept.setPosition(2,2,0);
-//
-        //wpt.setScale(1/40,1/40,1/160);
-        //wpt.setPosition(-7,2,0);
-//
-        //spt.setScale(1/40,1/40,5/3);
-        //spt.setPosition(2,-8.75,0);
-//
-        //dpt.setScale(1/40,1/40,4/5);
-        //dpt.setPosition(-7,-8.75,0);
-//
-        //this.currentScene.addEntity(ept);
-        //this.currentScene.addEntity(wpt);
-        //this.currentScene.addEntity(spt);
-        //this.currentScene.addEntity(dpt);
-
-        const cubemodel : string = await (await fetch("../assets/models/cube.obj")).text();
-        const cube = TriangleMesh.parseFromObj(cubemodel);
-        const cent = new MeshInstance(cube);
-        cent.setScale(0.2,0.2,0.2);
-
-        this.currentScene.addEntity(cent);
+        const cube: TriangleMesh = await this.loadModel("../assets/models/cube.obj");
+        const tree: TriangleMesh = await this.loadModel("../assets/models/tree.obj");
+        const plane: TriangleMesh = await this.loadModel("../assets/models/plane.obj");
+        const suzanne: TriangleMesh = await this.loadModel("../assets/models/suzanne.obj");
 
 
-        const treemodel : string = await (await fetch("../assets/models/tree.obj")).text();
-        const tree = TriangleMesh.parseFromObj(treemodel);
+        const p1 = new MeshInstance(plane);
+        p1.setScale(5,5,1);
+        p1.setPosition(0,0,0.01);
 
-        const tent = new MeshInstance(tree);
-        tent.setPosition(-2,-2,0);
-        //cent.setScale(0.1,0.1,0.1);
+        this.currentScene.addEntity(p1);
 
-        this.currentScene.addEntity(tent);
+        const s1 = new MeshInstance(suzanne);
+        s1.setPosition(-0.7, -1.7, 0.3);
+        s1.setScale(0.6,0.6,0.6);
+        s1.setYRotation(Math.PI / 7);
+        this.currentScene.addEntity(s1);
+
+        const c1 = new MeshInstance(cube);
+        c1.setPosition(1.2, 1.2, 0.4);
+        c1.setScale(0.5,0.5,0.4);
+
+        const c2 = new MeshInstance(cube);
+        c2.setPosition(-2.4, 1.3, 0.5);
+        c1.setScale(1,1,0.5);
+        c2.setZRotation(Math.PI / 4);
+
+        this.currentScene.addEntity(c1);
+        this.currentScene.addEntity(c2);
+        
+        const t1 = new MeshInstance(tree);
+        t1.setPosition(1.3, 1.1, 0.8);
+        t1.setScale(0.3,0.3,0.3);
+
+        this.currentScene.addEntity(t1);
 
 
 
         //console.log(eptMesh);
-        
+
         //const tmi_mesh : tm_mesh = create_tm_mesh(eptBin);
         //const tmi_bvh : TMIBvh = new TMIBvh(tmi_mesh);
         //const tmi_pass : TMIComputePass = new TMIComputePass(tmi_bvh,10_000_000);

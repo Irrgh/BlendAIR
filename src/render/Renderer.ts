@@ -5,10 +5,15 @@ import { RenderGraph } from './RenderGraph';
 import { App } from "../app";
 import { mat4, vec3 } from 'gl-matrix';
 import { Camera } from '../entity/Camera';
+import { TriangleMesh } from '../engine/TriangleMesh';
+import { MeshInstance } from '../entity/MeshInstance';
+import { Entity } from '../entity/Entity';
+import { ArrayStorage } from '../util/ArrayStorage';
 
 export abstract class Renderer {
     public webgpu: WebGPU = App.getInstance().webgpu;
     public viewport: Viewport;
+    public drawParameters: Uint32Array;
 
     /**
      * 
@@ -19,6 +24,7 @@ export abstract class Renderer {
     constructor(name: string, viewport: Viewport) {
         this.name = name;
         this.viewport = viewport;
+        this.drawParameters = new Uint32Array();
     }
 
     /**
@@ -188,10 +194,26 @@ export abstract class Renderer {
 
     }
 
+    public updateTransformBuffer(viewport:Viewport): void {
+
+        const scene = viewport.scene;
+
+        const transformArray: Float32Array = new Float32Array(scene.entities.size * 16);
+
+        scene.entities.forEach((entity, uuid) => {
+            const id = scene.getId(entity);
+            transformArray.set(entity.getWorldTransform(), (id * 16));
+        });
+
+        const transformBuffer = this.createBuffer({
+            size: Math.max(transformArray.byteLength, 32),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
+        }, "transform");
+
+        App.getRenderDevice().queue.writeBuffer(transformBuffer, 0, transformArray.buffer);
+    }
 
     public updateCameraData = (viewport: Viewport) => {
-
-        const renderer: Renderer = viewport.getRenderer();
 
         const cameraValues = new ArrayBuffer(144);
         const cameraViews = {
@@ -209,22 +231,145 @@ export abstract class Renderer {
         cameraViews.width.set([viewport.width]);
         cameraViews.height.set([viewport.height]);
 
-        const cameraBuffer: GPUBuffer = renderer.createBuffer({
+        const cameraBuffer: GPUBuffer = this.createBuffer({
             size: cameraValues.byteLength,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
             label: "camera"
         }, "camera");
 
-        
         App.getRenderDevice().queue.writeBuffer(cameraBuffer, 0, cameraValues);
     }
 
+    /**
+     * Updates the mesh
+     * @param viewport 
+     */
+    public updateMeshBuffer(viewport: Viewport): void {
+
+        const scene = viewport.scene;
+
+        let vertexSize = 0;
+        let normalSize = 0;
+        let uvSize = 0;
+        let indexSize = 0;
+
+        const instances: Map<TriangleMesh, { count: number, ids: number[] }> = new Map();
+
+        scene.entities.forEach((object: Entity, name: String) => {
+
+            if (!(object instanceof MeshInstance)) {
+                return;
+            }
+
+            const mesh: TriangleMesh = object.mesh;
+            const instance = instances.get(mesh);
+            const id = scene.getId(object);
+
+            if (!instance) {
+                vertexSize += mesh.getVertexBuffer().length;
+                indexSize += mesh.getElementBuffer().length;
+                normalSize += mesh.getNormalBuffer().length;
+                uvSize += mesh.getUVBuffer().length;
+
+                instances.set(mesh, { count: 1, ids: [id] });
+                return;
+            }
+            instance.count++;
+            instance.ids.push(id);
+        });
+
+
+        const vertexArray: Float32Array = new Float32Array(vertexSize);
+        const normalArray: Float32Array = new Float32Array(normalSize);
+        const uvArray: Float32Array = new Float32Array(uvSize);
+        const indexArray: Uint32Array = new Uint32Array(indexSize);
+        const idArray: Uint32Array = new Uint32Array(scene.entities.size);
+        const drawParameters: Uint32Array = new Uint32Array(instances.size * 5);
+
+
+        // Offsets for writing into the flat buffers
+        let vertexOffset = 0;
+        let normalOffset = 0;
+        let uvOffset = 0;
+        let indexOffset = 0;
+        let objectOffset = 0;
+        let drawIndex = 0;
+
+        instances.forEach((value: { count: number, ids: number[] }, mesh: TriangleMesh) => {
+
+            // Copy vertex data into separate buffers
+            vertexArray.set(mesh.getVertexBuffer(), vertexOffset);
+            normalArray.set(mesh.getNormalBuffer(), normalOffset);
+            uvArray.set(mesh.getUVBuffer(), uvOffset);
+
+            // Offset indices to the correct vertex location
+            indexArray.set(
+                mesh.getElementBuffer().map(idx => idx + vertexOffset / 3), // divide by 3 since separate buffer
+                indexOffset
+            );
+
+            // Set instance IDs
+            idArray.set(value.ids, objectOffset);
+
+            // Draw parameters: [indexCount, instanceCount, firstIndex, baseVertex, firstInstance]
+            drawParameters.set([
+                mesh.getElementBuffer().length,
+                value.count,
+                indexOffset,
+                0,
+                objectOffset
+            ], drawIndex * 5);
+
+            vertexOffset += mesh.getVertexBuffer().length;
+            normalOffset += mesh.getNormalBuffer().length;
+            uvOffset += mesh.getUVBuffer().length;
+            indexOffset += mesh.getElementBuffer().length;
+            objectOffset += value.count;
+            drawIndex++;
+        });
+
+        const min = WebGPU.minBuffersize;
+        const device = App.getRenderDevice();
+
+        // Create GPU buffers
+        const vertexBuffer = this.createBuffer({
+            size: Math.max(vertexArray.byteLength, min),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE
+        }, "vertex");
+
+        const normalBuffer = this.createBuffer({
+            size: Math.max(normalArray.byteLength, min),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE
+        }, "normal");
+
+        const uvBuffer = this.createBuffer({
+            size: Math.max(uvArray.byteLength, min),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE
+        }, "uv");
+
+        const indexBuffer = this.createBuffer({
+            size: Math.max(indexArray.byteLength, min),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX
+        }, "index");
+
+        
+
+        const objectIndexBuffer = this.createBuffer({
+            size: Math.max(idArray.byteLength, min),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
+        }, "object-index");
+
+        // Upload to GPU
+        device.queue.writeBuffer(vertexBuffer, 0, vertexArray.buffer);
+        device.queue.writeBuffer(normalBuffer, 0, normalArray.buffer);
+        device.queue.writeBuffer(uvBuffer, 0, uvArray.buffer);
+        device.queue.writeBuffer(indexBuffer, 0, indexArray.buffer);
+        device.queue.writeBuffer(objectIndexBuffer, 0, idArray.buffer);
+
+        this.drawParameters = drawParameters;
+
+    }
+
     public abstract render(): void
-
-
-
-
-
-
 
 }

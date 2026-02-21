@@ -4,7 +4,7 @@ import { Viewport } from '../engine/Viewport';
 import { App } from '../app';
 import { MeshInstance } from "../entity/MeshInstance";
 import { TriangleMesh } from "../engine/TriangleMesh";
-import { InputStateMachine } from '../input/InputStateMachine';
+import { BlenderController } from '../input/BlenderController';
 import { Controller } from "../engine/Controller";
 import { XrController } from "../engine/XrController";
 
@@ -21,7 +21,7 @@ export class ViewportWindow extends ContentWindow {
 
         const app: App = App.getInstance();
 
-        this.controller = new InputStateMachine();
+        this.controller = new BlenderController();
 
         const viewport = new Viewport(canvas, App.getScene(),true);
 

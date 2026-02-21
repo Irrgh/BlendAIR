@@ -33,9 +33,9 @@ export class ObjectScale extends State {
             vec3.scale(entity.getScale(), entity.getScale(), 1 / this.scale);
         });
 
-
-        document.exitPointerLock();
+        this.viewport.updateTransforms();
         requestAnimationFrame(this.viewport.render);
+        document.exitPointerLock();
     }
 
     public finalize(): void {
@@ -62,6 +62,7 @@ export class ObjectScale extends State {
             vec3.scale(entity.getScale(), entity.getScale(), factor);
         });
 
+        this.viewport.updateTransforms();
         requestAnimationFrame(this.viewport.render);
     }
 

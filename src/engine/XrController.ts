@@ -39,6 +39,7 @@ const xUpFromYUpOrientation = (orient: DOMPointReadOnly) => {
 }
 
 export class XrController implements Controller {
+
     private managed?: Viewport;
     private xr?: XRSession;
     private layer?: XRWebGLLayer;
@@ -51,12 +52,9 @@ export class XrController implements Controller {
     private cmesh!: TriangleMesh;
 
     constructor(private mode: XRSessionMode, private options?: XrSessionOptions) {
-
-
-
-
     }
 
+    type: string = "xr";
 
     public async manage(viewport: Viewport): Promise<void> {
         if (!navigator.xr) {
@@ -79,8 +77,8 @@ export class XrController implements Controller {
 
         this.viewport = viewport;
 
-        const cubemodel: string = await (await fetch("../assets/models/cube.obj")).text();
-        this.cmesh = TriangleMesh.parseFromObj(cubemodel);
+        const canmodel: string = await (await fetch("../assets/models/can.obj")).text();
+        this.cmesh = TriangleMesh.parseFromObj(canmodel);
 
         this.xr.addEventListener("inputsourceschange", (event) => {
             for (const source of event.added) {
@@ -92,7 +90,7 @@ export class XrController implements Controller {
             }
         });
 
-
+        viewport.controller = this;
         this.xr.requestAnimationFrame(this.onXRFrame);
     }
 
@@ -128,9 +126,12 @@ export class XrController implements Controller {
 
             mat4.copy(this.viewport.camera.getProjectionMatrix(), view.projectionMatrix);
 
-
+            this.viewport.updateTransforms();
             gl.viewport(vp.x, vp.y, vp.width, vp.height);
+
+            console.time("render");
             this.viewport.render();
+            console.timeEnd("render");
         }
 
 
@@ -148,7 +149,6 @@ export class XrController implements Controller {
             let controller = this.controllers.get(inputSource.handedness);
             if (!controller) {
                 controller = new MeshInstance(this.cmesh);
-                controller.setScale(0.1, 0.1, 0.1);
                 this.viewport!.scene.addEntity(controller);
                 this.controllers.set(inputSource.handedness, controller);
             }
@@ -161,7 +161,8 @@ export class XrController implements Controller {
             const position = xUpFromYUpPosition(pose.transform.position);
             const orientation = xUpFromYUpOrientation(pose.transform.orientation);
 
-            console.log(position);
+            
+            quat.rotateX(orientation,orientation, -Math.PI / 2);
 
             controller!.setPosition(position[0], position[1], position[2]);
             controller!.setRotation(orientation);

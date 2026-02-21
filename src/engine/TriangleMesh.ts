@@ -4,7 +4,9 @@ import { ArrayStorage } from "../util/ArrayStorage";
 export class TriangleMesh {
 
     /** Includes all Vertex Attributes  */
-    private vertexBuffer: Float32Array
+    private vertices: Float32Array
+    private normals: Float32Array;
+    private uvs: Float32Array;
 
     /** 3 indicies construct one triangle face */
     private elementBuffer: Uint32Array
@@ -35,8 +37,10 @@ export class TriangleMesh {
 
 
 
-    constructor(vbo: Float32Array, ebo: Uint32Array) {
-        this.vertexBuffer = vbo;
+    constructor(vertices: Float32Array, normals: Float32Array, uvs :Float32Array, ebo: Uint32Array) {
+        this.vertices = vertices;
+        this.normals = normals;
+        this.uvs = uvs;
         this.elementBuffer = ebo;
         this.instancedBy = new Set<MeshInstance>;
     }
@@ -54,11 +58,9 @@ export class TriangleMesh {
         const tempUv: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
         const tempNorm: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
 
-        /**
-         * We be converted to vbo
-         */
         const vertices: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
-
+        const normals: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
+        const uvs: ArrayStorage<Float32Array> = new ArrayStorage(Float32Array);
 
         const vertexMap = new Map<string, number>()
         const faces: ArrayStorage<Uint32Array> = new ArrayStorage(Uint32Array);
@@ -99,27 +101,34 @@ export class TriangleMesh {
                             const normIndex = indices[i + 2] - 1;
 
                             const key = `${posIndex}_${uvIndex}_${normIndex}`;
+
                             if (vertexMap.has(key)) {
                                 faces.push(vertexMap.get(key)!);
                             } else {
-                                const vertex = [
+                                // Append to separate arrays instead of interleaving
+                                vertices.push(
                                     tempPos.get(posIndex * 3),
                                     tempPos.get(posIndex * 3 + 1),
-                                    tempPos.get(posIndex * 3 + 2),
+                                    tempPos.get(posIndex * 3 + 2)
+                                );
+
+                                normals.push(
                                     tempNorm.get(normIndex * 3),
                                     tempNorm.get(normIndex * 3 + 1),
-                                    tempNorm.get(normIndex * 3 + 2),
+                                    tempNorm.get(normIndex * 3 + 2)
+                                );
+
+                                uvs.push(
                                     tempUv.get(uvIndex * 2),
                                     tempUv.get(uvIndex * 2 + 1)
-                                ];
-                                const index = vertices.size() / 8;
+                                );
+
+                                const index = vertices.size() / 3 - 1; // Each vertex has 3 floats
                                 vertexMap.set(key, index);
-                                vertices.push(...vertex);
-                                faces.push(index)
+                                faces.push(index);
                             }
-
-
                         }
+
 
                     } else {
 
@@ -135,7 +144,7 @@ export class TriangleMesh {
 
             }
         }
-        return new TriangleMesh(vertices.getArray(), faces.getArray());
+        return new TriangleMesh(vertices.getArray(), normals.getArray(), uvs.getArray(), faces.getArray());
     }
 
 
@@ -149,13 +158,19 @@ export class TriangleMesh {
 
 
     public getVertexBuffer(): Float32Array {
-        return this.vertexBuffer;
+        return this.vertices;
+    }
+
+    public getNormalBuffer(): Float32Array {
+        return this.normals;
+    }
+
+    public getUVBuffer() : Float32Array {
+        return this.uvs;
     }
 
     public getElementBuffer(): Uint32Array {
         return this.elementBuffer;
     }
-
-    
 
 }

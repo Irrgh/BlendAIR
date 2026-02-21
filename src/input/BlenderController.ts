@@ -11,12 +11,13 @@ import { CameraOrbit } from "./CameraOrbit";
 import { App } from "../app";
 import { Controller } from "../engine/Controller";
 
-export class InputStateMachine implements Controller {
+export class BlenderController implements Controller {
     private viewport?: Viewport;
 
     constructor() { }
+    type: string = "blender";
 
-    public manage(viewport: Viewport): Promise<void> {
+    public async manage(viewport: Viewport): Promise<void> {
         if (viewport) this.detach();
 
         this.viewport = viewport;
@@ -27,7 +28,7 @@ export class InputStateMachine implements Controller {
 
         this.viewport.canvas.addEventListener("keydown", this.keyDown);
         this.viewport.canvas.addEventListener("keyup", this.keyUp);
-        this.viewport.canvas.addEventListener("wheel", this.cameraZoom);
+        this.viewport.canvas.addEventListener("wheel", this.cameraZoom, {passive:true});
         this.viewport.canvas.addEventListener("pointermove", this.pointerMove);
         this.viewport.canvas.addEventListener("pointerdown", this.pointerDown);
         this.viewport.canvas.addEventListener("pointerup", this.pointerUp);
@@ -45,7 +46,7 @@ export class InputStateMachine implements Controller {
         this.cameraPosition = Util.cartesianToSpherical(this.viewport.camera.getForward());
         this.cameraPosition.phi -= Math.PI / 2;
 
-        return Promise.resolve();
+        viewport.controller = this;
     }
 
     public detach(): Promise<void> {

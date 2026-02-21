@@ -8,12 +8,12 @@ import { MeshInstance } from "../../entity/MeshInstance";
 import { Entity } from "../../entity/Entity";
 import { WebGPU } from "../../engine/WebGPU";
 import shader from "../../../assets/shaders/main.wgsl";
+import { ArrayStorage } from '../../util/ArrayStorage';
 
 /**
  * The TrianglePass takes all TriangleMeshes of the {@link Scene.entities | Scene's entities} and renders them using
  */
 export class TrianglePass extends RenderPass {
-    private drawParameters: Uint32Array = new Uint32Array();
 
     private vertexBufferLayout: GPUVertexBufferLayout = {
         arrayStride: 32,
@@ -34,7 +34,6 @@ export class TrianglePass extends RenderPass {
 
 
     constructor(renderer: Renderer) {
-
         const input: PassResource[] = [
             {
                 label: "camera",
@@ -78,141 +77,12 @@ export class TrianglePass extends RenderPass {
 
         super(renderer, input, output);
 
-        this.renderer.createBuffer({
-            size: 32,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX
-        }, "vertex", { modified: true, update: this.createMeshBuffer });
-
-        this.renderer.createBuffer({
-            size: 32,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX
-        }, "index", { modified: true, update: this.createMeshBuffer });
-
-        this.renderer.createBuffer({
-            size: 32,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
-        }, "transform", { modified: true, update: this.createMeshBuffer });
-
-
     }
 
 
-    /**
-     * Updates the mesh
-     * @param viewport 
-     */
-    private createMeshBuffer(viewport: Viewport): void {
-
-        const scene = viewport.scene;
-
-
-        let vertexSize = 0;
-        let indexSize = 0;
-
-        const transformArray: Float32Array = new Float32Array(scene.entities.size * 16);
-        const instances: Map<TriangleMesh, { count: number, ids: number[] }> = new Map();
-
-        scene.entities.forEach((object: Entity, name: String) => {
-
-            if (!(object instanceof MeshInstance)) {
-                return;
-            }
-
-            const mesh: TriangleMesh = object.mesh;
-            const instance = instances.get(mesh);
-            const id = scene.getId(object);
-
-            transformArray.set(object.getWorldTransform(), (id * 16));
-
-            if (!instance) {
-                vertexSize += mesh.getVertexBuffer().length;
-                indexSize += mesh.getElementBuffer().length;
-                instances.set(mesh, { count: 1, ids: [id] });
-                return;
-            }
-            instance.count++;
-            instance.ids.push(id);
-
-
-        });
-
-
-        const vertexArray: Float32Array = new Float32Array(vertexSize);
-        const indexArray: Uint32Array = new Uint32Array(indexSize);
-        const idArray: Uint32List = new Uint32Array(scene.entities.size);
-        const drawParameters: Uint32Array = new Uint32Array(instances.size * 5);
-
-        let vertexOffset = 0;
-        let indexOffset = 0;
-        let objectOffset = 0;
-        let index = 0;
-
-        instances.forEach((value: { count: number, ids: number[] }, mesh: TriangleMesh) => {
-
-            vertexArray.set(mesh.getVertexBuffer(), vertexOffset);
-            indexArray.set(mesh.getElementBuffer().map((index) => { return index + vertexOffset / 8 }), indexOffset);
-            idArray.set(value.ids, objectOffset);
-            drawParameters.set([
-                mesh.getElementBuffer().length,   // index count
-                value.count,                // instance count
-                indexOffset,                // first index
-                0,                          // base vertex
-                objectOffset                // first instance
-            ], index * 5);
-            vertexOffset += mesh.getVertexBuffer().length;
-            indexOffset += mesh.getElementBuffer().length;
-            objectOffset += value.count;
-            index++;
-
-        });
-
-        const min = WebGPU.minBuffersize;
-
-
-
-        const vertexBuffer = this.renderer.createBuffer({
-            size: Math.max(vertexArray.byteLength, min),
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX
-        }, "vertex");
-
-        const indexBuffer = this.renderer.createBuffer({
-            size: Math.max(indexArray.byteLength, min),
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX
-        }, "index");
-
-        const transformBuffer = this.renderer.createBuffer({
-            size: Math.max(transformArray.byteLength, min),
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
-        }, "transform");
-
-        const objectIndexBuffer = this.renderer.createBuffer({
-            size: Math.max(idArray.byteLength, min),
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
-        }, "object-index");
-
-
-        const device = App.getRenderDevice();
-
-        device.queue.writeBuffer(vertexBuffer, 0, vertexArray.buffer);
-        device.queue.writeBuffer(indexBuffer, 0, indexArray.buffer);
-        device.queue.writeBuffer(transformBuffer, 0, transformArray.buffer);
-        device.queue.writeBuffer(objectIndexBuffer, 0, idArray.buffer);
-        this.drawParameters = drawParameters;
-
-    }
-
-
-
+    
 
     public render(viewport: Viewport): void {
-
-
-        //if (App.getInstance().outdated) {
-        this.createMeshBuffer(viewport);
-        //App.getInstance().outdated = false;
-        //console.log(viewport.scene);
-        //}
-
 
         const device: GPUDevice = App.getRenderDevice();
 
@@ -224,6 +94,8 @@ export class TrianglePass extends RenderPass {
         const objectIndexBuffer = this.renderer.getBuffer("object-index");
         const cameraUniformBuffer = this.renderer.getBuffer("camera");
         const vertexBuffer = this.renderer.getBuffer("vertex");
+        const normalBuffer = this.renderer.getBuffer("normal");
+        const uvBuffer = this.renderer.getBuffer("uv");
         const indexBuffer = this.renderer.getBuffer("index");
         const transformBuffer = this.renderer.getBuffer("transform");
 
@@ -310,7 +182,33 @@ export class TrianglePass extends RenderPass {
             vertex: {
                 module: shaderModule,
                 entryPoint: "vertex_main",
-                buffers: [this.vertexBufferLayout]
+                buffers: [
+                    {
+                        arrayStride: 12, // vec3<f32>
+                        attributes: [{
+                            shaderLocation: 0,
+                            offset: 0,
+                            format: "float32x3"
+                        }]
+                    },
+                    {
+                        arrayStride: 12, // vec3<f32>
+                        attributes: [{
+                            shaderLocation: 1,
+                            offset: 0,
+                            format: "float32x3"
+                        }]
+                    },
+                    {
+                        arrayStride: 8, // vec2<f32>
+                        attributes: [{
+                            shaderLocation: 2,
+                            offset: 0,
+                            format: "float32x2"
+                        }]
+                    }
+
+                ]
             },
             fragment: {
                 module: shaderModule,
@@ -345,16 +243,22 @@ export class TrianglePass extends RenderPass {
         renderPass.pushDebugGroup("rendering triangles");
         renderPass.setPipeline(renderPipeline);
         renderPass.setBindGroup(0, bindgroup);
+
         renderPass.setVertexBuffer(0, vertexBuffer);
+        renderPass.setVertexBuffer(1, normalBuffer);
+        renderPass.setVertexBuffer(2, uvBuffer);
+
         renderPass.setIndexBuffer(indexBuffer, "uint32");
 
-        for (let i = 0; i < this.drawParameters.length; i += 5) {
+        const param = this.renderer.drawParameters;
+
+        for (let i = 0; i < param.length; i += 5) {
             renderPass.drawIndexed(
-                this.drawParameters[i],
-                this.drawParameters[i + 1],
-                this.drawParameters[i + 2],
-                this.drawParameters[i + 3],
-                this.drawParameters[i + 4]
+                param[i],
+                param[i + 1],
+                param[i + 2],
+                param[i + 3],
+                param[i + 4]
             );
         }
 

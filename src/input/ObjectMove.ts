@@ -40,7 +40,8 @@ export class ObjectMove extends State {
         scene.selections.forEach((entity: Entity) => {
             vec3.add(entity.getPosition(), entity.getPosition(), diff);
         });
-        
+
+        this.viewport.updateTransforms();
         requestAnimationFrame(this.viewport.render);
         document.exitPointerLock();
     }
@@ -67,7 +68,7 @@ export class ObjectMove extends State {
             vec3.add(entity.getPosition(), entity.getPosition(), newDiff);
 
         });
-
+        this.viewport.updateTransforms();
         requestAnimationFrame(this.viewport.render);
     }
 

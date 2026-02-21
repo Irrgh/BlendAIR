@@ -53,6 +53,10 @@ export class WebGPU {
             return Promise.reject(new Error("No appropriate GPUDevice found."));
         }
 
+        device.lost.then((info) => {
+            console.warn(`device was lost: ${info.message}`);
+        });
+
         return Promise.resolve(new WebGPU(adapter,device));
 
     }

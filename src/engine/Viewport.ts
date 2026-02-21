@@ -15,7 +15,8 @@ import { BasicRenderer } from "../render/BasicRenderer";
 import { App } from "../app";
 import fullQuadShader from "../../assets/shaders/fullQuadShader.wgsl";
 import { RealisticRenderer } from "../render/RealisticRenderer";
-import { InputStateMachine } from "../input/InputStateMachine";
+import { BlenderController } from "../input/BlenderController";
+import { Controller } from "./Controller";
 
 type WebGLContext = {
     gl: WebGLRenderingContext;
@@ -59,7 +60,7 @@ export class Viewport implements Resizable {
     width: number;
     height: number;
 
-    private navigator?: InputStateMachine;
+    public controller?: Controller;
     private ctx?: WebGLRenderingContext;
     private supportXR: boolean;
     private xrReady: boolean = false;
@@ -115,6 +116,18 @@ export class Viewport implements Resizable {
         return this.renderer;
     }
 
+    public updateMeshes() {
+        this.renderer.updateMeshBuffer(this);
+    }
+
+    public updateTransforms() {
+        this.renderer.updateTransformBuffer(this);
+    }
+
+
+    public getController(): Controller | undefined {
+        return this.controller;
+    }
 
     public resize(width: number, height: number): void {
 
@@ -261,6 +274,10 @@ export class Viewport implements Resizable {
 
             gl.bindTexture(gl.TEXTURE_2D, this.blitTexture!);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.webgpuCanvas);
+
+            if (this.getController()?.type === "blender") {
+                gl.viewport(0, 0, this.width, this.height);
+            }
 
             const samplerLoc = gl.getUniformLocation(prog, "u_tex");
             gl.uniform1i(samplerLoc, 0);

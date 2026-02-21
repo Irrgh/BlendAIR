@@ -46,6 +46,7 @@ export class ObjectRotate extends State {
             quat.normalize(entity.getRotation(), entity.getRotation());
         });
 
+        this.viewport.updateTransforms();
         requestAnimationFrame(this.viewport.render);
         document.exitPointerLock();
     }
@@ -74,6 +75,7 @@ export class ObjectRotate extends State {
             quat.normalize(entity.getRotation(), entity.getRotation());
         });
 
+        this.viewport.updateTransforms();
         requestAnimationFrame(this.viewport.render);
     }
 

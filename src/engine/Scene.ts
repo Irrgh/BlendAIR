@@ -11,7 +11,7 @@ export class Scene {
      * All entities except viewport Camera are included in here;
      */
     entities: Map<string, Entity>;
-    public entityIndecies: Map<Entity, number> = new Map();
+    public entityIndices: Map<Entity, number> = new Map();
 
     private redrawScheduled: boolean = false;
     private globalRedraw: boolean = false;
@@ -77,7 +77,7 @@ export class Scene {
 
 
     public getId(entity: Entity): number {
-        const id = this.entityIndecies.get(entity);
+        const id = this.entityIndices.get(entity);
         if (id != undefined) { return id; }
         throw new Error(`Entity ${entity} does not exist.`)
     }
@@ -85,11 +85,16 @@ export class Scene {
 
     public addEntity(entity: MeshInstance) {
         this.entities.set(entity.name, entity);
-        this.entityIndecies.set(entity, this.entityIndecies.size);
+        this.entityIndices.set(entity, this.entityIndices.size);
+
+        this.viewports.forEach(vp => {
+            vp.updateMeshes();
+            vp.updateTransforms();
+        });
     }
 
     public getIds(): Map<Entity, number> {
-        return this.entityIndecies;
+        return this.entityIndices;
     }
 
     

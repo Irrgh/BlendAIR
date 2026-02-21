@@ -15,7 +15,6 @@ struct VertexIn {
 }
 
 
-
 struct VertexOut {
       @builtin(position) position: vec4<f32>,
       @location(0) fragPosition: vec3<f32>,
@@ -23,26 +22,30 @@ struct VertexOut {
       @location(2) uv: vec2<f32>,
       @location(3) @interpolate(flat) objectId: u32,
       @location(4) @interpolate(flat) vertId: u32,
+      //@location(5) @interpolate(flat) materialId: u32,
 }
 
 
 @binding(0) @group(0) var<uniform> camera : Camera;
 @binding(1) @group(0) var<storage,read> modelTransforms : array<mat4x4<f32>>;
 @binding(2) @group(0) var<storage,read> objectIndex: array<u32>;
+//@binding(3) @group(0) var<storage,read> materialIndex: array<u32>;
+
+@group(1) @binding(0) var textureArray : texture_2d_array<f32>;
+@group(1) @binding(1) var textureSampler : sampler;
 
     
 @vertex
 fn vertex_main(input : VertexIn, @builtin(vertex_index) vert : u32) -> VertexOut {
 
     let objectId : u32 = objectIndex[input.instanceId];
-
+    //let matId : u32 = materialIndex[objectId];
 
     var modelTransform: mat4x4<f32> = modelTransforms[objectId];
     var output: VertexOut;
     output.position = camera.proj * camera.view * modelTransform * vec4<f32>(input.position, 1.0f);
     output.fragPosition = input.position;
     output.normal = (modelTransform * vec4<f32>(input.normal, 0.0f)).xyz;
-    //output.normal.x = f32(vert);
     output.uv = input.uv;
     output.objectId = objectId + 1u;
     output.vertId = vert;
@@ -54,8 +57,6 @@ struct FragmentOut {
     @location(1) normal: vec4<f32>,
     @location(2) object: u32,
 }
-
-
 
 
 @fragment
@@ -94,6 +95,23 @@ fn fragment_main(fragData: VertexOut) -> FragmentOut {
     output.color = vec4<f32>(color,1.0);
     output.normal = vec4<f32>(normal,1.0);
     output.object = fragData.objectId;
+
+
+    // Sample correct texture layer
+    //let texColor = textureSample(
+    //    textureArray,
+    //    textureSampler,
+    //    fragData.uv,
+    //    i32(fragData.materialId)
+    //);
+//
+    //var output : FragmentOut;
+    //output.color = texColor;
+    //output.normal = vec4<f32>(normal, 1.0);
+    //output.object = fragData.objectId;
+//
+    //return output;
+
 
     return output;
 }

@@ -11,6 +11,8 @@ export class BasicRenderer extends Renderer {
         super("basic",viewport);
         this.passes = [new TrianglePass(this), new SelectionOutlinePass(this,[1,1,0,1],[0,1,0,1]), new CoordinatePlanePass(this), ]
         /** @todo please fix this */
+        this.updateMeshBuffer(viewport);
+        this.updateTransformBuffer(viewport);
     }
 
 
@@ -43,7 +45,7 @@ export class BasicRenderer extends Renderer {
         }, "normal");
         
         
-        //const sorted = RenderGraph.topSort(this.passes);
+        //const sorted = RenderGraph.topSort(this.passes);;
         this.updateCameraData(this.viewport);
         
         this.passes.forEach((pass: RenderPass) => {
