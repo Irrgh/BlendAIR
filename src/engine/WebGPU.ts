@@ -38,14 +38,20 @@ export class WebGPU {
             return Promise.reject(new Error("No appropriate GPUAdapter found."));
         }
 
+        const features : GPUFeatureName[] = [
+              "texture-formats-tier2"
+        ];
+
         const canTimestamp = adapter.features.has("timestamp-query");
+        if (canTimestamp) features.push("timestamp-query");
+
+
         const device = await adapter.requestDevice(
             {
-                requiredFeatures: canTimestamp ? ["timestamp-query"] : [],
-                //requiredLimits: {
-                //    maxBufferSize:2147483648,
-                //    maxStorageBufferBindingSize:2147483644
-                //}
+                requiredFeatures: features,
+                requiredLimits: {
+                    maxStorageBuffersPerShaderStage:10
+                }
             }
         );
 

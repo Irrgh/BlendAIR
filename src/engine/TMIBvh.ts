@@ -1,5 +1,6 @@
 import { vec3 } from "gl-matrix";
 import { tm_mesh } from "./TMILoader";
+import { TriangleMesh } from "./TriangleMesh";
 
 export type TMIBvhNode = {
     min : vec3,
@@ -40,30 +41,33 @@ export class TMIBvh {
 
     public nodes : Array<TMIBvhNode>;
     public tris : Array<TMITriangle>;
+
     public vertices : Float32Array;
+    public normals: Float32Array;
+    public uvs: Float32Array;
+
     
     public nodes_used: number;
 
 
-    constructor (mesh : tm_mesh) {
+    constructor (mesh : TriangleMesh) {
 
-        for (let i=0; i < mesh.vertices.length; i++) {
-            if (isNaN(mesh.vertices[i])) console.log(i);
-        }
+        this.vertices = mesh.getVertexBuffer();
+        const faces = mesh.getElementBuffer();
+        this.normals = mesh.getNormalBuffer();
+        this.uvs = mesh.getUVBuffer();
 
+        this.nodes = new Array(faces.length/3*2-1);
+        this.tris = new Array(faces.length/3);
 
-        this.vertices = new Float32Array(mesh.vertices);
-        this.nodes = new Array(mesh.faces.length/3*2-1);
-        this.tris = new Array(mesh.faces.length/3);
-
-        this.init_tris(mesh.faces);
+        this.init_tris(faces);
         
         for (let i = 0; i < this.nodes.length; i++) {
             this.nodes[i] = {min:[0,0,0],first_pc:0,max:[0,0,0],prim_count:0};
         }
 
         this.nodes[0].first_pc = 0
-        this.nodes[0].prim_count = mesh.faces.length/3;
+        this.nodes[0].prim_count = faces.length/3;
         this.nodes_used = 1
 
         this.update_bounds(0);
@@ -79,9 +83,9 @@ export class TMIBvh {
                 center : [0,0,0]
             }
 
-            tri.indices[0] = faces[i*3]-1;
-            tri.indices[1] = faces[i*3+1]-1;
-            tri.indices[2] = faces[i*3+2]-1;
+            tri.indices[0] = faces[i*3];
+            tri.indices[1] = faces[i*3+1];
+            tri.indices[2] = faces[i*3+2];
 
             const [a_i, b_i, c_i] = tri.indices;
 

@@ -9,6 +9,7 @@ import { Entity } from "../../entity/Entity";
 import { WebGPU } from "../../engine/WebGPU";
 import shader from "../../../assets/shaders/main.wgsl";
 import { ArrayStorage } from '../../util/ArrayStorage';
+import { materialBindGroupLayout } from "../../engine/Material";
 
 /**
  * The TrianglePass takes all TriangleMeshes of the {@link Scene.entities | Scene's entities} and renders them using
@@ -30,7 +31,7 @@ export class TrianglePass extends RenderPass {
 
     private outdated = true;
 
-
+    private sampler: GPUSampler;
 
 
     constructor(renderer: Renderer) {
@@ -77,10 +78,16 @@ export class TrianglePass extends RenderPass {
 
         super(renderer, input, output);
 
+        this.sampler = App.getRenderDevice().createSampler({
+            addressModeU:"clamp-to-edge",
+            addressModeV:"clamp-to-edge",
+            minFilter: "linear",
+            magFilter: "linear"
+        });
     }
 
 
-    
+
 
     public render(viewport: Viewport): void {
 
@@ -119,6 +126,12 @@ export class TrianglePass extends RenderPass {
                     buffer: {
                         type: "read-only-storage"   // object index
                     }
+                }, {
+                    binding: 3,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {
+                        type: "filtering"
+                    }
                 }
             ]
         });
@@ -135,6 +148,9 @@ export class TrianglePass extends RenderPass {
                 }, {
                     binding: 2,
                     resource: { buffer: objectIndexBuffer }
+                }, {
+                    binding: 3,
+                    resource: this.sampler
                 }
             ]
         })
@@ -174,7 +190,7 @@ export class TrianglePass extends RenderPass {
 
 
         const pipelineLayout = device.createPipelineLayout({
-            bindGroupLayouts: [bindgroupLayout]
+            bindGroupLayouts: [bindgroupLayout, materialBindGroupLayout()]
         });
 
 
@@ -250,17 +266,20 @@ export class TrianglePass extends RenderPass {
 
         renderPass.setIndexBuffer(indexBuffer, "uint32");
 
-        const param = this.renderer.drawParameters;
+        const params = this.renderer.drawParameters;
 
-        for (let i = 0; i < param.length; i += 5) {
+        params.forEach(draw => {
+            renderPass.setBindGroup(1,draw.bindGroup);
+
             renderPass.drawIndexed(
-                param[i],
-                param[i + 1],
-                param[i + 2],
-                param[i + 3],
-                param[i + 4]
+                draw.indexCount,
+                draw.instanceCount,
+                draw.firstIndex,
+                draw.baseVertex,
+                draw.firstInstance
             );
-        }
+
+        });
 
         renderPass.popDebugGroup();
         renderPass.end()

@@ -4,6 +4,7 @@ import { MeshInstance } from "../entity/MeshInstance";
 import { TriangleMesh } from "./TriangleMesh";
 import { Viewport } from "./Viewport";
 import { Timeline } from './Timeline';
+import { Acceleration } from './Acceleration';
 
 export class Scene {
 
@@ -12,6 +13,8 @@ export class Scene {
      */
     entities: Map<string, Entity>;
     public entityIndices: Map<Entity, number> = new Map();
+
+    public accel: Acceleration;
 
     private redrawScheduled: boolean = false;
     private globalRedraw: boolean = false;
@@ -41,6 +44,7 @@ export class Scene {
         this.selections = new Set<Entity>;
         this.timeline = new Timeline();
         this.meshes = new Map<string, TriangleMesh>();
+        this.accel = new Acceleration(this);
     }
 
     /**
@@ -86,6 +90,9 @@ export class Scene {
     public addEntity(entity: MeshInstance) {
         this.entities.set(entity.name, entity);
         this.entityIndices.set(entity, this.entityIndices.size);
+
+        this.accel.update();
+        console.log(this.accel);
 
         this.viewports.forEach(vp => {
             vp.updateMeshes();

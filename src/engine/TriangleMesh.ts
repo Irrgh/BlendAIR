@@ -32,10 +32,7 @@ export class TriangleMesh {
     ]
 
 
-
-
-
-
+    readonly id : string = window.crypto.randomUUID();
 
     constructor(vertices: Float32Array, normals: Float32Array, uvs :Float32Array, ebo: Uint32Array) {
         this.vertices = vertices;

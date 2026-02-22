@@ -10,20 +10,18 @@ import { Entity } from "./entity/Entity";
 import { TimelineWindow } from "./gui/TimelineWindow";
 import { AnimationSheet } from "./engine/AnimationSheet";
 import { Bvh } from "./engine/Bvh";
-import { Ray } from "./engine/Ray";
+
 import { Util } from "./util/Util";
 import { create_tm_mesh, tm_mesh } from "./engine/TMILoader";
 import { TMIBvh } from "./engine/TMIBvh";
 import { TMIComputePass } from "./render/pass/TMIComputePass";
+import { Ray } from "./engine/Acceleration";
 
 export class App {
     private static instance: App;
 
     private constructor() {
 
-
-        this.currentScene = new Scene();
-        this.loadedScenes = [this.currentScene];
     }
 
 
@@ -53,8 +51,8 @@ export class App {
 
 
 
-    private loadedScenes: Scene[];
-    private currentScene: Scene;
+    private loadedScenes!: Scene[];
+    private currentScene!: Scene;
     public webgpu!: WebGPU;
     public outdated: boolean = true;
 
@@ -86,8 +84,8 @@ export class App {
         this.currentScene.addEntity(p1);
 
         const s1 = new MeshInstance(suzanne);
-        s1.setPosition(-0.7, -1.7, 0.3);
-        s1.setScale(0.6,0.6,0.6);
+        s1.setPosition(-0.7, -1.7, 0.5);
+        s1.setScale(0.5,0.5,0.5);
         s1.setYRotation(Math.PI / 7);
         this.currentScene.addEntity(s1);
 
@@ -124,6 +122,20 @@ export class App {
         //    sites[i*2] = Math.random()*120-60;
         //    sites[i*2+1] = Math.random()*120-60;
         //}
+
+
+        let dir : vec3 = vec3.normalize(vec3.create(),[-1,-2,-3]);
+        let inv_dir : vec3 = vec3.inverse(vec3.create(),dir);
+        let pos : vec3 = [0,0,0.5];
+        
+        let ray : Ray = {
+            origin:pos,
+            dir,
+            inv_dir,
+        }
+
+        //console.log(await this.currentScene.accel.intersect([ray]));
+
 
 
         console.log(App.getRenderDevice().adapterInfo);

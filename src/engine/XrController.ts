@@ -4,6 +4,7 @@ import { mat3, mat4, quat, vec3 } from 'gl-matrix';
 import { TriangleMesh } from './TriangleMesh';
 import { MeshInstance } from '../entity/MeshInstance';
 import { App } from "../app";
+import { Ray } from "./Acceleration";
 
 
 interface XRDomOverlayRoot {
@@ -27,11 +28,11 @@ interface XrSessionOptions {
 
 
 const xUpFromYUpPosition = (pos: DOMPointReadOnly) => {
-    return [
+    return vec3.fromValues(
         pos.x,      // x stays the same
         -pos.z,     // WebXR z → -Y
         pos.y,      // WebXR y → Z
-    ];
+    );
 }
 
 const xUpFromYUpOrientation = (orient: DOMPointReadOnly) => {
@@ -49,12 +50,14 @@ export class XrController implements Controller {
 
     private controllers = new Map<XRHandedness, MeshInstance>();
 
-    private cmesh!: TriangleMesh;
+    private dummy!: MeshInstance;
+
+    private can!: TriangleMesh;
 
     constructor(private mode: XRSessionMode, private options?: XrSessionOptions) {
     }
 
-    type: string = "xr";
+    readonly type: string = "xr";
 
     public async manage(viewport: Viewport): Promise<void> {
         if (!navigator.xr) {
@@ -77,8 +80,14 @@ export class XrController implements Controller {
 
         this.viewport = viewport;
 
-        const canmodel: string = await (await fetch("../assets/models/can.obj")).text();
-        this.cmesh = TriangleMesh.parseFromObj(canmodel);
+        this.can = await App.getInstance().loadModel("../assets/models/can.obj")
+
+        this.dummy = new MeshInstance(this.can);
+        this.dummy.setScale(1, 1, 1);
+
+        this.viewport.scene.addEntity(this.dummy);
+
+
 
         this.xr.addEventListener("inputsourceschange", (event) => {
             for (const source of event.added) {
@@ -115,7 +124,7 @@ export class XrController implements Controller {
 
         for (const view of pose.views) {
             const vp = this.layer!.getViewport(view)!;
-    
+
             const qZup = xUpFromYUpOrientation(view.transform.orientation);
 
             const pos = xUpFromYUpPosition(view.transform.position);
@@ -129,9 +138,9 @@ export class XrController implements Controller {
             this.viewport.updateTransforms();
             gl.viewport(vp.x, vp.y, vp.width, vp.height);
 
-            console.time("render");
+            //console.time("render");
             this.viewport.render();
-            console.timeEnd("render");
+            //console.timeEnd("render");
         }
 
 
@@ -140,15 +149,18 @@ export class XrController implements Controller {
     }
 
     private handleInput = (frame: XRFrame) => {
-        this.xr!.inputSources.forEach(inputSource => {
+        this.xr!.inputSources.forEach(async inputSource => {
             if (!inputSource.gripSpace) {
                 console.warn(inputSource);
                 return;
             }
 
+
+
+
             let controller = this.controllers.get(inputSource.handedness);
             if (!controller) {
-                controller = new MeshInstance(this.cmesh);
+                controller = new MeshInstance(this.can);
                 this.viewport!.scene.addEntity(controller);
                 this.controllers.set(inputSource.handedness, controller);
             }
@@ -161,16 +173,65 @@ export class XrController implements Controller {
             const position = xUpFromYUpPosition(pose.transform.position);
             const orientation = xUpFromYUpOrientation(pose.transform.orientation);
 
-            
-            quat.rotateX(orientation,orientation, -Math.PI / 2);
+
+            quat.rotateX(orientation, orientation, -Math.PI / 2);
 
             controller!.setPosition(position[0], position[1], position[2]);
             controller!.setRotation(orientation);
+
+            if (inputSource.gamepad) {
+                const gamepad = inputSource.gamepad;
+
+                // Example: button 0 (usually trigger)
+                const trigger = gamepad.buttons[0];
+
+                if (trigger.touched) {
+                    this.triggerHaptics(inputSource, trigger.value, 100);
+                }
+
+                
+
+                    this.dummy.setRotation(orientation);
+
+                    vec3.add(this.dummy.getPosition(), controller.getPosition(), controller.getForward());
+
+                    //const ray: Ray =
+                    //{
+                    //    origin: position,
+                    //    dir: controller.getForward(),
+                    //    inv_dir: vec3.inverse(vec3.create(), controller.getForward())
+                    //}
+
+                    //console.log(await this.viewport!.scene.accel.intersect([ray]));
+                
+            }
+
+
+
 
 
         });
     }
 
+    private triggerHaptics(inputSource: XRInputSource, intensity = 0.5, duration = 50) {
+        const gamepad = inputSource.gamepad;
+        if (!gamepad) return;
+
+        // Newer API
+        if (gamepad.vibrationActuator) {
+            gamepad.vibrationActuator.playEffect("dual-rumble", {
+                startDelay: 0,
+                duration,
+                weakMagnitude: intensity,
+                strongMagnitude: intensity,
+            });
+        }
+
+        // Older API
+        if (gamepad.hapticActuators && gamepad.hapticActuators.length > 0) {
+            gamepad.hapticActuators[0].pulse(intensity, duration);
+        }
+    }
 
 
 

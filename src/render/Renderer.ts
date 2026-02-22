@@ -9,11 +9,21 @@ import { TriangleMesh } from '../engine/TriangleMesh';
 import { MeshInstance } from '../entity/MeshInstance';
 import { Entity } from '../entity/Entity';
 import { ArrayStorage } from '../util/ArrayStorage';
+import { Material } from '../engine/Material';
+
+export interface DrawCall {
+    indexCount: number;
+    instanceCount: number;
+    firstIndex: number;
+    baseVertex: number;
+    firstInstance: number;
+    bindGroup: GPUBindGroup; // material bindgroup
+}
 
 export abstract class Renderer {
     public webgpu: WebGPU = App.getInstance().webgpu;
     public viewport: Viewport;
-    public drawParameters: Uint32Array;
+    public drawParameters: DrawCall[];
 
     /**
      * 
@@ -24,7 +34,7 @@ export abstract class Renderer {
     constructor(name: string, viewport: Viewport) {
         this.name = name;
         this.viewport = viewport;
-        this.drawParameters = new Uint32Array();
+        this.drawParameters = [];
     }
 
     /**
@@ -94,7 +104,7 @@ export abstract class Renderer {
     }
 
 
-    
+
 
 
 
@@ -194,7 +204,7 @@ export abstract class Renderer {
 
     }
 
-    public updateTransformBuffer(viewport:Viewport): void {
+    public updateTransformBuffer(viewport: Viewport): void {
 
         const scene = viewport.scene;
 
@@ -253,38 +263,36 @@ export abstract class Renderer {
         let uvSize = 0;
         let indexSize = 0;
 
-        const instances: Map<TriangleMesh, { count: number, ids: number[] }> = new Map();
+        interface MeshMaterialGroup {
+            mesh: TriangleMesh;
+            material: Material;
+            ids: number[];
+        }
+        const grouped: Map<string, MeshMaterialGroup> = new Map();
 
-        scene.entities.forEach((object: Entity, name: String) => {
+        scene.entities.forEach((object: Entity) => {
+            if (!(object instanceof MeshInstance)) return;
 
-            if (!(object instanceof MeshInstance)) {
-                return;
-            }
-
-            const mesh: TriangleMesh = object.mesh;
-            const instance = instances.get(mesh);
+            const mesh = object.mesh;
+            const material = object.material;
             const id = scene.getId(object);
 
-            if (!instance) {
+            const key = `${mesh.id}_${material.id}`; // unique per mesh+material
+            if (!grouped.has(key)) {
+                grouped.set(key, { mesh, material, ids: [] });
                 vertexSize += mesh.getVertexBuffer().length;
-                indexSize += mesh.getElementBuffer().length;
                 normalSize += mesh.getNormalBuffer().length;
                 uvSize += mesh.getUVBuffer().length;
-
-                instances.set(mesh, { count: 1, ids: [id] });
-                return;
+                indexSize += mesh.getElementBuffer().length;
             }
-            instance.count++;
-            instance.ids.push(id);
+            grouped.get(key)!.ids.push(id);
         });
-
 
         const vertexArray: Float32Array = new Float32Array(vertexSize);
         const normalArray: Float32Array = new Float32Array(normalSize);
         const uvArray: Float32Array = new Float32Array(uvSize);
         const indexArray: Uint32Array = new Uint32Array(indexSize);
         const idArray: Uint32Array = new Uint32Array(scene.entities.size);
-        const drawParameters: Uint32Array = new Uint32Array(instances.size * 5);
 
 
         // Offsets for writing into the flat buffers
@@ -295,37 +303,38 @@ export abstract class Renderer {
         let objectOffset = 0;
         let drawIndex = 0;
 
-        instances.forEach((value: { count: number, ids: number[] }, mesh: TriangleMesh) => {
+        const drawCalls: DrawCall[] = [];
 
-            // Copy vertex data into separate buffers
+        grouped.forEach(group => {
+            const mesh = group.mesh;
+
+            // Copy vertex, normal, uv
             vertexArray.set(mesh.getVertexBuffer(), vertexOffset);
             normalArray.set(mesh.getNormalBuffer(), normalOffset);
             uvArray.set(mesh.getUVBuffer(), uvOffset);
 
-            // Offset indices to the correct vertex location
-            indexArray.set(
-                mesh.getElementBuffer().map(idx => idx + vertexOffset / 3), // divide by 3 since separate buffer
-                indexOffset
-            );
+            // Offset indices
+            indexArray.set(mesh.getElementBuffer().map(idx => idx + vertexOffset / 3), indexOffset);
 
             // Set instance IDs
-            idArray.set(value.ids, objectOffset);
+            idArray.set(group.ids, objectOffset);
 
-            // Draw parameters: [indexCount, instanceCount, firstIndex, baseVertex, firstInstance]
-            drawParameters.set([
-                mesh.getElementBuffer().length,
-                value.count,
-                indexOffset,
-                0,
-                objectOffset
-            ], drawIndex * 5);
+            // Add draw call
+            drawCalls.push({
+                indexCount: mesh.getElementBuffer().length,
+                instanceCount: group.ids.length,
+                firstIndex: indexOffset,
+                baseVertex: 0,
+                firstInstance: objectOffset,
+                bindGroup: group.material.bindgroup
+            });
 
+            // Advance offsets
             vertexOffset += mesh.getVertexBuffer().length;
             normalOffset += mesh.getNormalBuffer().length;
             uvOffset += mesh.getUVBuffer().length;
             indexOffset += mesh.getElementBuffer().length;
-            objectOffset += value.count;
-            drawIndex++;
+            objectOffset += group.ids.length;
         });
 
         const min = WebGPU.minBuffersize;
@@ -352,7 +361,7 @@ export abstract class Renderer {
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX
         }, "index");
 
-        
+
 
         const objectIndexBuffer = this.createBuffer({
             size: Math.max(idArray.byteLength, min),
@@ -366,8 +375,7 @@ export abstract class Renderer {
         device.queue.writeBuffer(indexBuffer, 0, indexArray.buffer);
         device.queue.writeBuffer(objectIndexBuffer, 0, idArray.buffer);
 
-        this.drawParameters = drawParameters;
-
+        this.drawParameters = drawCalls;
     }
 
     public abstract render(): void

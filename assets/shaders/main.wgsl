@@ -22,17 +22,16 @@ struct VertexOut {
       @location(2) uv: vec2<f32>,
       @location(3) @interpolate(flat) objectId: u32,
       @location(4) @interpolate(flat) vertId: u32,
-      //@location(5) @interpolate(flat) materialId: u32,
 }
 
 
 @binding(0) @group(0) var<uniform> camera : Camera;
 @binding(1) @group(0) var<storage,read> modelTransforms : array<mat4x4<f32>>;
 @binding(2) @group(0) var<storage,read> objectIndex: array<u32>;
-//@binding(3) @group(0) var<storage,read> materialIndex: array<u32>;
+@binding(3) @group(0) var textureSampler : sampler;
 
-@group(1) @binding(0) var textureArray : texture_2d_array<f32>;
-@group(1) @binding(1) var textureSampler : sampler;
+@binding(0) @group(1) var texture : texture_2d<f32>;  
+
 
     
 @vertex
@@ -77,41 +76,37 @@ fn edgeFactor(bary: vec3f) -> f32 {
 fn fragment_main(fragData: VertexOut) -> FragmentOut {
     let normal = normalize(fragData.normal);
 
-    var color : vec3f;
-
-    let id : u32 = fragData.vertId;
-
-    color = abs(normalize(dpdx(fragData.fragPosition) + dpdy(fragData.fragPosition)));
-
-    color = color * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
-
-    let x : f32 = ((f32(id + 5) % 16) / 16 * 0.7) + 0.3;
-    let y : f32 = ((f32(id + 4) % 11) / 11 * 0.7) + 0.3;
-    let z : f32 = ((f32(id + 7) % 13) / 13 * 0.7) + 0.3;
-    color = vec3f(x,y,z);
-
-
-    var output : FragmentOut;
-    output.color = vec4<f32>(color,1.0);
-    output.normal = vec4<f32>(normal,1.0);
-    output.object = fragData.objectId;
-
-
-    // Sample correct texture layer
-    //let texColor = textureSample(
-    //    textureArray,
-    //    textureSampler,
-    //    fragData.uv,
-    //    i32(fragData.materialId)
-    //);
+    //var color : vec3f;
+//
+    //let id : u32 = fragData.vertId;
+//
+    //color = abs(normalize(dpdx(fragData.fragPosition) + dpdy(fragData.fragPosition)));
+//
+    //color = color * ((dot(normal, normalize(vec3<f32>(1.0, 2.0, 3.0))) + 1.0) / 2.0);
+//
+    //let x : f32 = ((f32(id + 5) % 16) / 16 * 0.7) + 0.3;
+    //let y : f32 = ((f32(id + 4) % 11) / 11 * 0.7) + 0.3;
+    //let z : f32 = ((f32(id + 7) % 13) / 13 * 0.7) + 0.3;
+    //color = vec3f(x,y,z);
+//
 //
     //var output : FragmentOut;
-    //output.color = texColor;
-    //output.normal = vec4<f32>(normal, 1.0);
+    //output.color = vec4<f32>(color,1.0);
+    //output.normal = vec4<f32>(normal,1.0);
     //output.object = fragData.objectId;
-//
     //return output;
 
+    //Sample correct texture layer
+    let texColor = textureSample(
+        texture,
+        textureSampler,
+        fragData.uv,
+    );
+
+    var output : FragmentOut;
+    output.color = texColor;
+    output.normal = vec4<f32>(normal, 1.0);
+    output.object = fragData.objectId;
 
     return output;
 }

@@ -157,11 +157,8 @@ export class Bvh {
         const node = this.nodes[index];
 
         if (node.primCount <= 2) {
-            throw new Error("eee");
-            
-            return;}
-
-
+            return;
+        }
 
         const dim = vec3.sub(vec3.create(), node.aabbMax, node.aabbMin);
         let axis = 0;   // [x,y,z]
@@ -215,8 +212,6 @@ export class Bvh {
         this.subdivide(leftIndex);
         this.subdivide(rightIndex);
 
-
-
     }
 
 
@@ -225,7 +220,7 @@ export class Bvh {
      * @param ray 
      * @returns 
      */
-    public intersectionBvh(ray: Ray) {
+    private intersectionBvh(ray: Ray) {
 
         const intersectionStack: Uint32Array = new Uint32Array(Bvh.maxDepth);   // depth in a balanced binary Tree.
         const distanceStack: Float32Array = new Float32Array(Bvh.maxDepth);
