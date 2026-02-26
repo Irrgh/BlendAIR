@@ -42,14 +42,14 @@ export class TLAS {
 
             const base = i * 32;
 
-            nodeDataView.setFloat32(base + 0, node.min[0]);
-            nodeDataView.setFloat32(base + 4, node.min[1]);
-            nodeDataView.setFloat32(base + 8, node.min[2]);
-            nodeDataView.setUint32(base + 12, node.first_pc);
-            nodeDataView.setFloat32(base + 16, node.max[0]);
-            nodeDataView.setFloat32(base + 20, node.max[1]);
-            nodeDataView.setFloat32(base + 24, node.max[2]);
-            nodeDataView.setUint32(base + 28, node.prim_count);
+            nodeDataView.setFloat32(base + 0, node.min[0], true);
+            nodeDataView.setFloat32(base + 4, node.min[1], true);
+            nodeDataView.setFloat32(base + 8, node.min[2], true);
+            nodeDataView.setUint32(base + 12, node.first_pc, true);
+            nodeDataView.setFloat32(base + 16, node.max[0], true);
+            nodeDataView.setFloat32(base + 20, node.max[1], true);
+            nodeDataView.setFloat32(base + 24, node.max[2], true);
+            nodeDataView.setUint32(base + 28, node.prim_count, true);
         }
         
         const device = App.getRenderDevice();

@@ -124,9 +124,9 @@ export class App {
         //}
 
 
-        let dir : vec3 = vec3.normalize(vec3.create(),[-1,-2,-3]);
+        let dir : vec3 = vec3.normalize(vec3.create(),[0,-1,-1]);
         let inv_dir : vec3 = vec3.inverse(vec3.create(),dir);
-        let pos : vec3 = [0,0,0.5];
+        let pos : vec3 = [0,0,1];
         
         let ray : Ray = {
             origin:pos,
@@ -134,7 +134,7 @@ export class App {
             inv_dir,
         }
 
-        //console.log(await this.currentScene.accel.intersect([ray]));
+        console.log(await this.currentScene.accel.intersect([ray]));
 
 
 

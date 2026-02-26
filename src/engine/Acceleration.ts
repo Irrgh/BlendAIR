@@ -184,6 +184,9 @@ export class Acceleration {
             this.uploadBLASBuffers();
         }
 
+        this.tlas = new TLAS(instances);
+        this.tlasNodesBuffer = this.tlas.nodeBuffer;
+
         const instanceArray = new Float32Array(36 * instances.length);
         const instanceDataView = new DataView(instanceArray.buffer);
 
@@ -193,9 +196,9 @@ export class Acceleration {
 
             const offset = this.offsetMap.get(instance.name)!;
 
-            instanceDataView.setUint32(base + 0, offset.nodeOffset);
-            instanceDataView.setUint32(base + 4, offset.indexOffset);
-            instanceDataView.setUint32(base + 8, offset.vertexOffset);
+            instanceDataView.setUint32(base + 0, offset.nodeOffset, true);
+            instanceDataView.setUint32(base + 4, offset.indexOffset, true);
+            instanceDataView.setUint32(base + 8, offset.vertexOffset, true);
 
             instanceArray.set(instance.transform, (base/4) + 4);
             instanceArray.set(instance.invTransform, (base/4) + 20);
@@ -208,11 +211,7 @@ export class Acceleration {
         });
 
         device.queue.writeBuffer(instanceBuffer, 0, instanceArray);
-        this.tlasInstanceBuffer = instanceBuffer;
-
-
-        this.tlas = new TLAS(instances);
-        this.tlasNodesBuffer = this.tlas.nodeBuffer;
+        this.tlasInstanceBuffer = instanceBuffer;        
     }
 
     private transformAABB(min: vec3, max: vec3, m: mat4, outMin: vec3, outMax: vec3) {
@@ -328,14 +327,14 @@ export class Acceleration {
 
                 const base = nodeOffset + i * 8;
 
-                nodeDataView.setFloat32(base + 0, node.min[0]);
-                nodeDataView.setFloat32(base + 4, node.min[1]);
-                nodeDataView.setFloat32(base + 8, node.min[2]);
-                nodeDataView.setUint32(base + 12, node.first_pc);
-                nodeDataView.setFloat32(base + 16, node.max[0]);
-                nodeDataView.setFloat32(base + 20, node.max[1]);
-                nodeDataView.setFloat32(base + 24, node.max[2]);
-                nodeDataView.setUint32(base + 28, node.prim_count);
+                nodeDataView.setFloat32(base + 0, node.min[0],true);
+                nodeDataView.setFloat32(base + 4, node.min[1],true);
+                nodeDataView.setFloat32(base + 8, node.min[2],true);
+                nodeDataView.setUint32(base + 12, node.first_pc, true);
+                nodeDataView.setFloat32(base + 16, node.max[0], true);
+                nodeDataView.setFloat32(base + 20, node.max[1], true);
+                nodeDataView.setFloat32(base + 24, node.max[2], true);
+                nodeDataView.setUint32(base + 28, node.prim_count, true);
             }
             nodeOffset += bvh.nodes_used * 32;
 
@@ -423,6 +422,8 @@ export class Acceleration {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
+        device.queue.writeBuffer(inputBuffer,0, inputArray);
+
         const bindgroup = device.createBindGroup({
             layout: this.bindgroupLayout,
             entries: [
@@ -482,27 +483,27 @@ export class Acceleration {
 
         await mappingBuffer.mapAsync(GPUMapMode.READ);
 
-        const arr = new Float32Array(mappingBuffer.getMappedRange());
+        const e = mappingBuffer.getMappedRange();
+        const arr = new Float32Array(e);
 
         const hitInfos: RayHitInfo[] = new Array(rays.length);
         const view = new DataView(arr.buffer);
 
-
         for (let i = 0; i < hitInfos.length; i++) {
 
             const base = i * 12;
-
+            
             let hitInfo: RayHitInfo = {
-                worldPos: arr.slice(base + 0, base + 4),
-                length: view.getFloat32((base + 3) * 4),
-                normal: arr.slice(base + 4, base + 8),
-                objectId: view.getUint32((base + 7) * 4),
-                uv: arr.slice(base + 4, base + 6)
+                worldPos: arr.slice(base + 0, base + 3),
+                length: view.getFloat32((i + 3) * 4, true),
+                normal: arr.slice(base + 4, base + 7),
+                objectId: view.getUint32((i + 7) * 4, true),
+                uv: arr.slice(base + 8, base + 10)
             };
 
             hitInfos[i] = hitInfo;
         }
-
+        mappingBuffer.unmap();
 
         return hitInfos;
     }
